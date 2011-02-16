@@ -1,0 +1,17 @@
+Tree Properties
+	All
+		render		function
+		result		string
+
+	Instructions (tag = "ins")
+		mne(monic)	string
+		oper(ands)	list(string)
+		jmp		list(number|None)
+		cond(itional)	list(number|None)
+		call		list(number|None)
+		ret		string
+	
+
+Toplevel handle
+	.m	memory
+	.t	tree	

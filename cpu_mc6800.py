@@ -63,6 +63,16 @@ class mc6800(object):
 		assert inscode[0xc0] == "2iSUBB"
 		assert len(inscode) == 256
 
+	def render(self, p, t, lvl):
+		s = t.a['mne']
+		s += "\t"
+		d = ""
+		for i in t.a['oper']:
+			s += d
+			s += str(i)
+			d = ','
+		return (s,)
+
 	def disass(self, p, adr, priv):
 		try:
 			iw = p.m.rd(adr)
@@ -77,67 +87,56 @@ class mc6800(object):
 
 		try:
 			x = p.t.add(adr, adr + l, "ins")
+			x.render = self.render
 		except:
 			print ("FAIL")
 			return
 		x.a['mne'] = c[2:]
 
 		if c[1] == "i" and l == 2:
-			x.a['op'] = ("#0x%02x" % p.m.rd(adr + 1),)
+			x.a['oper'] = ("#0x%02x" % p.m.rd(adr + 1),)
 		elif c[1] == "i" and l == 3:
-			x.a['op'] = ("#0x%04x" % p.m.b16(adr + 1),)
+			x.a['oper'] = ("#0x%04x" % p.m.b16(adr + 1),)
 		elif c[1] == "x" and l == 2:
-			x.a['op'] = ("0x%02x" % p.m.rd(adr + 1),"X")
+			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 		elif c[1] == "d":
-			x.a['op'] = ("0x%02x" % p.m.rd(adr + 1),)
+			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),)
 		elif c[1] == "e":
-			x.a['op'] = ("0x%04x" % p.m.b16(adr + 1),)
+			x.a['oper'] = ("0x%04x" % p.m.b16(adr + 1),)
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
-			x.a['op'] = ("0x%04x" % da,)
+			x.a['oper'] = ("0x%04x" % da,)
 			x.a['call'] = (da, )
-			p.ins(x, self.disass)
-			return
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
-			x.a['op'] = ("0x%04x" % da,)
+			x.a['oper'] = ("0x%04x" % da,)
 			x.a['call'] = (da, )
-			p.ins(x, self.disass)
-			return
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
-			x.a['op'] = (">0x%04x" % da,)
+			x.a['oper'] = (">0x%04x" % da,)
 			if iw & 0x0f == 00:
 				x.a['jmp'] = (da, )
 			else:
 				x.a['cond'] = (adr + l, da)
-			p.ins(x, self.disass)
-			return
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
-			x.a['op'] = ("0x%04x" % da,)
+			x.a['oper'] = ("0x%04x" % da,)
 			x.a['jmp'] = (da, )
-			p.ins(x, self.disass)
-			return
 		elif c[1] == "X":
-			x.a['op'] = ("0x%02x" % p.m.rd(adr + 1),"X")
+			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 			if x.a['mne'] == "JSR":
 				x.a['call'] = (None, )
 			else:
 				x.a['jmp'] = (None, )
-			p.ins(x, self.disass)
-			return
-				
 		elif c[1] == "_":
-			x.a['op'] = list()
+			x.a['oper'] = list()
 			x.a['ret'] = ""
-			p.ins(x, self.disass)
 			return
 		elif c[1] == " ":
-			x.a['op'] = list()
+			x.a['oper'] = list()
 		else:
 			print("UNIMPL %04x: %02x %s" % (adr,iw, c))
-			x.a['op'] = ("??",)
+			x.a['oper'] = ("??",)
 			return
-		p.todo(adr + l, self.disass)
+		p.ins(x, self.disass)
 			

@@ -5,7 +5,7 @@
 # This is used to partition the memory space into logical ranges
 # such as "procedure", "statement", "instruction" etc.
 #
-# The '.a' member is where we put the properties of the nodes
+# The '.a' member is where we put random properties of the nodes
 
 import bisect
 
@@ -27,6 +27,10 @@ class tree(object):
 		self.a = dict()
 		self.parent = None
 		self.tag = tag
+		self.render = None
+		self.descend = True
+		self.cmt = list()
+		self.blockcmt = ""
 		if tag == "root":
 			self.nseq = 1
 
@@ -89,12 +93,14 @@ class tree(object):
 		x = self.child[i]
 		if x.start == start and x.tag == tag:
 			return x
-		x = self.child[i+1]
-		if x.start == start and x.tag == tag:
-			return x
+		if i + 1 < len(self.child):
+			x = self.child[i+1]
+			if x.start == start and x.tag == tag:
+				return x
 		if tag == "ins":
 			print("BORG ? %x" % start, i, str(self.child[i]))
-			print("BORG ? %x" % start, i+1, str(self.child[i+1]))
+			if i + 1 < len(self.child):
+				print("BORG ? %x" % start, i+1, str(self.child[i+1]))
 		return None
 	
 
@@ -119,6 +125,8 @@ class tree(object):
 			s = "%s %s" % (i , self)
 			for j in self.a:
 				s += "  %s = %s" % (j, self.a[j])
+			for j in self.cmt:
+				s += "  ; %s" % j
 			print(s)
 			
 		elif func(self, priv, lvl):

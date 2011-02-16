@@ -13,6 +13,13 @@ from __future__ import print_function
 import struct
 import array
 
+def ascii(x):
+	x &= 0xff
+	if x < 32 or x > 126:
+		return " "
+	return "%c" % x
+
+
 #######################################################################
 #
 # We report trouble as these exceptions
@@ -48,6 +55,10 @@ class base_mem(object):
 		self.qmask = ((1<<qualifiers) - 1) << bits
 		self.bmask = (1<<bits) - 1
 
+		self.apct = "%%0%dx" % len("%x" % (self.end - 1))
+		self.dpct = "%%0%dx" % (bits / 4)
+		self.qpct = "[%%0%dx]" % (qualifiers / 4)
+
 		w = bits + qualifiers
 		if flags:
 			self.fmask = ((1<<6) - 1) << w
@@ -71,6 +82,42 @@ class base_mem(object):
 			for a in range(self.start, self.end):
 				self.mem[a - self.start] |= \
 				    self.invalid | self.undef
+
+	# Format a memory address as a hex string
+	# If you don't like hex, you can override .afmt or subclass
+	# and overload .adr()
+
+	def afmt(self, a):
+		return self.apct % a
+
+	def dfmt(self, d):
+		return self.dpct % d
+
+	def qfmt(self, q):
+		return self.qpct % q
+
+	# Default adr/data/ascii column formatter
+	# returns a list of lines, all the same width
+	def col1(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			try:
+				x = self.rd(start)
+			except:
+				l.append(self.afmt(start) + "<undef>")
+				start += 1
+				continue
+			s = self.afmt(start) + " " + self.dfmt(x)
+			if self.qualifiers > 0:
+				s += self.qfmt(self.rdqual(start))
+			s += "  |"
+			for b in range(24,-1,-8):
+				if self.bits > b:
+					s += ascii(x >> b)
+			s += "|\t"
+			l.append(s)
+			start += 1
+		return l
 
 	# Check if an address is inside this piece of memory
 	def chkadr(self, start, end=None):
@@ -232,6 +279,34 @@ class byte_mem(base_mem):
 			    self.invalid|self.undef)
 			self.wr(offset, i)
 			offset += step
+
+	def col1(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			s = self.afmt(start)
+			s += " "
+			t = "|"
+			for i in range(0,8):
+				if start + i >= end:
+					s += "   "
+					t += " "
+				else:
+					try:
+						x = self.rd(start + i)
+					except:
+						s += " --"
+						t += " "
+						continue
+
+					s += " %02x" % x
+					if x < 32 or x > 126:
+						t += " "
+					else:
+						t += "%c" % x
+			s += " " + t + "|\t"
+			l.append(s)
+			start += 8
+		return l
 
 if __name__ == "__main__":
 
