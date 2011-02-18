@@ -113,8 +113,12 @@ class domus(cpu_nova.nova):
 				x.a['cmt'] = "pageref -> 0x%04x" % da
 			if ss[0] == "CALL":
 				p.todo(adr + 2, self.disass)
-		p.ins(x, self.disass)
 			
+		if ss[1] > 1:
+			x.a['cond'] = list()
 		for j in range(1, ss[1] + 1):
+			if ss[1] > 1:
+				x.a['cond'].append(adr + j)
 			p.todo(adr + j, self.disass)
+		p.ins(x, self.disass)
 
