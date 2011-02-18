@@ -96,32 +96,51 @@ class pyreveng(object):
 		if n:
 			self.todo(t.end, func, priv)
 
+	def markbb(self, a, why):
+		self.__bbstart[a] = why
+
+	# Build runs of instructions.
+	#
+	# A run is defined as a sequence of one or more instructions which
+	# are executed as a unit, either all are executed, or none are.
+	#
+	# Instructions which transfer control elsewhere (jmp, cond branch,
+	# return &c) will always terminate a run, and will thereby define
+	# the beginning of the next run.
+	#
+	# NB: conditionals which always take one path can screw up this logic.
+	#
 	def build_bb(self):
-		print("BUILD_BB")
 		for i in self.__bbstart:
 			if i in self.__bbx:
 				continue
 			x = self.__bbstart[i]
-			print("%04x { %s" % (i, str(x)))
-			y = self.t.find(i, None, "ins")
+			y = self.t.find(i, "ins")
 			if y == None:
-				print("NO y %x" % i)
 				continue
 			while True:
 				j = y.end
 				if y.start in self.__bbend:
 					break
-				y = self.t.find(j, None, "run")
+				y = self.t.find(j, "run")
 				if y != None:
 					break
-				y = self.t.find(j, None, "ins")
+				y = self.t.find(j, "ins")
 				if y == None:
 					j = None
 					break
 				if y.start in self.__bbstart:
 					break
+				if 'ret' in y.a:
+					j = y.end
+					break
+				if 'jmp' in y.a:
+					j = y.end
+					break
+				if 'cond' in y.a:
+					j = y.end
+					break
 			if j != None:
-				print("RUN %x..%x" % (i,j))
 				x = self.t.add(i,j,"run")
 				x.blockcmt += "\n"
 				self.__bbx[i] = x
@@ -181,8 +200,10 @@ class pyreveng(object):
 				fo.write(i)
 				fo.write("\n")
 			return
-
-		a = t.render(self, t, lvl)
+		if type(t.render) == str:
+			a = (t.render,)
+		else:
+			a = t.render(self, t, lvl)
 		b = self.m.col1(self, t.start, t.end, lvl)
 		c = t.cmt
 		i = 0
