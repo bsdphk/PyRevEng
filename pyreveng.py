@@ -149,7 +149,7 @@ class pyreveng(object):
 				s = False
 				continue
 		if s != False:
-			self.__f2(s, j, fo, lvl)
+			self.__f2(s, b, fo, lvl)
 		s = False
 
 	def __r(self, t, lvl, fo):
