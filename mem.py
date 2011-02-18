@@ -268,6 +268,27 @@ class byte_mem(base_mem):
 		    self.rd(adr + 1) << 16 | \
 		    self.rd(adr + 2) << 8 | self.rd(adr + 3)
 
+	def ascii(self, adr, len=-1):
+		s = ""
+		while True:
+			x = self.rd(adr)
+			if len == -1 and x == 0:
+				break
+			if x >= 32 or x <= 126:
+				s += "%c" % x
+			elif x == 10:
+				s += "\\n" 
+			elif x == 13:
+				s += "\\r" 
+			else:
+				s += "\\x%02x" % x
+			if len > 0:
+				len -= 1
+				if len == 0:
+					break
+			adr += 1
+		return s
+
 	def fromfile(self, fn, offset, step):
 		f = open(fn, "rb")
 		d = f.read()
