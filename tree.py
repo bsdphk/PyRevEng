@@ -88,21 +88,12 @@ class tree(object):
 		t.parent = self
 		return t
 
-	def find(self, start, end, tag):
-		i = bisect.bisect_left(self.cend, start)
+	def find(self, start, tag):
+		i = bisect.bisect_right(self.cend, start)
 		x = self.child[i]
 		if x.start == start and x.tag == tag:
 			return x
-		if i + 1 < len(self.child):
-			x = self.child[i+1]
-			if x.start == start and x.tag == tag:
-				return x
-		if tag == "ins":
-			print("BORG ? %x" % start, i, str(self.child[i]))
-			if i + 1 < len(self.child):
-				print("BORG ? %x" % start, i+1, str(self.child[i+1]))
 		return None
-	
 
 	# Return a list of gaps
 	def gaps(self):
