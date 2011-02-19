@@ -243,12 +243,56 @@ m = mem.byte_mem(0, 0x10000, 0, True)
 m.bcols = 3
 p = pyreveng.pyreveng(m)
 p.cmt_start = 48
-
 p.cpu = cpu_mc6800.mc6800()
-p.t.recurse()
 
 # The HP5370B inverts the address bus, so start at the end and count down:
 p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+
+#########
+p.t.blockcmt += """
+HP5370B ROM disassembly
+=======================
+
+Address Map:
+------------
+0x0000-0003	GPIB {P8-30}
+		0x0000:R Data In
+		0x0000:W Data Out
+		0x0001:R Inq In
+		0x0001:W Status Out
+		0x0002:R Cmd In
+		0x0002:W Control Out
+			0x10 = EOI out {0x61e9}
+		0x0003:R State In
+
+0x0050-0x05f	A16 Arming
+		0x0050-0x0051:R	LDACSR signal
+		0x0052-0x0053:R A16U21+A16U15 MUX
+			0x0052:R A16 Service Switch
+				0x80 = Loop
+				0x10 = Read
+				0x08 = Display
+				0x04 = Write
+				0x02 = ROM test
+				0x01 = RAM test
+		0x0054-0x0055:R	LEN2 signal
+		0x0056-0x0057:R	LEN1 signal
+		0x0058-0x0059:R	LEN0 signal
+		0x005a-0x005b:R	A16U17+A16U19 MUX
+			 Eventcounter
+		{more}
+0x0060-0x007f	Front panel
+		0x0060:R Buttons
+			0xf0: scan lines
+			0x07: sense lines
+		0x0060-0x006f:W	LEDS
+		0x0070-0x007f:W	7segs
+0x0080-0x0200	RAM
+
+0x4000-?	Possibly Service/Expansion EPROM
+0x6000-0x7fff	EPROMS
+				
+"""
 
 # 0x6f00...0x7000 = x^2/256 table
 
@@ -302,8 +346,17 @@ for a in range(0x7ead, 0x7ebf, 2):
 	dot_ptr(p, a)
 
 for i in range(0x6000,0x8000,0x400):
+	j = 0
+	for jj in range(2, 0x400):
+		j += p.m.rd(i + jj)
+	j &= 0xffff
+	j ^= p.m.b16(i)
+	if j == 0xffff:
+		j = "OK"
+	else:
+		j = "BAD"
 	x = dot_word(p, i)
-	x.cmt.append("EPROM checksum")
+	x.cmt.append("EPROM checksum (%s)" % j)
 	x = dot_byte(p, i + 2)
 	x.cmt.append("EPROM number")
 	n = 0
@@ -315,8 +368,9 @@ for i in range(0x6000,0x8000,0x400):
 		x = p.t.add(i - n, i, "fill")
 		x.render = ".FILL\t%d, 0xff" % n
 
+#######################################################################
 x = p.t.add(0x7eed, 0x7ef9, "tbl")
-x.blockcmt += "EPROM test byte values (?)\n"
+x.blockcmt += "Write test byte values (?)\n"
 for i in range(x.start, x.end):
 	dot_byte(p, i)
 
@@ -402,5 +456,56 @@ for i in range(0, hpib_numcmds):
 while p.run():
 	#study(p)
 	pass
+#######################################################################
+# Manual markup
+
+x = p.t.add(0x7d96, 0x7da3, "block")
+x.blockcmt += """
+RESET entry point
+"""
+x = p.t.add(0x7da3, 0x7db1, "block")
+x.blockcmt += """
+Self & Service test start
+"""
+x = p.t.add(0x7db1, 0x7de8, "block")
+x.blockcmt += """
+RAM test
+"""
+x = p.t.add(0x7de8, 0x7df8, "block")
+x.blockcmt += """
+Display "Err 6.N" RAM error
+"""
+
+x = p.t.add(0x7df8, 0x7e30, "block")
+x.blockcmt += """
+Display "Err N.M" 
+"""
+
+x = p.t.add(0x7e40, 0x7ebf, "block")
+x.blockcmt += """
+EPROM test
+"""
+x = p.t.add(0x7ebf, 0x7ef9, "block")
+x.blockcmt += """
+A16 Service Switch bit 2: "Write Test"
+"""
+x = p.t.add(0x7ef9, 0x7f24, "block")
+x.blockcmt += """
+A16 Service Switch bit 3: "Display Test"
+"""
+x = p.t.add(0x7f24, 0x7f46, "block")
+x.blockcmt += """
+A16 Service Switch bit 4: "Read Test"
+"""
+x = p.t.add(0x7f46, 0x7f4d, "block")
+x.blockcmt += """
+A16 Service Switch bit 7: "Loop Tests"
+"""
+x = p.t.add(0x7f6b, 0x7f79, "block")
+x.blockcmt += """
+LAMP/LED test
+"""
+
+#######################################################################
 p.render()
 #p.t.recurse()
