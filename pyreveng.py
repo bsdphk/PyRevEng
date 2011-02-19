@@ -37,6 +37,9 @@ class pyreveng(object):
 		self.__bbend = dict()
 		self.__bbx = dict()
 
+		# @label
+		self.__label = dict()
+
 		# @render
 		self.cmt_start = 56
 
@@ -139,6 +142,11 @@ class pyreveng(object):
 				self.__bbx[i] = x
 
 	###############################################################
+
+	def setlabel(self, a, lbl):
+		self.__label[a] = lbl
+
+	###############################################################
 	# Resolve effective addresses that go through unconditional jumps
 	#
 
@@ -188,28 +196,41 @@ class pyreveng(object):
 			self.__f2(s, b, fo, lvl)
 		s = False
 
+	def __eas(self, adr, cond):
+		if cond != None:
+			t = "EA(%s)=" % cond
+		else:
+			t = "EA="
+		adr = self.resolve_ea(adr)
+		if adr == None:
+			t += "?"
+		else:
+			t += self.m.afmt(adr)
+			if adr in self.__label:
+				t += "=" + self.__label[adr]
+		return t
+		
 	# Emit effective address comments
 	def __ear(self, t, c):
+		s = ""
+		d = ""
 		for jj in ('cond', 'call'):
 			if not jj in t.a:
 				continue
 			x = t.a[jj]
 			if len(x) == 1 and x[0][0] == "T":
-				if x[0][1] != None:
-					c.append("EA=" + self.m.afmt(
-					    self.resolve_ea(x[0][1])))
-					continue;
-			s = ""
-			d = ""
-			for ii in x:
-				s += d
-				s += "EA(%s)=" % ii[0]
-				if ii[1] != None:
-					s += self.m.afmt(self.resolve_ea(ii[1]))
-				else:
-					s += "?"
+				s += d + self.__eas(x[0][1], None)
 				d = ", "
-			c.append(s)
+			else:
+				for ii in x:
+					s += d + self.__eas(ii[1], ii[0])
+					d = ", "
+		if 'EA' in t.a:
+			# XXX: multiple EA's per instrution, how ?
+			for ii in t.a['EA']:
+				s += d + self.__eas(ii, None)
+				d = ", "
+		c.append(s)
 
 	def __r(self, t, lvl, fo):
 		if t.blockcmt != "":
@@ -227,6 +248,9 @@ class pyreveng(object):
 				a = i.end
 			self.__f(a, t.end, fo, lvl)
 			return
+
+		if t.start in self.__label:
+			fo.write(self.col1s + self.__label[t.start] + ":\n")
 
 		if t.render == None:
 			fo.write("%s" % self.m.afmt(t.start))

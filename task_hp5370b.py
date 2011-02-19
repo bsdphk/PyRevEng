@@ -255,7 +255,7 @@ HP5370B ROM disassembly
 
 Address Map:
 ------------
-0x0000-0003	GPIB {P8-30}
+0x0000-0x0003	GPIB {P8-30}
 		0x0000:R Data In
 		0x0000:W Data Out
 		0x0001:R Inq In
@@ -265,7 +265,7 @@ Address Map:
 			0x10 = EOI out {0x61e9}
 		0x0003:R State In
 
-0x0050-0x05f	A16 Arming
+0x0050-0x005f	A16 Arming
 		0x0050-0x0051:R	LDACSR signal
 		0x0052-0x0053:R A16U21+A16U15 MUX
 			0x0052:R A16 Service Switch
@@ -288,6 +288,24 @@ Address Map:
 		0x0060-0x006f:W	LEDS
 		0x0070-0x007f:W	7segs
 0x0080-0x0200	RAM
+		0x0080-0x0086:	SW \  FLOAT
+		0x0087-0x008d:	SZ  | stack
+		0x008e-0x0094:	SY  > SW=top
+		0x0095-0x009b:	SX  | SX=bot
+		0x009c-0x00a2:	SA /  SA=spill
+
+		0x00b7:
+			0b....X...: SE[12]
+			0b......X.: SA[12]
+			0b.......X: SO[12]
+		0x00bc:
+			0b...XX...: IN[14]
+		0x00f4:
+			0bX.......: TB[01]
+
+		0x0140-0x014f:	Led buffer
+			0bX.......: DP
+			0b....XXXX: BCD
 
 0x4000-?	Possibly Service/Expansion EPROM
 0x6000-0x7fff	EPROMS
@@ -451,6 +469,8 @@ for i in range(0, hpib_numcmds):
 		x = dot_code(p, pp + (xx - lo) * 2)
 		tt = "%s%d" % (hpib_cmd[i], xx)
 		x.cmt.append("%s %s" % (tt, gpib_expl[tt]))
+		w = p.m.b16(x.start)
+		p.setlabel(w, "CMD_" + tt + "_" + gpib_expl[tt])
 
 #######################################################################
 while p.run():
@@ -506,6 +526,39 @@ x.blockcmt += """
 LAMP/LED test
 """
 
+#######################################################################
+p.setlabel(0x0052, "A16.ServSwich")
+aa = 0x80
+for ii in ("SW", "SZ", "SY", "SX", "SA"):
+	for jj in ('m0', 'm1', 'm2', 'm3', 'm4', 'm5', 'e'):
+		p.setlabel(aa, ii + "." + jj)
+		aa += 1
+
+p.setlabel(0x6064, "Delay(X)")
+p.setlabel(0x608d, "LED_BLANK()")
+p.setlabel(0x608f, "LED_FILL(A)")
+p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
+p.setlabel(0x6244, "LedFillMinus()")
+p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
+p.setlabel(0x62cf, "LED=LEDBUF()")
+p.setlabel(0x6344, "X+=A()")
+p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
+p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
+p.setlabel(0x7048, "PUSH(?*X)")
+p.setlabel(0x705c, "*X=SX")
+p.setlabel(0x7069, "memcpy(*0xae,*0xac,7)")
+p.setlabel(0x707d, "Swap(SX,SY)")
+p.setlabel(0x708c, "DUP()")
+p.setlabel(0x70ab, "DROP()")
+p.setlabel(0x70ef, "SY.m+=SX.m()")
+p.setlabel(0x7115, "A=OR(SX.m)")
+p.setlabel(0x7122, "A=OR(SY.m)")
+p.setlabel(0x714b, "SY.m-=SX.m()")
+p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
+p.setlabel(0x7310, "NORMLEFT(*X,A)")
+p.setlabel(0x73ca, "LED_ERR(A)")
+p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
+p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
 #######################################################################
 p.render()
 #p.t.recurse()
