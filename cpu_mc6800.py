@@ -44,7 +44,7 @@ inscode = (
 
 
 	"2iSUBB","2iCMPB","2iSBCB","0-???", "2iANDB","2iBITB","2iLDAB","0-???",
-	"2iEOR", "2iADC", "2iORA", "2iADD", "0-???", "0-???", "3iLDX", "0-???",
+	"2iEORB","2iADCB","2iORAB","2iADDB","0-???", "0-???", "3iLDX", "0-???",
 
 	"2dSUBB","2dCMPB","2dSBCB","0-???", "2dANDB","2dBITB","2dLDAB","2dSTAB",
 	"2dEORB","2dADCB","2dORAB","2dADDB","0-???", "0-???", "2dLDX", "2dSTX",
