@@ -93,7 +93,7 @@ class tree(object):
 			if i.start == start and i.tag == tag:
 				return i
 			if start >= i.start and start <= i.end and len(i.child):
-				j = i.__fnd(start.tag)
+				j = i.__fnd(start, tag)
 				if j != None:
 					return j
 		return None
