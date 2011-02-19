@@ -71,7 +71,7 @@ class nova(object):
 			else:
 				x.a['oper'] = (o1, o2)
 			if cc == 1:
-				x.a['cond'] = (("T", adr + 2),)
+				x.a['cond'] = (("NXT", adr + 2),)
 			elif cc:
 				x.a['cond'] = ((o3, adr + 2), (o3n, adr + 1,))
 		elif iw & 0xe000 == 0x0000:

@@ -91,6 +91,12 @@ class domus(cpu_nova.nova):
 
 	def disass(self, p, adr, priv = None):
 		try:
+			q = p.m.rdqual(adr)
+			if q != 1:
+				return
+		except:
+			pass
+		try:
 			iw = p.m.rd(adr)
 		except:
 			return
