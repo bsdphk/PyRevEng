@@ -96,7 +96,13 @@ class mc6800(object):
 		if c[1] == "i" and l == 2:
 			x.a['oper'] = ("#0x%02x" % p.m.rd(adr + 1),)
 		elif c[1] == "i" and l == 3:
-			x.a['oper'] = ("#0x%04x" % p.m.b16(adr + 1),)
+			aa = p.m.b16(adr + 1)
+			x.a['oper'] = ("#0x%04x" % aa,)
+			try:
+				p.m.rd(aa)
+				x.a['EA'] = (aa,)
+			except:
+				pass
 		elif c[1] == "x" and l == 2:
 			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 		elif c[1] == "d":

@@ -52,6 +52,7 @@ class tree(object):
 		assert end > start
 		if t == None:
 			t = tree(start, end, tag)
+		if t.seq == 0:
 			t.seq = self.nseq
 			self.nseq += 1
 		i = bisect.bisect(self.cend, start)
@@ -129,8 +130,7 @@ class tree(object):
 			s = "%s %s" % (i , self)
 			for j in self.a:
 				s += "  %s = %s" % (j, self.a[j])
-			for j in self.cmt:
-				s += "  ; %s" % j
+			s += str(self.cmt)
 			print(s)
 			
 		elif func(self, priv, lvl):

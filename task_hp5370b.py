@@ -13,6 +13,118 @@ import pyreveng
 
 import cpu_mc6800
 
+headcmt = """
+HP5370B ROM disassembly
+=======================
+
+Address Map:
+------------
+
+0x0000-0x0003	GPIB {P8-30}
+
+	0x0000:R Data In
+	0x0000:W Data Out
+	0x0001:R Inq In
+	0x0001:W Status Out
+	0x0002:R Cmd In
+	0x0002:W Control Out
+		0x10 = EOI out {0x61e9}
+	0x0003:R State In
+
+0x0050-0x005f	A16 Arming
+
+	0x0050-0x0051:R	LDACSR signal
+	0x0052-0x0053:R A16U21+A16U15 MUX
+		0x0052:R A16 Service Switch
+			0x80 = Loop
+			0x10 = Read
+			0x08 = Display
+			0x04 = Write
+			0x02 = ROM test
+			0x01 = RAM test
+	0x0054-0x0055:R	LEN2 signal
+	0x0056-0x0057:R	LEN1 signal
+	0x0058-0x0059:R	LEN0 signal
+	0x005a-0x005b:R	A16U17+A16U19 MUX
+		 Eventcounter
+	{more}
+
+0x0060-0x007f	Front panel
+
+	0x0060:R Buttons
+		0xf0: scan lines
+		0x07: sense lines
+	0x0060-0x006f:W	LEDS
+	0x0070-0x007f:W	7segs
+
+0x0080-0x0200	RAM
+
+	0x0080-0x0086:	SW \  FLOAT
+	0x0087-0x008d:	SZ  | stack
+	0x008e-0x0094:	SY  > SW=top
+	0x0095-0x009b:	SX  | SX=bot
+	0x009c-0x00a2:	SA /  SA=spill
+
+	0x00b6:
+		0b.....000: FN3 Freq
+		0b.....001: FN4 Period
+		0b.....010: FN1 TI
+		0b.....100: FN2 TrigLevel
+		0b.....101: FN5 ???
+		0b..00....: MD1 FP rate
+		0b..01....: MD2 Hold until MR
+		0b..10....: MD3 Fast
+		0b..11....: MD4 Fast+SRQ
+
+	0x00b7:
+		0b....X...: SE[12]
+		0b......X.: SA[12]
+		0b.......X: SO[12]
+	0x00bc:
+		0b...XX...: IN[14]
+	0x00c0-0x00c6:	REF_VALUE (FLOAT)
+	0x00f2-0x00f3:	Freq/Period
+	0x00f4-0x00f5:	TI
+	0x00f6-0x00f7:	Triglev/FN5
+		0b........ ....0000 SS1 1 sample
+		0b........ ....0001 SS2 100 sample
+		0b........ ....0010 SS3 1k sample
+		0b........ ....0011 SS4 10k sample
+		0b........ ....0100 SS5 100k sample
+		0b........ ....0101 GT2 0.01s
+		0b........ ....0110 GT3 0.1s
+		0b........ ....0111 GT4 1s
+		0b........ .000.... ST1 Mean
+		0b........ .001.... ST2 Stddev
+		0b........ .010.... ST3 Min
+		0b........ .011.... ST4 Max
+		0b........ .100.... ST5 Disp Ref
+		0b........ .101.... ST7 Disp Evt
+		0b........ .111.... ST3 Disp All
+		
+	0x00f4:
+		0bX.......: TB[01]
+
+	0x0116-0x011c:	MAX_VALUE (FLOAT)
+	0x011d-0x0123:	MIN_VALUE (FLOAT)
+	0x0124-0x012a:
+	0x012b-0x0131:
+	0x0132-0x0138:	#Events ? (FLOAT?)
+
+	0x0140-0x014f:	Led buffer
+		0bX.......: DP
+		0b....XXXX: BCD
+
+	0x016c-0x016d: GPIB transmit-pointer
+	0x016f-0x0182: GPIB output buffer
+		"...,...,...,.E+##\r\n"
+
+0x4000-?	Possibly Service/Expansion EPROM
+0x6000-0x7fff	EPROMS
+				
+"""
+
+
 # Explanation of the HP5370B HPIB Commands
 gpib_expl = {
 	"FN1":	"Time Interval",
@@ -212,6 +324,7 @@ class dot_code(tree.tree):
 		t = p.m.b16(adr)
 		p.markbb(t, ".code")
 		p.todo(t, p.cpu.disass)
+		self.a['EA'] = (t,)
 
 	def rfunc(self, p, t, lvl):
 		s = ".CODE\t%04x" % p.m.b16(t.start)
@@ -222,6 +335,8 @@ class dot_ptr(tree.tree):
 		tree.tree.__init__(self, adr, adr + 2, "dot-ptr")
 		p.t.add(adr, adr + 2, "dot-ptr", True, self)
 		self.render = self.rfunc
+		t = p.m.b16(adr)
+		self.a['EA'] = (t,)
 
 	def rfunc(self, p, t, lvl):
 		s = ".PTR\t%04x" % p.m.b16(t.start)
@@ -232,9 +347,11 @@ class dot_float(tree.tree):
 		tree.tree.__init__(self, adr, adr + 7, "dot_float")
 		p.t.add(adr, adr + 7, "dot-float", True, self)
 		self.render = self.rfunc
+		self.nbr = nbr_render(p, adr)
+		p.setlabel(adr, "FP=" + self.nbr)
 
 	def rfunc(self, p, t, lvl):
-		s = ".FLOAT\t%s" % nbr_render(p, t.start)
+		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
 
 dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
@@ -248,75 +365,15 @@ p.cpu = cpu_mc6800.mc6800()
 # The HP5370B inverts the address bus, so start at the end and count down:
 p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
 
-#########
-p.t.blockcmt += """
-HP5370B ROM disassembly
-=======================
-
-Address Map:
-------------
-0x0000-0x0003	GPIB {P8-30}
-		0x0000:R Data In
-		0x0000:W Data Out
-		0x0001:R Inq In
-		0x0001:W Status Out
-		0x0002:R Cmd In
-		0x0002:W Control Out
-			0x10 = EOI out {0x61e9}
-		0x0003:R State In
-
-0x0050-0x005f	A16 Arming
-		0x0050-0x0051:R	LDACSR signal
-		0x0052-0x0053:R A16U21+A16U15 MUX
-			0x0052:R A16 Service Switch
-				0x80 = Loop
-				0x10 = Read
-				0x08 = Display
-				0x04 = Write
-				0x02 = ROM test
-				0x01 = RAM test
-		0x0054-0x0055:R	LEN2 signal
-		0x0056-0x0057:R	LEN1 signal
-		0x0058-0x0059:R	LEN0 signal
-		0x005a-0x005b:R	A16U17+A16U19 MUX
-			 Eventcounter
-		{more}
-0x0060-0x007f	Front panel
-		0x0060:R Buttons
-			0xf0: scan lines
-			0x07: sense lines
-		0x0060-0x006f:W	LEDS
-		0x0070-0x007f:W	7segs
-0x0080-0x0200	RAM
-		0x0080-0x0086:	SW \  FLOAT
-		0x0087-0x008d:	SZ  | stack
-		0x008e-0x0094:	SY  > SW=top
-		0x0095-0x009b:	SX  | SX=bot
-		0x009c-0x00a2:	SA /  SA=spill
-
-		0x00b7:
-			0b....X...: SE[12]
-			0b......X.: SA[12]
-			0b.......X: SO[12]
-		0x00bc:
-			0b...XX...: IN[14]
-		0x00f4:
-			0bX.......: TB[01]
-
-		0x0140-0x014f:	Led buffer
-			0bX.......: DP
-			0b....XXXX: BCD
-
-0x4000-?	Possibly Service/Expansion EPROM
-0x6000-0x7fff	EPROMS
-				
-"""
+p.t.blockcmt += headcmt
 
 # 0x6f00...0x7000 = x^2/256 table
 
 dot_float(p, 0x614c)
-dot_float(p, 0x619c)
-dot_float(p, 0x61a3)
+x = dot_float(p, 0x619c)
+x.blockcmt += "= 2^22/10^17\n"
+x =dot_float(p, 0x61a3)
+x.blockcmt += "= 2^30/10^8\n"
 dot_float(p, 0x69dd)
 dot_float(p, 0x69e4)
 
@@ -394,22 +451,32 @@ for i in range(x.start, x.end):
 
 #######################################################################
 # CPU vectors
-dot_code(p, 0x7ffe)
-dot_code(p, 0x7ffc)
-dot_code(p, 0x7ffa)
-dot_code(p, 0x7ff8)
+
+def vec(p,a,n):
+	x = dot_code(p, a)
+	x.blockcmt += n + " VECTOR\n"
+	w = p.m.b16(a)
+	p.setlabel(w, n + "_ENTRY")
+
+vec(p,0x7ffe,"RST")
+vec(p,0x7ffc,"NMI")
+vec(p,0x7ffa,"SWI")
+vec(p,0x7ff8,"IRQ")
 
 #######################################################################
-# jmp table, see 7962->6054->63ec
-for i in range(0x6403,0x6409,2):
-	dot_ptr(p, i)
-for i in range(0x640c,0x644c,2):
-	dot_code(p, i)
-for i in range(0x64ac,0x64c4,2):
-	dot_code(p, i)
-# jmp table
+# jmp table 
+dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "DS7")
+j=0
 for i in range(0x6848,0x6858,2):
-	dot_code(p, i)
+	x = dot_code(p, i)
+	w = p.m.b16(i)
+	p.setlabel(w, "DSP_" + dspf[j])
+	j += 1
+
+x=p.t.add(0x6848,0x6858,"tbl")
+x.blockcmt += "Table of display functions\n"
+p.setlabel(0x6848, "DSP_FUNC_TABLE")
+#######################################################################
 
 # strings
 dot_ascii(p,0x78f3,4)
@@ -440,12 +507,37 @@ for i in range(0x7c64,0x7c98,2):
 	hpib_cmd.append(p.m.ascii(i, 2))
 	
 #######################################################################
+# jmp table, see 7962->6054->63ec
+
+dot_ptr(p, 0x6403)
+ba = p.m.b16(0x6403)
+ea = p.m.b16(0x6405)
+
+aa = ba
+for col in range(8,0,-1):
+	p.setlabel(aa, "Keyboard_Column_%d" % col)
+	for row in range(1,5):
+		x = dot_code(p, aa)
+		aa += 2
+
+x = p.t.add(ba, ea, "tbl")
+x.blockcmt += """
+Dispatch table for Keyboard commands
+"""
+
+p.setlabel(0x66a1, "KEY_Ext_Arm")
+p.setlabel(0x6669, "KEY_Ext_Hold_Off")
+p.setlabel(0x6613, "KEY_RESET")
+
+#######################################################################
 # Table of HPIB numeric arg ranges
 # & pointer into command dispatch table
 #
 hpib_numcmds = 14
 
+dot_ptr(p, 0x6405)
 ba = p.m.b16(0x6405)
+ea = p.m.b16(0x6407)
 
 b = 0x7d6c
 e = b + 2 * hpib_numcmds
@@ -471,6 +563,37 @@ for i in range(0, hpib_numcmds):
 		x.cmt.append("%s %s" % (tt, gpib_expl[tt]))
 		w = p.m.b16(x.start)
 		p.setlabel(w, "CMD_" + tt + "_" + gpib_expl[tt])
+
+x = p.t.add(ba, ea, "tbl")
+x.blockcmt += """
+Dispatch table for GPIB commands with numeric argument
+"""
+
+#######################################################################
+# Table of GPIB commands without numeric args
+# XXX: should find these automatically, but the indir an the jumps are
+# XXX: not found yet...
+
+p.setlabel(0x61aa,"CMD_LN_Learn")
+p.setlabel(0x61ca,"CMD_TE_Teach")
+p.setlabel(0x7968,"CMD_MR_ManualRate")
+
+dot_ptr(p, 0x6407)
+ba = p.m.b16(0x6407)
+n = 0
+for j in range(hpib_numcmds, len(hpib_cmd)):
+	aa = ba + n * 2
+	n += 1
+	x = dot_code(p, aa)
+	w = p.m.b16(x.start)
+	tt = hpib_cmd[j]
+	x.cmt.append("%s %s" % (tt, gpib_expl[tt]))
+	p.setlabel(w, "CMD_" + tt + "_" + gpib_expl[tt])
+
+x = p.t.add(ba, aa + 2, "tbl")
+x.blockcmt += """
+Dispatch table for GPIB commands without argument
+"""
 
 #######################################################################
 while p.run():
@@ -534,14 +657,21 @@ for ii in ("SW", "SZ", "SY", "SX", "SA"):
 		p.setlabel(aa, ii + "." + jj)
 		aa += 1
 
+p.setlabel(0x00c0, "REF_VALUE")
+p.setlabel(0x0116, "MAX_VALUE")
+p.setlabel(0x011d, "MIN_VALUE")
+
+p.setlabel(0x6057, "X=PARAM(CUR)")
 p.setlabel(0x6064, "Delay(X)")
 p.setlabel(0x608d, "LED_BLANK()")
 p.setlabel(0x608f, "LED_FILL(A)")
+p.setlabel(0x6153, "SHOW_RESULT()")
 p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
 p.setlabel(0x6244, "LedFillMinus()")
 p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
 p.setlabel(0x62cf, "LED=LEDBUF()")
 p.setlabel(0x6344, "X+=A()")
+p.setlabel(0x6376, "LED=0.00")
 p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
 p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
 p.setlabel(0x7048, "PUSH(?*X)")
@@ -558,7 +688,12 @@ p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
 p.setlabel(0x7310, "NORMLEFT(*X,A)")
 p.setlabel(0x73ca, "LED_ERR(A)")
 p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
+p.setlabel(0x76f9, "RESULT_TO_GPIB()")
+p.setlabel(0x7716, "LED_TO_GPIB()")
+p.setlabel(0x7bd7, "HPIB_SEND(*X,A)")
+p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
 p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
+p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
 p.render()
 #p.t.recurse()

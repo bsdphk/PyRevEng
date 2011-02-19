@@ -207,7 +207,7 @@ class pyreveng(object):
 		else:
 			t += self.m.afmt(adr)
 			if adr in self.__label:
-				t += "=" + self.__label[adr]
+				t += "/" + self.__label[adr]
 		return t
 		
 	# Emit effective address comments
@@ -230,7 +230,8 @@ class pyreveng(object):
 			for ii in t.a['EA']:
 				s += d + self.__eas(ii, None)
 				d = ", "
-		c.append(s)
+		if s != "":
+			c.append(s)
 
 	def __r(self, t, lvl, fo):
 		if t.blockcmt != "":
@@ -294,7 +295,7 @@ class pyreveng(object):
 				r += " "
 			if i < len(c):
 				r += "; " + c[i]
-			fo.write(r.strip() + "\n")
+			fo.write(r.rstrip() + "\n")
 			i += 1
 		
 
