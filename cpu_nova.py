@@ -64,30 +64,35 @@ class nova(object):
 			if cc:
 				o3 = ("", "SKP", "SZC", "SNC",
 				      "SZR", "SNR", "SEZ", "SBN")[cc]
+				o3n = ("", "SKP", "SZC", "SNC",
+				      "SZR", "SNR", "SEZ", "SBN")[cc ^ 0x1]
+				x.a['oper'] = (o1, o2, o3)
 				x.a['oper'] = (o1, o2, o3)
 			else:
 				x.a['oper'] = (o1, o2)
 			if cc == 1:
-				x.a['jmp'] = (adr + 2,)
+				x.a['cond'] = (("T", adr + 2),)
 			elif cc:
-				x.a['cond'] = (adr + 1, adr + 2,)
+				x.a['cond'] = ((o3, adr + 2), (o3n, adr + 1,))
 		elif iw & 0xe000 == 0x0000:
 			s = ("JMP", "JSR", "ISZ", "DSZ")[(iw>>11)&3]
 			x.a['mne'] = s
 			i=self.adrmode(p, adr, iw)
 			x.a['oper'] = i[1]
 			if s == "JMP":
-				x.a['jmp'] = (i[0],)
+				x.a['cond'] = (("T", i[0]),)
 			elif s == "JSR":
-				x.a['call'] = (i[0],)
+				x.a['call'] = (("T", i[0]),)
 			else:
-				x.a['cond'] = (adr + 1, adr + 2,)
+				x.a['cond'] = (("NZ", adr + 1), ("Z", adr + 2))
 		elif iw & 0xe000 == 0x6000:
 			s = ("NIO", "DIA", "DOA", "DIB",
 			     "DOB", "DIC", "DOC", "SKP")[(iw>>8)&7]
 			if s == "SKP":
-				s += ("BN", "BZ", "DN", "DZ")[(iw>>6)&3]
-				x.a['cond'] = (adr + 1, adr + 2,)
+				s1 = ("BN", "BZ", "DN", "DZ")[(iw>>6)&3]
+				s += s1
+				s2 = ("BN", "BZ", "DN", "DZ")[((iw>>6)&3) ^ 1]
+				x.a['cond'] = ((s2, adr + 1), (s1, adr + 2))
 			else:
 				s += ("", "S", "C", "P")[(iw>>6)&3]
 			x.a['mne'] = s

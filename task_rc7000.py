@@ -253,8 +253,8 @@ if __name__ == "__main__":
 	fn = dn + "__.MUM"
 	fn = dn + "__.CATIX"
 	fn = dn + "__.CAP2"
-	fn = dn + "__.DOMUS"
 	fn = dn + "__.CATLI"
+	fn = dn + "__.DOMUS"
 	fn = dn + "__.PTP"
 
 	p = pyreveng.pyreveng(mem_domus())
@@ -267,11 +267,21 @@ if __name__ == "__main__":
 		p.todo(l, procdesc)
 
 	if False:
+		# DOMUS
 		p.t.a['page_base'] = 0x137a
 		for pg in range(3,20):
 			aa = 0x137a + pg * 0x100
 			x = p.t.add(aa, aa + 1, "page %d" % pg)
 			x.a['cmt'] = "; PAGE %d" % pg
+		for c in range(0,19):
+			aa = 0x1d90 + 5 * c
+			word(p,aa)
+			dot_txt(p, aa + 1, aa + 4)
+			word(p,aa + 4)
+			nw = p.m.rd(aa)
+			da = (nw & 0x7fff) + p.t.a['page_base']
+			p.todo(da, p.cpu.disass)
+			print("CMD: %x -> %x" % (aa,da))
 
 	p.run()
 
@@ -288,4 +298,4 @@ if __name__ == "__main__":
 					p.t.add(i, i + 1, "gap")
 	print("----------")
 	p.render()
-	#p.t.recurse()
+	p.t.recurse()

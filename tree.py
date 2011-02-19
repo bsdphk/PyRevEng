@@ -88,12 +88,25 @@ class tree(object):
 		t.parent = self
 		return t
 
+	def __fnd(self, start, tag):
+		for i in self.child:
+			if i.start == start and i.tag == tag:
+				return i
+			if start >= i.start and start <= i.end and len(i.child):
+				j = i.__fnd(start.tag)
+				if j != None:
+					return j
+		return None
+
 	def find(self, start, tag):
 		i = bisect.bisect_right(self.cend, start)
+		if i < 0 or i >= len(self.child):
+			print("FIND ??", start, tag, i)
+			return None
 		x = self.child[i]
 		if x.start == start and x.tag == tag:
 			return x
-		return None
+		return x.__fnd(start, tag)
 
 	# Return a list of gaps
 	def gaps(self):

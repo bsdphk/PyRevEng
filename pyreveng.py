@@ -68,28 +68,20 @@ class pyreveng(object):
 	def ins(self, t, func, priv = None):
 		#print("INS", t)
 		n = True
-		if 'jmp' in t.a:
-			n = False
-			self.__bbend[t.start] = "jmp"
-			for i in t.a['jmp']:
-				if i != None:
-					#print("JMP 0x%x" %  i)
-					self.__bbstart[i] = "jmp"
-					self.todo(i, func, priv)
 		if 'cond' in t.a:
 			n = False
 			self.__bbend[t.start] = "cond"
 			for i in t.a['cond']:
-				if i != None:
-					#print("COND 0x%x" % i)
-					self.__bbstart[i] = "cond"
-					self.todo(i, func, priv)
+				#print("COND", i)
+				if i[1] != None:
+					self.__bbstart[i[1]] = "cond"
+					self.todo(i[1], func, priv)
 		if 'call' in t.a:
 			for i in t.a['call']:
-				if i != None:
-					#print("CALL 0x%x" % i)
-					self.__bbstart[i] = "call"
-					self.todo(i, func, priv)
+				#print("CALL", i)
+				if i[1] != None:
+					self.__bbstart[i[1]] = "call"
+					self.todo(i[1], func, priv)
 		if 'ret' in t.a:
 			n = False
 			self.__bbend[t.start] = "ret"
@@ -146,6 +138,30 @@ class pyreveng(object):
 				self.__bbx[i] = x
 
 	###############################################################
+	# Resolve effective addresses that go through unconditional jumps
+	#
+
+	def resolve_ea(self, a):
+		while True:
+			if a == None:
+				return None
+			x = self.t.find(a, "ins")
+			if x == None:
+				return a
+			if not 'cond' in x.a:
+				return a
+			y = x.a['cond']
+			if len(y) > 1:
+				return a
+			if y[0][1] == None:
+				return a
+			if y[0][0] != "T":
+				return a
+			if y[0][1] == a:
+				return a
+			a = y[0][1]
+
+	###############################################################
 	# Rendering
 	#
 
@@ -170,6 +186,29 @@ class pyreveng(object):
 		if s != False:
 			self.__f2(s, b, fo, lvl)
 		s = False
+
+	# Emit effective address comments
+	def __ear(self, t, c):
+		for jj in ('cond', 'call'):
+			if not jj in t.a:
+				continue
+			x = t.a[jj]
+			if len(x) == 1 and x[0][0] == "T":
+				if x[0][1] != None:
+					c.append("EA=" + self.m.afmt(
+					    self.resolve_ea(x[0][1])))
+					continue;
+			s = ""
+			d = ""
+			for ii in x:
+				s += d
+				s += "EA(%s)=" % ii[0]
+				if ii[1] != None:
+					s += self.m.afmt(self.resolve_ea(ii[1]))
+				else:
+					s += "?"
+				d = ", "
+			c.append(s)
 
 	def __r(self, t, lvl, fo):
 		if t.blockcmt != "":
@@ -206,6 +245,8 @@ class pyreveng(object):
 			a = t.render(self, t, lvl)
 		b = self.m.col1(self, t.start, t.end, lvl)
 		c = t.cmt
+		self.__ear(t, c)
+
 		i = 0
 		w = len(b[0])
 		while True:

@@ -118,7 +118,7 @@ class domus(cpu_nova.nova):
 			x.a['cond'] = list()
 		for j in range(1, ss[1] + 1):
 			if ss[1] > 1:
-				x.a['cond'].append(adr + j)
+				x.a['cond'].append(("XXX", adr + j))
 			p.todo(adr + j, self.disass)
 		p.ins(x, self.disass)
 

@@ -77,7 +77,7 @@ class mc6800(object):
 		try:
 			iw = p.m.rd(adr)
 		except:
-			print("FETCH failed: %04x" % adr)
+			print("FETCH failed:", adr)
 			return
 		c = inscode[iw]
 		l = int(c[0])
@@ -89,7 +89,7 @@ class mc6800(object):
 			x = p.t.add(adr, adr + l, "ins")
 			x.render = self.render
 		except:
-			print ("FAIL")
+			print ("FAIL @ 0x%04x" % adr)
 			return
 		x.a['mne'] = c[2:]
 
@@ -105,29 +105,30 @@ class mc6800(object):
 			x.a['oper'] = ("0x%04x" % p.m.b16(adr + 1),)
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
-			x.a['oper'] = ("0x%04x" % da,)
-			x.a['call'] = (da, )
+			x.a['oper'] = (p.m.afmt(da),)
+			x.a['call'] = (("T", da),)
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
-			x.a['oper'] = ("0x%04x" % da,)
-			x.a['call'] = (da, )
+			x.a['oper'] = (p.m.afmt(da),)
+			x.a['call'] = (("T", da),)
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
-			x.a['oper'] = (">0x%04x" % da,)
+			x.a['oper'] = (p.m.afmt(da),)
 			if iw & 0x0f == 00:
-				x.a['jmp'] = (da, )
+				x.a['cond'] = (("T", da),)
 			else:
-				x.a['cond'] = (adr + l, da)
+				c2 = inscode[iw ^ 1]
+				x.a['cond'] = ((c2[3:], adr + l), (c[3:], da),)
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
-			x.a['oper'] = ("0x%04x" % da,)
-			x.a['jmp'] = (da, )
+			x.a['oper'] = (p.m.afmt(da),)
+			x.a['cond'] = (("T", da),)
 		elif c[1] == "X":
 			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 			if x.a['mne'] == "JSR":
-				x.a['call'] = (None, )
+				x.a['call'] = (("T", None),)
 			else:
-				x.a['jmp'] = (None, )
+				x.a['cond'] = (("T", None),)
 		elif c[1] == "_":
 			x.a['oper'] = list()
 			x.a['ret'] = ""

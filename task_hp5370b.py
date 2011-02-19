@@ -13,6 +13,70 @@ import pyreveng
 
 import cpu_mc6800
 
+# Explanation of the HP5370B HPIB Commands
+gpib_expl = {
+	"FN1":	"Time Interval",
+	"FN2":	"Trigger Levels",
+	"FN3":	"Frequency",
+	"FN4":	"Period",
+	"FN5":	"???",
+	"GT1":	"Single Period",
+	"GT2":	"0.01s",
+	"GT3":	"0.1s",
+	"GT4":	"1s",
+	"ST1":	"Mean",
+	"ST2":	"StdDev",
+	"ST3":	"Min",
+	"ST4":	"Max",
+	"ST5":	"Disp Ref",
+	"ST6":	"Clr Ref",
+	"ST7":	"Disp Evts",
+	"ST8":	"Set Ref",
+	"ST9":	"Disp All",
+	"SS1":	"Sample Size = 1",
+	"SS2":	"Sample Size = 100",
+	"SS3":	"Sample Size = 1k",
+	"SS4":	"Sample Size = 10k",
+	"SS5":	"Sample Size = 100k",
+	"MD1":	"FP Rate",
+	"MD2":	"Hold until MR",
+	"MD3":	"Fast",
+	"MD4":	"Fast + SRQ",
+	"IN1":	"Input: Start+Stop",
+	"IN2":	"Input: Stop+Stop",
+	"IN3":	"Input: Start+Start",
+	"IN4":	"Input: Stop+Start",
+	"SA1":	"Start Pos",
+	"SA2":	"Start Neg",
+	"SO1":	"Stop Pos",
+	"SO2":	"Stop Neg",
+	"SE1":	"Arm Pos",
+	"SE2":	"Arm Neg",
+	"AR1":	"+T.I. Arming Only",
+	"AR2":	"+T.I. Arming",
+	"EH0":	"Ext Holdoff dis",
+	"EH1":	"Ext Holdoff ena",
+	"EA0":	"Ext Arm dis",
+	"EA1":	"Ext Arm ena",
+	"IA1":	"Internal Arm Auto",
+	"IA2":	"Start Chan Arm",
+	"IA3":	"Stop Chan Arm",
+	"MR":	"Manual Rate",
+	"MI":	"Manual Input",
+	"SL":	"Slope Local",
+	"SR":	"Slope Remote",
+	"TL":	"Trigger Local",
+	"TR":	"Trigger Remote",
+	"TE":	"Teach",
+	"PC":	"Period Complement",
+	"TB0":	"Ascii",
+	"TB1":	"Binary",
+	"SB":	"Sample Size Binary",
+	"LN":	"Learn",
+	"TA":	"Trigger Start",
+	"TO":	"Trigger Stop",
+}
+
 procat=dict()
 
 def sdisc(p, tg):
@@ -79,6 +143,57 @@ def nbr_render(p, a):
 		x = x + "."
 	return x
 
+class dot_byte(tree.tree):
+	def __init__(self, p, adr, len = 1, fmt="0x%02x"):
+		tree.tree.__init__(self, adr, adr + len, "dot-byte")
+		p.t.add(self.start, self.end, self.tag, True, self)
+		self.render = self.rfunc
+		self.fmt = fmt
+
+	def rfunc(self, p, t, lvl):
+		s = ".BYTE\t"
+		d = ""
+		for i in range(t.start, t.end):
+			x = p.m.rd(i)
+			s += d
+			s += self.fmt % x
+			d = ", "
+		return (s,)
+
+class dot_word(tree.tree):
+	def __init__(self, p, adr, len = 1, fmt = "0x%04x"):
+		tree.tree.__init__(self, adr, adr + len * 2, "dot-word")
+		p.t.add(self.start, self.end, self.tag, True, self)
+		self.render = self.rfunc
+		self.fmt = fmt
+
+	def rfunc(self, p, t, lvl):
+		s = ".WORD\t"
+		d = ""
+		for i in range(t.start, t.end, 2):
+			x = p.m.b16(i)
+			s += d
+			s += self.fmt % x
+			d += ", "
+		return (s,)
+
+class dot_24bit(tree.tree):
+	def __init__(self, p, adr, len = 1, fmt = "0x%06x"):
+		tree.tree.__init__(self, adr, adr + len * 3, "dot-24bit")
+		p.t.add(self.start, self.end, self.tag, True, self)
+		self.render = self.rfunc
+		self.fmt = fmt
+
+	def rfunc(self, p, t, lvl):
+		s = ".24bit\t"
+		d = ""
+		for i in range(t.start, t.end, 3):
+			x = p.m.b32(i) >> 8
+			s += d
+			s += self.fmt % x
+			d += ", "
+		return (s,)
+
 class dot_ascii(tree.tree):
 	def __init__(self, p, adr, len):
 		tree.tree.__init__(self, adr, adr + len, "dot-ascii")
@@ -86,11 +201,7 @@ class dot_ascii(tree.tree):
 		self.render = self.rfunc
 
 	def rfunc(self, p, t, lvl):
-		s = ".TXT\t'"
-		for i in range(t.start, t.end):
-			x = p.m.rd(i)
-			s += mem.ascii(x)
-		s += "'"
+		s = ".TXT\t'" + p.m.ascii(t.start, t.end - t.start) + "'"
 		return (s,)
 
 class dot_code(tree.tree):
@@ -98,9 +209,22 @@ class dot_code(tree.tree):
 		tree.tree.__init__(self, adr, adr + 2, "dot-code")
 		p.t.add(adr, adr + 2, "dot-code", True, self)
 		self.render = self.rfunc
+		t = p.m.b16(adr)
+		p.markbb(t, ".code")
+		p.todo(t, p.cpu.disass)
 
 	def rfunc(self, p, t, lvl):
 		s = ".CODE\t%04x" % p.m.b16(t.start)
+		return (s,)
+
+class dot_ptr(tree.tree):
+	def __init__(self, p, adr):
+		tree.tree.__init__(self, adr, adr + 2, "dot-ptr")
+		p.t.add(adr, adr + 2, "dot-ptr", True, self)
+		self.render = self.rfunc
+
+	def rfunc(self, p, t, lvl):
+		s = ".PTR\t%04x" % p.m.b16(t.start)
 		return (s,)
 
 class dot_float(tree.tree):
@@ -113,62 +237,168 @@ class dot_float(tree.tree):
 		s = ".FLOAT\t%s" % nbr_render(p, t.start)
 		return (s,)
 
-if __name__ == "__main__":
+dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
 
-	def ptr(p,x):
-		dot_code(p, x)
-		p.todo(p.m.b16(x), p.cpu.disass)
-		
-	dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
+m = mem.byte_mem(0, 0x10000, 0, True)
+p = pyreveng.pyreveng(m)
+
+p.cpu = cpu_mc6800.mc6800()
+p.t.recurse()
+
+# The HP5370B inverts the address bus, so start at the end and count down:
+p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+
+# 0x6f00...0x7000 = x^2/256 table
+
+dot_float(p, 0x614c)
+dot_float(p, 0x619c)
+dot_float(p, 0x61a3)
+dot_float(p, 0x69dd)
+dot_float(p, 0x69e4)
 
 
-	m = mem.byte_mem(0, 0x10000, 0, True)
-	p = pyreveng.pyreveng(m)
-	p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+#######################################################################
+dot_byte(p, 0x7a75, 15)
+dot_byte(p, 0x7a84, 8)
+dot_byte(p, 0x7a8c, 8)
+dot_byte(p, 0x7a95, 7)
+dot_byte(p, 0x77f7, 7)
 
-	# 0x6f00...0x7000 = x^2/256 table
+#######################################################################
+x = p.t.add(0x6b09,0x6b23, "tbl")
+x.blockcmt += "Table Keyboard or LED related ?\n"
+dot_byte(p, 0x6b09, 8)
+dot_byte(p, 0x6b11, 8)
+dot_byte(p, 0x6b19, 8)
+dot_byte(p, 0x6b21, 2)
 
-	dot_float(p, 0x614c)
-	dot_float(p, 0x619c)
-	dot_float(p, 0x61a3)
-	dot_float(p, 0x69dd)
-	dot_float(p, 0x69e4)
+#######################################################################
+x = p.t.add(0x6b23,0x6b32, "tbl")
+x.blockcmt += "Table of NSAMP = {1,100,1k,10k,100k}\n"
+dot_24bit(p, 0x6b23, 1, "%d")
+dot_24bit(p, 0x6b26, 1, "%d")
+dot_24bit(p, 0x6b29, 1, "%d")
+dot_24bit(p, 0x6b2c, 1, "%d")
+dot_24bit(p, 0x6b2f, 1, "%d")
 
-	p.cpu = cpu_mc6800.mc6800()
-	p.t.recurse()
+#######################################################################
+x = p.t.add(0x6b32,0x6b3b, "tbl")
+x.blockcmt += "Table sqrt(1k,10k,100k)\n"
+dot_24bit(p, 0x6b32, 1, "%d")
+dot_24bit(p, 0x6b35, 1, "%d")
+dot_24bit(p, 0x6b38, 1, "%d")
 
-	for i in range(0x6000,0x8000,0x400):
-		p.t.add(i, i + 3, "checksum")
+#######################################################################
+x = p.t.add(0x6f00,0x7000, "tbl")
+x.blockcmt += "Table of I^2>>8\n"
+
+#######################################################################
+# Table of EPROM ranges
+x = p.t.add(0x7ead, 0x7ebf, "tbl")
+x.blockcmt += "Table of EPROM start addresses\n"
+for a in range(0x7ead, 0x7ebf, 2):
+	dot_ptr(p, a)
+
+for i in range(0x6000,0x8000,0x400):
+	x = dot_word(p, i)
+	x.cmt.append("EPROM checksum")
+	x = dot_byte(p, i + 2)
+	x.cmt.append("EPROM number")
+	n = 0
+	for a in range(i - 1, 0x6000, -1):
+		if p.m.rd(a) != 0xff:
+			break;
+		n += 1
+	if n > 0:
+		x = p.t.add(i - n, i, "fill")
+		x.render = ".FILL\t%d, 0xff" % n
+
+x = p.t.add(0x7eed, 0x7ef9, "tbl")
+x.blockcmt += "EPROM test byte values (?)\n"
+for i in range(x.start, x.end):
+	dot_byte(p, i)
+
+#######################################################################
+# CPU vectors
+dot_code(p, 0x7ffe)
+dot_code(p, 0x7ffc)
+dot_code(p, 0x7ffa)
+dot_code(p, 0x7ff8)
+
+#######################################################################
+# jmp table, see 7962->6054->63ec
+for i in range(0x6403,0x6409,2):
+	dot_ptr(p, i)
+for i in range(0x640c,0x644c,2):
+	dot_code(p, i)
+for i in range(0x64ac,0x64c4,2):
+	dot_code(p, i)
+# jmp table
+for i in range(0x6848,0x6858,2):
+	dot_code(p, i)
+
+# strings
+dot_ascii(p,0x78f3,4)
+dot_ascii(p,0x78f7,6)
+dot_ascii(p,0x78fd,2)
+for i in range(0x77d7,0x77f7,4):
+	dot_ascii(p,i,4)
+
+dot_code(p, 0x7909)
+dot_ptr(p, 0x7915)
+#######################################################################
+# BCD->7seg table
+x = p.t.add(0x7e30, 0x7e40, "7seg")
+x.blockcmt += "BCD to 7 segment table\n"
+sevenseg = "0123456789.#-Er "
+for i in range(0,16):
+	y = dot_byte(p, x.start + i)
+	y.cmt.append("'%s'" % sevenseg[i])
+
+#######################################################################
+# List of two-letter HPIB commands
+#
+hpib_cmd = list()
+x = p.t.add(0x7c64, 0x7c98, "cmd-table")
+x.blockcmt += "Table of two-letter HPIB commands\n"
+for i in range(0x7c64,0x7c98,2):
+	dot_ascii(p,i,2)
+	hpib_cmd.append(p.m.ascii(i, 2))
 	
-	ptr(p, 0x7ffe)
-	ptr(p, 0x7ffc)
-	ptr(p, 0x7ffa)
-	ptr(p, 0x7ff8)
+#######################################################################
+# Table of HPIB numeric arg ranges
+# & pointer into command dispatch table
+#
+hpib_numcmds = 14
 
-	# jmp table, see 7962->6054->63ec
-	#ptr(p, 0x6403)
-	for i in range(0x640c,0x644c,2):
-		ptr(p, i)
-	#ptr(p, 0x6405)
-	for i in range(0x644c,0x64ac,2):
-		ptr(p, i)
-	#ptr(p, 0x6407)
-	for i in range(0x64ac,0x64c4,2):
-		ptr(p, i)
-	# jmp table
-	for i in range(0x6848,0x6858,2):
-		ptr(p, i)
+ba = p.m.b16(0x6405)
 
-	# strings
-	dot_ascii(p,0x78f3,4)
-	dot_ascii(p,0x78f7,6)
-	dot_ascii(p,0x78fd,2)
-	for i in range(0x77d7,0x77f7,4):
-		dot_ascii(p,i,4)
-	for i in range(0x7c64,0x7c98,2):
-		dot_ascii(p,i,2)
-		
-	while p.run():
-		#study(p)
-		pass
-	p.render()
+b = 0x7d6c
+e = b + 2 * hpib_numcmds
+x = p.t.add(b, e, "arg-table")
+x.blockcmt += "Table of legal range of numeric argument for HPIB cmd\n"
+
+t = 0x7d88
+x = p.t.add(t, t + hpib_numcmds, "idx-table")
+x.blockcmt += "Index into cmd table, add numeric arg\n"
+
+for i in range(0, hpib_numcmds):
+	x = dot_byte(p, b + 2 * i, 2)
+	lo = p.m.rd(b + 2 * i)
+	hi = p.m.rd(b + 2 * i + 1)
+	x.cmt.append(hpib_cmd[i])
+
+	x = dot_byte(p, t + i)
+	x.cmt.append(hpib_cmd[i] + "[%d-%d]" % (lo, hi))
+	pp = ba + p.m.rd(t + i) * 2
+	for xx in range(lo, hi + 1):
+		x = dot_code(p, pp + (xx - lo) * 2)
+		tt = "%s%d" % (hpib_cmd[i], xx)
+		x.cmt.append("%s %s" % (tt, gpib_expl[tt]))
+
+#######################################################################
+while p.run():
+	#study(p)
+	pass
+p.render()
+p.t.recurse()
