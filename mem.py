@@ -236,6 +236,8 @@ class byte_mem(base_mem):
 		    bits = 8,
 		    qualifiers = qualifiers,
 		    flags = flags)
+		# Number of bytes per line
+		self.bcols = 8
 
 	# All these functions come in big and little endian
 	# signed versions have 's' prefix
@@ -307,7 +309,7 @@ class byte_mem(base_mem):
 			s = self.afmt(start)
 			s += " "
 			t = "|"
-			for i in range(0,8):
+			for i in range(0,self.bcols):
 				if start + i >= end:
 					s += "   "
 					t += " "
@@ -320,13 +322,10 @@ class byte_mem(base_mem):
 						continue
 
 					s += " %02x" % x
-					if x < 32 or x > 126:
-						t += " "
-					else:
-						t += "%c" % x
-			s += " " + t + "|\t"
+					t += ascii(x)
+			s += "  " + t + "|\t"
 			l.append(s)
-			start += 8
+			start += self.bcols
 		return l
 
 if __name__ == "__main__":

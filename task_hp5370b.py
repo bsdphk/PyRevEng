@@ -240,7 +240,9 @@ class dot_float(tree.tree):
 dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
 
 m = mem.byte_mem(0, 0x10000, 0, True)
+m.bcols = 3
 p = pyreveng.pyreveng(m)
+p.cmt_start = 48
 
 p.cpu = cpu_mc6800.mc6800()
 p.t.recurse()
@@ -401,4 +403,4 @@ while p.run():
 	#study(p)
 	pass
 p.render()
-p.t.recurse()
+#p.t.recurse()

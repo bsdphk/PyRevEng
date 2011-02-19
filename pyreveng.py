@@ -16,6 +16,7 @@ from __future__ import print_function
 
 # Python dist imports
 import sys
+import random
 
 # PyRevEng imports
 import tree
@@ -37,7 +38,7 @@ class pyreveng(object):
 		self.__bbx = dict()
 
 		# @render
-		self.__cmt_start = 56
+		self.cmt_start = 56
 
 	###############################################################
 	# TODO
@@ -213,7 +214,10 @@ class pyreveng(object):
 	def __r(self, t, lvl, fo):
 		if t.blockcmt != "":
 			for i in t.blockcmt[:-1].split("\n"):
-				fo.write("\t\t\t; " + i + "\n")
+				if i != "":
+					fo.write(self.col1s + "; " + i + "\n")
+				else:
+					fo.write("\n")
 
 		if t.descend == True and len(t.child) > 0:
 			a = t.start
@@ -239,6 +243,7 @@ class pyreveng(object):
 				fo.write(i)
 				fo.write("\n")
 			return
+
 		if type(t.render) == str:
 			a = (t.render,)
 		else:
@@ -254,13 +259,15 @@ class pyreveng(object):
 			if i >= len(b) and i >= len(a) and i >= len(c):
 				break
 			if i >= len(b):
-				r += "%s" % "                         "[0:w]
+				r += self.col1s
 			else:
 				r += b[i]
 			if i < len(a):
 				r += a[i]
-			while len(r.expandtabs()) < self.__cmt_start:
+			while len(r.expandtabs()) < self.cmt_start - 8:
 				r += "\t"
+			while len(r.expandtabs()) < self.cmt_start:
+				r += " "
 			if i < len(c):
 				r += "; " + c[i]
 			fo.write(r.strip() + "\n")
@@ -279,6 +286,26 @@ class pyreveng(object):
 
 		if end == None:
 			end = self.m.end
+
+		# XXX: do something with start & end
+
+		# Calculate space string for non-col1 lines
+		# XXX: hackish:
+
+		while True:
+			a = int(random.random() * (end - start) + start)
+			try:
+				self.m.rd(a)
+			except:
+				continue
+			break
+		xx = self.m.col1(self, a, a + 1, 0)[0]
+		self.col1w = len(xx.expandtabs())
+		self.col1s = ""
+		for i in range(0, self.col1w/8):
+			self.col1s += "\t"
+		for i in range(0, self.col1w & 7):
+			self.col1s += " "
 
 		self.__r(self.t, 0, fo)
 

@@ -254,8 +254,8 @@ if __name__ == "__main__":
 	fn = dn + "__.CATIX"
 	fn = dn + "__.CAP2"
 	fn = dn + "__.CATLI"
-	fn = dn + "__.DOMUS"
 	fn = dn + "__.PTP"
+	fn = dn + "__.DOMUS"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()
