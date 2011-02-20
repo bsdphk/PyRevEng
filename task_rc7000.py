@@ -163,6 +163,9 @@ class dot_txt(tree.tree):
 		return (s,)
 
 def do_desc(p, a, l, n, desc):
+	if l == 0:
+		for i in desc:
+			l += i[0]
 	x = p.t.add(a, a + l, "descriptor")
 	x.blockcmt += n + "descriptor\n"
 	x.fill = False
@@ -181,8 +184,69 @@ def do_desc(p, a, l, n, desc):
 		x.cmt.append("+%d" % i)
 		i += 1
 
+def paging(p, a, priv = None):
+	do_desc(p, a, 0, "RCSL-43-RI-0142 Paging", (
+		( 1, "page size"),
+		( 1, "page mask"),
+		( 1, "blocking factor"),
+		( 1, "page table"),
+		( 1, "pagemap"),
+		( 1, "statproc"),
+		( 1, "first frame"),
+		( 1, "top of frames"),
+		( 1, "victim"),
+		( 1, "pages read"),
+		( 1, "pages written"),
+		( 1, "pages in"),
+		( 1, "pages out"),
+		( 1, "adr input mess"),
+		( 1, "input message[0]"),
+		( 1, "input message[1]"),
+		( 1, "input message[2]"),
+		( 1, "input message[3]"),
+		( 1, "adr output mess"),
+		( 1, "output message[0]"),
+		( 1, "output message[1]"),
+		( 1, "output message[2]"),
+		( 1, "output message[3]"),
+		( 1, "pager flag"),
+		( 1, "working locations"),
+	))
+
+	w = p.m.rd(a + 3)
+	do_desc(p, w, 0, "Page Table", (
+		( 1, "n_pages" ),
+		( p.m.rd(w), "pageentries"),
+	))
+
+	w = p.m.rd(a + 4)
+	do_desc(p, w, 0, "Page Map", (
+		( 1, "n_pages" ),
+		( p.m.rd(w), "pageentries"),
+	))
+
+	w = p.m.rd(a + 5)
+	if w != 0:
+		p.setlabel(w, "Paging_Statproc")
+		p.todo(w, p.cpu.disass)
+	
+
+def msgdesc(p, a, priv = None):
+	do_desc(p, a, 0, "Message", (
+		( 1, "next"),
+		( 1, "prev"),
+		( 1, "chain"),
+		( 1, "size"),
+		( 1, "sende"),
+		( 1, "recei"),
+		( 1, "mess0"),
+		( 1, "mess1"),
+		( 1, "mess2"),
+		( 1, "mess3"),
+	))
+
 def progdesc(p, a, priv = None):
-	do_desc(p, a, 7, "Program", (
+	do_desc(p, a, 0, "Program", (
 		( 1, "spec"),
 		( 1, "start"),
 		( 1, "chain"),
@@ -266,9 +330,11 @@ if __name__ == "__main__":
 	if l < 0x8000:
 		p.todo(l, procdesc)
 
-	if False:
+	if True:
 		# DOMUS
+		p.todo(0x11f1, p.cpu.disass)
 		p.t.a['page_base'] = 0x137a
+		paging(p, 0x1007)
 		for pg in range(3,20):
 			aa = 0x137a + pg * 0x100
 			x = p.t.add(aa, aa + 1, "page %d" % pg)
@@ -297,5 +363,5 @@ if __name__ == "__main__":
 				else:
 					p.t.add(i, i + 1, "gap")
 	print("----------")
-	p.render()
-	p.t.recurse()
+	p.render("/tmp/_domus")
+	#p.t.recurse()

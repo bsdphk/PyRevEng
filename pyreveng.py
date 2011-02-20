@@ -42,6 +42,7 @@ class pyreveng(object):
 
 		# @render
 		self.cmt_start = 56
+		self.gaps = 0
 
 	###############################################################
 	# TODO
@@ -177,6 +178,7 @@ class pyreveng(object):
 	def __f2(self, a, b, fo, lvl):
 		for i in self.m.col1(self, a, b, lvl):
 			fo.write(i + ".XXX\n")
+		self.gaps += b - a
 
 	def __f(self, a, b, fo, lvl):
 		if a == b:
@@ -333,6 +335,8 @@ class pyreveng(object):
 			self.col1s += " "
 
 		self.__r(self.t, 0, fo)
+
+		print("%d locations xxx'ed" % self.gaps)
 
 	# A general purpose hexdumping routine
 	def hexdump(self, start = None, end = None, fo = sys.stdout, wid=16):

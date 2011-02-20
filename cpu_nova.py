@@ -85,6 +85,8 @@ class nova(object):
 				x.a['call'] = (("T", i[0]),)
 			else:
 				x.a['cond'] = (("NZ", adr + 1), ("Z", adr + 2))
+				if i[0] != None:
+					x.a['EA'] = (i[0],)
 		elif iw & 0xe000 == 0x6000:
 			s = ("NIO", "DIA", "DOA", "DIB",
 			     "DOB", "DIC", "DOC", "SKP")[(iw>>8)&7]
@@ -109,5 +111,7 @@ class nova(object):
 			o1 = "%d" % ((iw>>11)&3)
 			i=self.adrmode(p, adr, iw)
 			x.a['oper'] = (o1,) + i[1]
+			if i[0] != None:
+				x.a['EA'] = (i[0],)
 
 		p.ins(x, self.disass)
