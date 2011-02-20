@@ -167,7 +167,7 @@ def do_desc(p, a, l, n, desc):
 		for i in desc:
 			l += i[0]
 	x = p.t.add(a, a + l, "descriptor")
-	x.blockcmt += n + "descriptor\n"
+	x.blockcmt += n + " descriptor\n"
 	x.fill = False
 	i = 0
 	for j in desc:
@@ -306,7 +306,6 @@ if __name__ == "__main__":
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 	fn = dn + "__.DOMAC"
-	fn = dn + "__.MUI"
 	fn = dn + "__.MUC"
 	fn = dn + "__.LIBE"
 	fn = dn + "__.FSLIB"
@@ -314,16 +313,19 @@ if __name__ == "__main__":
 	fn = dn + "__.INT"
 	fn = dn + "__.DKP"
 	fn = dn + "__.TT009"
-	fn = dn + "__.MUM"
 	fn = dn + "__.CATIX"
 	fn = dn + "__.CAP2"
 	fn = dn + "__.CATLI"
 	fn = dn + "__.PTP"
 	fn = dn + "__.DOMUS"
+	fn = dn + "__.MUI"
+	fn = dn + "__.MUM"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()
 	p.t.recurse()
+
+	p.cpu.iodev[9] = "TTYOUT"
 
 	#domus_load(m, fn, member="P0155")
 	l = domus_load(p, fn)
@@ -331,6 +333,16 @@ if __name__ == "__main__":
 		p.todo(l, procdesc)
 
 	if True:
+		# MUM
+		for i in range(0,256):
+			try:
+				q = p.m.rdqual(i)
+				if q != 1:
+					p.todo(p.m.rd(i), p.cpu.disass)
+			except:
+				continue
+
+	if False:
 		# DOMUS
 		p.todo(0x11f1, p.cpu.disass)
 		p.t.a['page_base'] = 0x137a

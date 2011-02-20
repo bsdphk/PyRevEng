@@ -1,13 +1,80 @@
 #!/usr/local/bin/python
 #
+# This is a disassembler for the Data General Nova CPU
+#
+# There are two extension mechanisms which do not require subclassing:
+#
+#	self.intercept[instuction_word] = (function_to_call, private_argument)
+#		Special instructions can be handled this way
+#
+#	self.iodev[device_number] = "device_name"
+#		Name the I/O devices
+#
 
 from __future__ import print_function
 
 class nova(object):
 	def __init__(self):
 		self.dummy = True
+		self.intercept = {
+			060177: ( self.macro,	("INTEN",)),
+			060277: ( self.macro,	("INTDS",)),
+			060477: ( self.cpu,	("READS",)),
+			064477: ( self.cpu,	("READS",)),
+			070477: ( self.cpu,	("READS",)),
+			074477: ( self.cpu,	("READS",)),
+			061477: ( self.cpu,	("INTA",)),
+			065477: ( self.cpu,	("INTA",)),
+			071477: ( self.cpu,	("INTA",)),
+			075477: ( self.cpu,	("INTA",)),
+			062077: ( self.cpu,	("MSKO",)),
+			066077: ( self.cpu,	("MSKO",)),
+			072077: ( self.cpu,	("MSKO",)),
+			076077: ( self.cpu,	("MSKO",)),
+			062677: ( self.cpu,	("IORST",)),
+			066677: ( self.cpu,	("IORST",)),
+			072677: ( self.cpu,	("IORST",)),
+			076677: ( self.cpu,	("IORST",)),
+			063077: ( self.cpu,	("HALT",)),
+			067077: ( self.cpu,	("HALT",)),
+			073077: ( self.cpu,	("HALT",)),
+			077077: ( self.cpu,	("HALT",)),
+			063477: ( self.macro,	("SKPIRQ",)),
+			063577: ( self.macro,	("SKPNIRQ",)),
+			063677: ( self.macro,	("SKPPWR",)),
+			063777: ( self.macro,	("SKPNPWR",)),
+		}
+		self.iodev = {
+			63: "CPU",
+		}
+
+	def cpu(self, p, adr, priv):
+		iw = p.m.rd(adr)
+		x = p.t.add(adr, adr + 1, "ins")
+		x.render = self.render
+		x.a['mne'] = priv[0]
+		x.a['oper'] = ("%d" % ((iw>>11)&3),)
+		f = (iw>>8)&3
+		if f == 1:
+			x.a['oper'] += ("INTEN",)
+		elif f == 2:
+			x.a['oper'] += ("INTDS",)
+		p.ins(x, self.disass)
+		return x
+
+	def macro(self, p, adr, priv):
+		x = p.t.add(adr, adr + 1, "ins")
+		x.render = self.render
+		x.a['mne'] = priv[0]
+		if len(priv) > 1:
+			x.a['oper'] = priv[1]
+		p.ins(x, self.disass)
+		return x
 
 	def adrmode(self, p, adr,iw):
+		# NB: Unless memory extension involved, in mode 2 & 3, the
+		# NB: topbit is zeroed, so AC2=0xff53 + displacement 0x4f does
+		# NB: not yield 0x801a, but 0x001a
 		d = iw & 0xff
 		mode =  (iw>>8)&3
 		if iw & 0x400:
@@ -36,11 +103,12 @@ class nova(object):
 
 	def render(self, p, t, lvl):
 		s = t.a['mne'] + "\t"
-		d = ""
-		for i in t.a['oper']:
-			s += d
-			s += str(i)
-			d = ','
+		if 'oper' in t.a:
+			d = ""
+			for i in t.a['oper']:
+				s += d
+				s += str(i)
+				d = ','
 		return (s,)
 
 	def disass(self, p, adr, priv):
@@ -48,6 +116,11 @@ class nova(object):
 			iw = p.m.rd(adr)
 		except:
 			return
+
+		if iw in self.intercept:
+			m = self.intercept[iw]
+			return m[0](p, adr, m[1])
+
 		x = p.t.add(adr, adr + 1, "ins")
 		x.render = self.render
 		if iw & 0x8000:
@@ -98,12 +171,17 @@ class nova(object):
 			else:
 				s += ("", "S", "C", "P")[(iw>>6)&3]
 			x.a['mne'] = s
+			dev = iw & 0x3f
+			if dev in self.iodev:
+				dev = self.iodev[dev]
+			else:
+				dev = "%d" % dev
 			if s[0] == "D":	
 				o1 = "%d" % ((iw >> 11) & 3)
-				o2 = "%d" % (iw & 0x3f)
+				o2 = dev
 				x.a['oper'] = (o1, o2)
 			else:
-				o1 = "%d" % (iw & 0x3f)
+				o1 = dev
 				x.a['oper'] = (o1,)
 		else:
 			s = ("", "LDA", "STA")[(iw>>13)&3]

@@ -197,9 +197,6 @@ class domus(cpu_nova.nova):
 		self.special[006367] = ( "CTOP")
 
 		self.special[006177] = ( "DIVIDE")
-		self.special[060177] = ( "INTEN")
-		self.special[060277] = ( "INTDS")
-		self.special[062677] = ( "IORST")
 
 	def disass(self, p, adr, priv = None):
 		try:
@@ -221,7 +218,6 @@ class domus(cpu_nova.nova):
 		x.a['oper'] = list()
 		x.render = self.render
 
-		print(ss)
 		if len(ss) > 1 and ss[1] != -1:
 			x.cmt += ss[1]
 		if len(ss) > 2:
