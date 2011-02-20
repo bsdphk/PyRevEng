@@ -276,12 +276,12 @@ class byte_mem(base_mem):
 			x = self.rd(adr)
 			if len == -1 and x == 0:
 				break
-			if x >= 32 or x <= 126:
+			if x >= 32 and x <= 126:
 				s += "%c" % x
 			elif x == 10:
-				s += "\\n" 
+				s += "\\n"
 			elif x == 13:
-				s += "\\r" 
+				s += "\\r"
 			else:
 				s += "\\x%02x" % x
 			if len > 0:

@@ -304,7 +304,7 @@ class pyreveng(object):
 		if fname == "-":
 			fo = sys.stdout
 		else:
-			fo = fopen(fname, "w")
+			fo = open(fname, "w")
 
 		if start == None:
 			start = self.m.start

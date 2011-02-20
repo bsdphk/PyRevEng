@@ -64,7 +64,9 @@ Address Map:
 	0x008e-0x0094:	SY  > SW=top
 	0x0095-0x009b:	SX  | SX=bot
 	0x009c-0x00a2:	SA /  SA=spill
-
+	
+	0x00ae:	0b.......0: EA0 Ext Arm dis
+	       	0b.......1: EA1 Ext Arm ena
 	0x00b6:
 		0b.....000: FN3 Freq
 		0b.....001: FN4 Period
@@ -101,6 +103,8 @@ Address Map:
 		0b........ .100.... ST5 Disp Ref
 		0b........ .101.... ST7 Disp Evt
 		0b........ .111.... ST3 Disp All
+		0b........ 0....... Ref clear
+		0b........ 1....... Ref set
 		
 	0x00f4:
 		0bX.......: TB[01]
@@ -233,26 +237,35 @@ def sfunc(t,p,lvl):
 def study(p):
 	p.t.recurse(sfunc, p)
 
-# HP5370B uses its own weird floating point format
-def nbr_render(p, a):
+#######################################################################
+# HP5370B uses its own (weird|smart) floating point format.
+#
+# As far as I can tell, it looks like this: S{1}M{47}E{8} where the
+# exponent is 2's complement.  But there are two scaling factors 
+# involved, so the value is:  (S * M{31.16} * 2^e * 5e-9)
+#
+# XXX: Hmm, the mantissa may be a 32.16 2' complement number...
+#
+
+def float_render(p, a):
 	x = p.m.rd(a + 0)
 	if x & 0x80:
 		s = -1
 		x ^= 0x80
 	else:
 		s = 1
-	m =  x * 1099511627776.
-	m += p.m.rd(a + 1) * 4294967296.
-	m += p.m.rd(a + 2) * 16777216.
-	m += p.m.rd(a + 3) * 65536.
-	m += p.m.rd(a + 4) * 256.
-	m += p.m.rd(a + 5)
+	m =  math.ldexp(x, 24)
+	m += math.ldexp(p.m.rd(a + 1), 16)
+	m += math.ldexp(p.m.rd(a + 2), 8)
+	m += math.ldexp(p.m.rd(a + 3), 0)
+	m += math.ldexp(p.m.rd(a + 4), -8)
+	m += math.ldexp(p.m.rd(a + 5), -16)
 	e =  p.m.s8(a + 6)
-	v = m / (math.pow(2, 17-e) * math.pow(10, 8))
-	#x = "m %f" % m + " e %d" % e + " v %g" % v
+	v = math.ldexp(m * 5e-9, e)
 	x = "%.9e" % v
 	if x.find(".") == -1 and x.find("e") == -1:
 		x = x + "."
+	print("FLOAT", "%x" % a, x)
 	return x
 
 class dot_byte(tree.tree):
@@ -311,9 +324,11 @@ class dot_ascii(tree.tree):
 		tree.tree.__init__(self, adr, adr + len, "dot-ascii")
 		p.t.add(adr, adr + 1, "dot-ascii", True, self)
 		self.render = self.rfunc
+		self.txt = p.m.ascii(adr, len)
+		p.setlabel(adr, "TXT='" + self.txt + "'")
 
 	def rfunc(self, p, t, lvl):
-		s = ".TXT\t'" + p.m.ascii(t.start, t.end - t.start) + "'"
+		s = ".TXT\t'" + self.txt + "'"
 		return (s,)
 
 class dot_code(tree.tree):
@@ -347,7 +362,7 @@ class dot_float(tree.tree):
 		tree.tree.__init__(self, adr, adr + 7, "dot_float")
 		p.t.add(adr, adr + 7, "dot-float", True, self)
 		self.render = self.rfunc
-		self.nbr = nbr_render(p, adr)
+		self.nbr = float_render(p, adr)
 		p.setlabel(adr, "FP=" + self.nbr)
 
 	def rfunc(self, p, t, lvl):
@@ -369,14 +384,24 @@ p.t.blockcmt += headcmt
 
 # 0x6f00...0x7000 = x^2/256 table
 
-dot_float(p, 0x614c)
-x = dot_float(p, 0x619c)
-x.blockcmt += "= 2^22/10^17\n"
-x =dot_float(p, 0x61a3)
-x.blockcmt += "= 2^30/10^8\n"
-dot_float(p, 0x69dd)
-dot_float(p, 0x69e4)
+#######################################################################
+# Floating point constants
+# likely related to converting to SI units
+#
+x = dot_float(p, 0x614c)
+x.cmt.append("= 2^31 * 5*10^-9 * 10^-6 (%.9e)\n" % (math.ldexp(1,31)*5e-9*1e-6))
 
+x = dot_float(p, 0x619c)
+x.cmt.append("= 2^23 * 5*10^-9 * 10^-9 (%.9e)\n" % (math.ldexp(1,23)*5e-9*1e-9))
+
+x = dot_float(p, 0x61a3)
+x.cmt.append("= 2^31 * 5*10^-9 (%.9e)\n" % (math.ldexp(1,31)*5e-9))
+
+x = dot_float(p, 0x69dd)
+x.cmt.append("= 2^23 * 5*10^-9 * 10^-9 (%.9e)\n" % (math.ldexp(1,23)*5e-9*1e-9))
+
+x = dot_float(p, 0x69e4)
+x.cmt.append("= 2^31 * 5*10^-9 (%.9e)\n" % (math.ldexp(1,31)*5e-9))
 
 #######################################################################
 dot_byte(p, 0x7a75, 15)
@@ -665,6 +690,7 @@ p.setlabel(0x6057, "X=PARAM(CUR)")
 p.setlabel(0x6064, "Delay(X)")
 p.setlabel(0x608d, "LED_BLANK()")
 p.setlabel(0x608f, "LED_FILL(A)")
+p.setlabel(0x612a, "*=10.0()")
 p.setlabel(0x6153, "SHOW_RESULT()")
 p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
 p.setlabel(0x6244, "LedFillMinus()")
@@ -674,18 +700,29 @@ p.setlabel(0x6344, "X+=A()")
 p.setlabel(0x6376, "LED=0.00")
 p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
 p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
+p.setlabel(0x69f5, "REF_VALUE=AVG()")
+p.setlabel(0x6a0c, "REF_VALUE=0.0()")
 p.setlabel(0x7048, "PUSH(?*X)")
 p.setlabel(0x705c, "*X=SX")
 p.setlabel(0x7069, "memcpy(*0xae,*0xac,7)")
 p.setlabel(0x707d, "Swap(SX,SY)")
 p.setlabel(0x708c, "DUP()")
 p.setlabel(0x70ab, "DROP()")
+p.setlabel(0x70d2, "ADD()")
 p.setlabel(0x70ef, "SY.m+=SX.m()")
 p.setlabel(0x7115, "A=OR(SX.m)")
 p.setlabel(0x7122, "A=OR(SY.m)")
+p.setlabel(0x712f, "SUB()")
 p.setlabel(0x714b, "SY.m-=SX.m()")
+p.setlabel(0x7173, "MULTIPLY()")
+p.setlabel(0x71fa, "DIVIDE()")
+p.setlabel(0x72d3, "NEGATE()")
+p.setlabel(0x72ee, "SX=0.0()")
 p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
 p.setlabel(0x7310, "NORMLEFT(*X,A)")
+p.setlabel(0x7326, "NORM(SX,SY)")
+p.setlabel(0x7356, "SY=0.0()")
+p.setlabel(0x7363, "NORM(SY)")
 p.setlabel(0x73ca, "LED_ERR(A)")
 p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
 p.setlabel(0x76f9, "RESULT_TO_GPIB()")
@@ -695,5 +732,5 @@ p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
 p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
 p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
-p.render()
+p.render("/tmp/_hp5370b")
 #p.t.recurse()
