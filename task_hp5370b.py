@@ -193,50 +193,6 @@ gpib_expl = {
 	"TO":	"Trigger Stop",
 }
 
-procat=dict()
-
-def sdisc(p, tg):
-	print(tg)
-	print("Discover %04x" % tg)
-	te = tg
-	while True:
-		x = p.t.find(te, None, "func")
-		if x != None:
-			print("FALL INTO", tg, x)
-			te = x.end
-			break
-		x = p.t.find(te, None, "ins")
-		if x == None:
-			break
-		if x.start == tg and 'jmp' in x.a:
-			print("CALL TO JUMP", x)
-			tg = x.a['jmp'][0]
-			if tg != None and tg not in procat:
-				procat[tg] = True
-				sdisc(p,tg)
-			return
-		print("%04x-%04x %s %s" % (x.start, x.end, x.a['mne'], str(x.a['op'])))
-		te = x.end
-		if 'ret' in x.a:
-			break
-	print("Found %04x...%04x" % (tg,te))
-	if tg != te:
-		p.t.add(tg, te, "func")
-
-def sfunc(t,p,lvl):
-	if not 'call' in t.a:
-		return
-	for tg in t.a['call']:
-		if tg == None:
-			continue
-		if tg in procat:
-			continue
-		procat[tg] = True
-		sdisc(p,tg)
-
-def study(p):
-	p.t.recurse(sfunc, p)
-
 #######################################################################
 # HP5370B uses its own (weird|smart) floating point format.
 #
@@ -369,6 +325,9 @@ class dot_float(tree.tree):
 		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
 
+#######################################################################
+# And there they go...
+
 dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
 
 m = mem.byte_mem(0, 0x10000, 0, True)
@@ -382,6 +341,54 @@ p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
 
 p.t.blockcmt += headcmt
 
+#######################################################################
+# The image was orginally written for 8 1K*8 (2708 ?) EPROMS
+# This structure still shows, with individual checksums and
+# chip numbers in each 1KB of the image.
+
+
+def do_eprom(p,start,eprom_size):
+	x = p.t.add(i, i + eprom_size, "eprom")
+	x.blockcmt += "EPROM at 0x%x-0x%x\n" % (i, i + eprom_size - 1)
+
+	# Calculate checksum
+	j = ~p.m.b16(i) 
+	for jj in range(2, eprom_size):
+		j += p.m.rd(i + jj)
+	j &= 0xffff
+	if j == 0xffff:
+		j = "OK"
+	else:
+		j = "BAD"
+
+	x = dot_word(p, i)
+	x.cmt.append("EPROM checksum (%s)" % j)
+
+	x = dot_byte(p, i + 2)
+	x.cmt.append("EPROM number")
+
+	# Handle any 0xff fill at the end of this EPROM
+	n = 0
+	for a in range(i + eprom_size - 1, i, -1):
+		if p.m.rd(a) != 0xff:
+			break;
+		n += 1
+	if n > 1:
+		x = p.t.add(i + eprom_size - n, i + eprom_size, "fill")
+		x.render = ".FILL\t%d, 0xff" % n
+
+for i in range(0x6000,0x8000,0x400):
+	do_eprom(p, i, 0x400)
+
+#######################################################################
+# NMI/GPIB debugger
+
+xnmi = p.t.add(0x7f79, 0x7ff8, "src")
+xnmi.blockcmt += """
+NMI based GPIB debugger interface.
+"""
+
+#######################################################################
 # 0x6f00...0x7000 = x^2/256 table
 
 #######################################################################
@@ -445,29 +452,6 @@ x.blockcmt += "Table of EPROM start addresses\n"
 for a in range(0x7ead, 0x7ebf, 2):
 	dot_ptr(p, a)
 
-for i in range(0x6000,0x8000,0x400):
-	j = 0
-	for jj in range(2, 0x400):
-		j += p.m.rd(i + jj)
-	j &= 0xffff
-	j ^= p.m.b16(i)
-	if j == 0xffff:
-		j = "OK"
-	else:
-		j = "BAD"
-	x = dot_word(p, i)
-	x.cmt.append("EPROM checksum (%s)" % j)
-	x = dot_byte(p, i + 2)
-	x.cmt.append("EPROM number")
-	n = 0
-	for a in range(i - 1, 0x6000, -1):
-		if p.m.rd(a) != 0xff:
-			break;
-		n += 1
-	if n > 0:
-		x = p.t.add(i - n, i, "fill")
-		x.render = ".FILL\t%d, 0xff" % n
-
 #######################################################################
 x = p.t.add(0x7eed, 0x7ef9, "tbl")
 x.blockcmt += "Write test byte values (?)\n"
@@ -487,6 +471,10 @@ vec(p,0x7ffe,"RST")
 vec(p,0x7ffc,"NMI")
 vec(p,0x7ffa,"SWI")
 vec(p,0x7ff8,"IRQ")
+
+p.t.add(0x7ff8, 0x8000, "tbl").blockcmt += """
+CPU Vector Table
+"""
 
 #######################################################################
 # jmp table 
@@ -733,4 +721,4 @@ p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
 p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
 p.render("/tmp/_hp5370b")
-#p.t.recurse()
+#######################################################################

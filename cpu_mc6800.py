@@ -138,7 +138,7 @@ class mc6800(object):
 				x.a['cond'] = (("T", None),)
 		elif c[1] == "_":
 			x.a['oper'] = list()
-			x.a['ret'] = ""
+			x.a['ret'] = ("T", None)
 			return
 		elif c[1] == " ":
 			x.a['oper'] = list()
