@@ -62,7 +62,6 @@ class pyreveng(object):
 			self.__did[c] = True
 			#print(">>> 0x%x" % c[0])
 			c[1](self, c[0], c[2])
-		self.build_bb()
 		return True
 
 	###############################################################
@@ -80,7 +79,7 @@ class pyreveng(object):
 			if i[0] != "call":
 				ax = t.start
 				if not ax in self.__bbend:
-					self.__bbend[ax] = ()
+					self.__bbend[ax] = list()
 				self.__bbend[ax] += (i,)
 			else:
 				self.todo(t.end, func, priv)
@@ -88,13 +87,13 @@ class pyreveng(object):
 			if i[2] != None:
 				ax = i[2]
 				if not ax in self.__bbstart:
-					self.__bbstart[ax] = ()
+					self.__bbstart[ax] = list()
 				self.__bbstart[ax] += ((i[0], i[1], t.start),)
 				self.todo(ax, func, priv)
 
 	def markbb(self, ax, why):
 		if not ax in self.__bbstart:
-			self.__bbstart[ax] = ()
+			self.__bbstart[ax] = list()
 		self.__bbstart[ax] += (why,)
 
 	# Build runs of instructions.
@@ -135,6 +134,50 @@ class pyreveng(object):
 				x.a['flow_in'] = self.__bbstart[i]
 				x.a['flow'] = fo
 				self.__bbx[i] = x
+
+	# Eliminate trampolines, such as calls to absolute unconditional
+	# jumps in order to extend reach of addressing modes.
+
+	def __elim(self, t, p, l):
+		if t.tag != "run":
+			return
+		if len(t.child) != 1:
+			return
+		if len(t.a['flow_in']) == 0:
+			return
+		fl = t.a['flow']
+		if len(fl) != 1:
+			return
+		if fl[0][0] != "cond":
+			return
+		if fl[0][1] != "T":
+			return
+		if fl[0][2] == "None":
+			return
+
+		dst = self.t.find(fl[0][2], "run")
+		if dst == None:
+			return
+
+		# Remove trampoline from destination flow_in
+		dfi = dst.a['flow_in']
+		for i in range(0, len(dfi)):
+			if dfi[i][2] == t.start:
+				del dfi[i]
+				break
+
+		# Move in-flows to destination
+		for i in t.a['flow_in']:
+			dfi += (i,)
+
+		t.a['flow_in'] = ()
+		# XXX: HACK:
+		t.child[0].cmt.append("Trampoline")
+		return True
+
+	def eliminate_trampolines(self):
+		while self.t.recurse(self.__elim):
+			continue
 
 	###############################################################
 

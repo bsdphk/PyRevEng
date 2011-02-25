@@ -13,6 +13,59 @@ import pyreveng
 
 import cpu_mc6800
 
+#######################################################################
+
+dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
+
+m = mem.byte_mem(0, 0x10000, 0, True)
+m.bcols = 3
+p = pyreveng.pyreveng(m)
+p.cmt_start = 48
+p.cpu = cpu_mc6800.mc6800()
+
+# The HP5370B inverts the address bus, so start at the end and count down:
+p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+
+#######################################################################
+# CPU vectors
+
+def vec(p,a,n):
+	#x = dot_code(p, a)
+	#x.blockcmt += n + " VECTOR\n"
+	w = p.m.b16(a)
+	p.todo(w, p.cpu.disass)
+	p.setlabel(w, n + "_ENTRY")
+	p.markbb(w, ("call", n, None))
+
+vec(p,0x7ffe,"RST")
+vec(p,0x7ffc,"NMI")
+vec(p,0x7ffa,"SWI")
+vec(p,0x7ff8,"IRQ")
+
+p.t.add(0x7ff8, 0x8000, "tbl").blockcmt += """
+CPU Vector Table
+"""
+
+#######################################################################
+
+if True:
+	while p.run():
+		pass
+
+	p.build_bb()
+	p.eliminate_trampolines()
+	p.render("/tmp/_hp5370b")
+	#p.t.recurse()
+	exit(0)
+
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+#
+# Manual polishing below this point
+#
+
 headcmt = """
 HP5370B ROM disassembly
 =======================
@@ -325,21 +378,6 @@ class dot_float(tree.tree):
 		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
 
-#######################################################################
-# And there they go...
-
-dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
-
-m = mem.byte_mem(0, 0x10000, 0, True)
-m.bcols = 3
-p = pyreveng.pyreveng(m)
-p.cmt_start = 48
-p.cpu = cpu_mc6800.mc6800()
-
-# The HP5370B inverts the address bus, so start at the end and count down:
-p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
-
-p.t.blockcmt += headcmt
 
 #######################################################################
 # The image was orginally written for 8 1K*8 (2708 ?) EPROMS
@@ -612,118 +650,123 @@ Dispatch table for GPIB commands without argument
 
 #######################################################################
 while p.run():
-	#study(p)
 	pass
+
+p.build_bb()
+p.eliminate_trampolines()
+
 #######################################################################
 # Manual markup
 
-x = p.t.add(0x7d96, 0x7da3, "block")
-x.blockcmt += """
-RESET entry point
-"""
-x = p.t.add(0x7da3, 0x7db1, "block")
-x.blockcmt += """
-Self & Service test start
-"""
-x = p.t.add(0x7db1, 0x7de8, "block")
-x.blockcmt += """
-RAM test
-"""
-x = p.t.add(0x7de8, 0x7df8, "block")
-x.blockcmt += """
-Display "Err 6.N" RAM error
-"""
+if True:
+	x = p.t.add(0x7d96, 0x7da3, "block")
+	x.blockcmt += """
+	RESET entry point
+	"""
+	x = p.t.add(0x7da3, 0x7db1, "block")
+	x.blockcmt += """
+	Self & Service test start
+	"""
+	x = p.t.add(0x7db1, 0x7de8, "block")
+	x.blockcmt += """
+	RAM test
+	"""
+	x = p.t.add(0x7de8, 0x7df8, "block")
+	x.blockcmt += """
+	Display "Err 6.N" RAM error
+	"""
 
-x = p.t.add(0x7df8, 0x7e30, "block")
-x.blockcmt += """
-Display "Err N.M" 
-"""
+	x = p.t.add(0x7df8, 0x7e30, "block")
+	x.blockcmt += """
+	Display "Err N.M" 
+	"""
 
-x = p.t.add(0x7e40, 0x7ebf, "block")
-x.blockcmt += """
-EPROM test
-"""
-x = p.t.add(0x7ebf, 0x7ef9, "block")
-x.blockcmt += """
-A16 Service Switch bit 2: "Write Test"
-"""
-x = p.t.add(0x7ef9, 0x7f24, "block")
-x.blockcmt += """
-A16 Service Switch bit 3: "Display Test"
-"""
-x = p.t.add(0x7f24, 0x7f46, "block")
-x.blockcmt += """
-A16 Service Switch bit 4: "Read Test"
-"""
-x = p.t.add(0x7f46, 0x7f4d, "block")
-x.blockcmt += """
-A16 Service Switch bit 7: "Loop Tests"
-"""
-x = p.t.add(0x7f6b, 0x7f79, "block")
-x.blockcmt += """
-LAMP/LED test
-"""
+	x = p.t.add(0x7e40, 0x7ebf, "block")
+	x.blockcmt += """
+	EPROM test
+	"""
+	x = p.t.add(0x7ebf, 0x7ef9, "block")
+	x.blockcmt += """
+	A16 Service Switch bit 2: "Write Test"
+	"""
+	x = p.t.add(0x7ef9, 0x7f24, "block")
+	x.blockcmt += """
+	A16 Service Switch bit 3: "Display Test"
+	"""
+	x = p.t.add(0x7f24, 0x7f46, "block")
+	x.blockcmt += """
+	A16 Service Switch bit 4: "Read Test"
+	"""
+	x = p.t.add(0x7f46, 0x7f4d, "block")
+	x.blockcmt += """
+	A16 Service Switch bit 7: "Loop Tests"
+	"""
+	x = p.t.add(0x7f6b, 0x7f79, "block")
+	x.blockcmt += """
+	LAMP/LED test
+	"""
 
 #######################################################################
-p.setlabel(0x0052, "A16.ServSwich")
-aa = 0x80
-for ii in ("SW", "SZ", "SY", "SX", "SA"):
-	for jj in ('m0', 'm1', 'm2', 'm3', 'm4', 'm5', 'e'):
-		p.setlabel(aa, ii + "." + jj)
-		aa += 1
+if True:
+	p.setlabel(0x0052, "A16.ServSwich")
+	aa = 0x80
+	for ii in ("SW", "SZ", "SY", "SX", "SA"):
+		for jj in ('m0', 'm1', 'm2', 'm3', 'm4', 'm5', 'e'):
+			p.setlabel(aa, ii + "." + jj)
+			aa += 1
 
-p.setlabel(0x00c0, "REF_VALUE")
-p.setlabel(0x0116, "MAX_VALUE")
-p.setlabel(0x011d, "MIN_VALUE")
+	p.setlabel(0x00c0, "REF_VALUE")
+	p.setlabel(0x0116, "MAX_VALUE")
+	p.setlabel(0x011d, "MIN_VALUE")
 
-p.setlabel(0x6057, "X=PARAM(CUR)")
-p.setlabel(0x6064, "Delay(X)")
-p.setlabel(0x608d, "LED_BLANK()")
-p.setlabel(0x608f, "LED_FILL(A)")
-p.setlabel(0x612a, "*=10.0()")
-p.setlabel(0x6153, "SHOW_RESULT()")
-p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
-p.setlabel(0x6244, "LedFillMinus()")
-p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
-p.setlabel(0x62cf, "LED=LEDBUF()")
-p.setlabel(0x6344, "X+=A()")
-p.setlabel(0x6376, "LED=0.00")
-p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
-p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
-p.setlabel(0x69f5, "REF_VALUE=AVG()")
-p.setlabel(0x6a0c, "REF_VALUE=0.0()")
-p.setlabel(0x7048, "PUSH(?*X)")
-p.setlabel(0x705c, "*X=SX")
-p.setlabel(0x7069, "memcpy(*0xae,*0xac,7)")
-p.setlabel(0x707d, "Swap(SX,SY)")
-p.setlabel(0x708c, "DUP()")
-p.setlabel(0x70ab, "DROP()")
-p.setlabel(0x70d2, "ADD()")
-p.setlabel(0x70ef, "SY.m+=SX.m()")
-p.setlabel(0x7115, "A=OR(SX.m)")
-p.setlabel(0x7122, "A=OR(SY.m)")
-p.setlabel(0x712f, "SUB()")
-p.setlabel(0x714b, "SY.m-=SX.m()")
-p.setlabel(0x7173, "MULTIPLY()")
-p.setlabel(0x71fa, "DIVIDE()")
-p.setlabel(0x72d3, "NEGATE()")
-p.setlabel(0x72ee, "SX=0.0()")
-p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
-p.setlabel(0x7310, "NORMLEFT(*X,A)")
-p.setlabel(0x7326, "NORM(SX,SY)")
-p.setlabel(0x7356, "SY=0.0()")
-p.setlabel(0x7363, "NORM(SY)")
-p.setlabel(0x73ca, "LED_ERR(A)")
-p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
-p.setlabel(0x76f9, "RESULT_TO_GPIB()")
-p.setlabel(0x7716, "LED_TO_GPIB()")
-p.setlabel(0x7bd7, "HPIB_SEND(*X,A)")
-p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
-p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
-p.setlabel(0x7f6b, "LAMP_TEST()")
+	p.setlabel(0x6057, "X=PARAM(CUR)")
+	p.setlabel(0x6064, "Delay(X)")
+	p.setlabel(0x608d, "LED_BLANK()")
+	p.setlabel(0x608f, "LED_FILL(A)")
+	p.setlabel(0x612a, "*=10.0()")
+	p.setlabel(0x6153, "SHOW_RESULT()")
+	p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
+	p.setlabel(0x6244, "LedFillMinus()")
+	p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
+	p.setlabel(0x62cf, "LED=LEDBUF()")
+	p.setlabel(0x6344, "X+=A()")
+	p.setlabel(0x6376, "LED=0.00")
+	p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
+	p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
+	p.setlabel(0x69f5, "REF_VALUE=AVG()")
+	p.setlabel(0x6a0c, "REF_VALUE=0.0()")
+	p.setlabel(0x7048, "PUSH(?*X)")
+	p.setlabel(0x705c, "*X=SX")
+	p.setlabel(0x7069, "memcpy(*0xae,*0xac,7)")
+	p.setlabel(0x707d, "Swap(SX,SY)")
+	p.setlabel(0x708c, "DUP()")
+	p.setlabel(0x70ab, "DROP()")
+	p.setlabel(0x70d2, "ADD()")
+	p.setlabel(0x70ef, "SY.m+=SX.m()")
+	p.setlabel(0x7115, "A=OR(SX.m)")
+	p.setlabel(0x7122, "A=OR(SY.m)")
+	p.setlabel(0x712f, "SUB()")
+	p.setlabel(0x714b, "SY.m-=SX.m()")
+	p.setlabel(0x7173, "MULTIPLY()")
+	p.setlabel(0x71fa, "DIVIDE()")
+	p.setlabel(0x72d3, "NEGATE()")
+	p.setlabel(0x72ee, "SX=0.0()")
+	p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
+	p.setlabel(0x7310, "NORMLEFT(*X,A)")
+	p.setlabel(0x7326, "NORM(SX,SY)")
+	p.setlabel(0x7356, "SY=0.0()")
+	p.setlabel(0x7363, "NORM(SY)")
+	p.setlabel(0x73ca, "LED_ERR(A)")
+	p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
+	p.setlabel(0x76f9, "RESULT_TO_GPIB()")
+	p.setlabel(0x7716, "LED_TO_GPIB()")
+	p.setlabel(0x7bd7, "HPIB_SEND(*X,A)")
+	p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
+	p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
+	p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
 
-if False:
+def dottage(t):
 	fx = open("/tmp/_.dot", "w")
 
 	fx.write("""
@@ -748,7 +791,8 @@ if False:
 					c = "green"
 				fx.write("N%x -> N%x [color=%s]\n" % (t.start, i[2], c))
 
-	xnmi.recurse(xxx, p)
+	print(t)
+	t.recurse(xxx, p)
 
 	fx.write("""
 	}
@@ -769,7 +813,7 @@ def build_func(p, a):
 	while True:
 		if y.start < sa:
 			print("FAIL start before entry %x < %x" % (y.start, sa), y)
-			return
+			#return
 		if y.end > ea:
 			ea = y.end
 		for i in y.a['flow']:
@@ -807,17 +851,20 @@ def build_func(p, a):
 		if not i.start in done:
 			print("ORPHAN", i)
 	print("")
+	return x
 
-build_func(p, 0x7fe9)
-build_func(p, 0x7f79)
-build_func(p, 0x72d3)
+#build_func(p, 0x7fe9)
+#build_func(p, 0x7f79)
+#build_func(p, 0x72d3)
 
 # Tail-recursion resolution candidates:
-#build_func(p, 0x71fa)
-#build_func(p, 0x7173)
+#x = build_func(p, 0x7173)
+#x = build_func(p, 0x71fa)
+#dottage(x)
 
 #xnmi.recurse()
 
+p.t.blockcmt += headcmt
 p.render("/tmp/_hp5370b")
 
-p.t.recurse()
+#p.t.recurse()
