@@ -152,18 +152,18 @@ class pyreveng(object):
 			x = self.t.find(a, "ins")
 			if x == None:
 				return a
-			if not 'cond' in x.a:
+			if not 'flow' in x.a:
 				return a
-			y = x.a['cond']
+			y = x.a['flow']
 			if len(y) > 1:
 				return a
-			if y[0][1] == None:
+			if y[0][0] != "cond":
 				return a
-			if y[0][0] != "T":
+			if y[0][1] != "T":
 				return a
-			if y[0][1] == a:
+			if y[0][2] == a:
 				return a
-			a = y[0][1]
+			a = y[0][2]
 
 	###############################################################
 	# Rendering
@@ -210,16 +210,10 @@ class pyreveng(object):
 	def __ear(self, t, c):
 		s = ""
 		d = ""
-		for jj in ('cond', 'call'):
-			if not jj in t.a:
-				continue
-			x = t.a[jj]
-			if len(x) == 1 and x[0][0] == "T":
-				s += d + self.__eas(x[0][1], None)
-				d = ", "
-			else:
-				for ii in x:
-					s += d + self.__eas(ii[1], ii[0])
+		if 'flow' in t.a:
+			for x in t.a['flow']:
+				if x[2] != None:
+					s += d + self.__eas(x[2], x[0] + "," + x[1])
 					d = ", "
 		if 'EA' in t.a:
 			# XXX: multiple EA's per instrution, how ?

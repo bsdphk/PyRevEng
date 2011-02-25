@@ -352,13 +352,14 @@ def do_eprom(p,start,eprom_size):
 	x.blockcmt += "EPROM at 0x%x-0x%x\n" % (i, i + eprom_size - 1)
 
 	# Calculate checksum
-	j = ~p.m.b16(i) 
+	j = 0^p.m.b16(i) 
 	for jj in range(2, eprom_size):
 		j += p.m.rd(i + jj)
 	j &= 0xffff
 	if j == 0xffff:
 		j = "OK"
 	else:
+		printf("NB: Bad Eprom checksum @%x" % start)
 		j = "BAD"
 
 	x = dot_word(p, i)
@@ -818,3 +819,5 @@ build_func(p, 0x72d3)
 #xnmi.recurse()
 
 p.render("/tmp/_hp5370b")
+
+p.t.recurse()
