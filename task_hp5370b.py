@@ -293,7 +293,7 @@ class dot_code(tree.tree):
 		p.t.add(adr, adr + 2, "dot-code", True, self)
 		self.render = self.rfunc
 		t = p.m.b16(adr)
-		p.markbb(t, ".code")
+		# p.markbb(t, ".code")
 		p.todo(t, p.cpu.disass)
 		self.a['EA'] = (t,)
 
@@ -466,6 +466,7 @@ def vec(p,a,n):
 	x.blockcmt += n + " VECTOR\n"
 	w = p.m.b16(a)
 	p.setlabel(w, n + "_ENTRY")
+	p.markbb(w, ("call", n, None))
 
 vec(p,0x7ffe,"RST")
 vec(p,0x7ffc,"NMI")
@@ -720,5 +721,100 @@ p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
 p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
 p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
+
+if False:
+	fx = open("/tmp/_.dot", "w")
+
+	fx.write("""
+	digraph {
+	""")
+
+	def xxx(t, p, l):
+		if t.tag != "run":
+			return
+		s = "ellipse"
+		for i in t.a['flow_in']:
+			if i[0] == "call":
+				s = "box"
+		fx.write("N%x [shape=%s]\n" % (t.start, s))
+		for i in t.a['flow']:
+			if i[0] == "ret":
+				fx.write("R%x [shape=hexagon,label=RET]\n" % t.start)
+				fx.write("N%x -> R%x\n" % (t.start, t.start))
+			if i[2] != None:
+				c = "black"
+				if i[0] == "call":
+					c = "green"
+				fx.write("N%x -> N%x [color=%s]\n" % (t.start, i[2], c))
+
+	xnmi.recurse(xxx, p)
+
+	fx.write("""
+	}
+	""")
+
+
+def build_func(p, a):
+	done = dict()
+	todo = dict()
+	l = list()
+
+	print("BUILD_FUNC %x" % a)
+	t = p.t.find(a, "run")
+	done[a] = t
+	sa = t.start
+	ea = t.end
+	y = t
+	while True:
+		if y.start < sa:
+			print("FAIL start before entry %x < %x" % (y.start, sa), y)
+			return
+		if y.end > ea:
+			ea = y.end
+		for i in y.a['flow']:
+			if i[0] == "call":
+				continue
+			if i[2] == None:
+				continue
+			if i[2] in done:
+				continue
+			if i[2] in todo:
+				continue
+			todo[i[2]] = True
+			l.append(i[2])
+		for i in y.a['flow_in']:
+			if i[0] == "call" and y.start == sa:
+				continue
+			if i[2] == None:
+				print("NB flow_in <none>", i)
+				continue
+			if i[2] < sa:
+				print("NB flow_in before entry %x < %x" % (i[2], sa), i)
+				continue
+			if i[2] > ea:
+				ea = i[2]
+		if len(l) == 0:
+			break
+		xa = l.pop()
+		del todo[xa]
+		y = p.t.find(xa, "run")
+		done[xa] = y
+	print("COMPLETE %x..%x" % (sa, ea))
+	x = p.t.add(sa, ea, "proc")
+	x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
+	for i in x.child:
+		if not i.start in done:
+			print("ORPHAN", i)
+	print("")
+
+build_func(p, 0x7fe9)
+build_func(p, 0x7f79)
+build_func(p, 0x72d3)
+
+# Tail-recursion resolution candidates:
+#build_func(p, 0x71fa)
+#build_func(p, 0x7173)
+
+#xnmi.recurse()
+
 p.render("/tmp/_hp5370b")
-#######################################################################

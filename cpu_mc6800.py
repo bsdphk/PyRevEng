@@ -113,33 +113,32 @@ class mc6800(object):
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
-			x.a['call'] = (("T", da),)
+			x.a['flow'] = (("call", "T", da),)
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
-			x.a['call'] = (("T", da),)
+			x.a['flow'] = (("call", "T", da),)
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
 			if iw & 0x0f == 00:
-				x.a['cond'] = (("T", da),)
+				x.a['flow'] = (("cond", "T", da),)
 			else:
 				c2 = inscode[iw ^ 1]
-				x.a['cond'] = ((c2[3:], adr + l), (c[3:], da),)
+				x.a['flow'] = (("cond", c2[3:], adr + l), ("cond", c[3:], da),)
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
-			x.a['cond'] = (("T", da),)
+			x.a['flow'] = (("cond", "T", da),)
 		elif c[1] == "X":
 			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 			if x.a['mne'] == "JSR":
-				x.a['call'] = (("T", None),)
+				x.a['flow'] = (("call", "T", None),)
 			else:
-				x.a['cond'] = (("T", None),)
+				x.a['flow'] = (("cond", "T", None),)
 		elif c[1] == "_":
 			x.a['oper'] = list()
-			x.a['ret'] = ("T", None)
-			return
+			x.a['flow'] = (("ret", "T", None),)
 		elif c[1] == " ":
 			x.a['oper'] = list()
 		else:

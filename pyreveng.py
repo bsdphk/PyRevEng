@@ -71,30 +71,31 @@ class pyreveng(object):
 
 	# Register an instruction that goes places
 	def ins(self, t, func, priv = None):
-		#print("INS", t)
-		n = True
-		if 'cond' in t.a:
-			n = False
-			self.__bbend[t.start] = "cond"
-			for i in t.a['cond']:
-				#print("COND", i)
-				if i[1] != None:
-					self.__bbstart[i[1]] = "cond"
-					self.todo(i[1], func, priv)
-		if 'call' in t.a:
-			for i in t.a['call']:
-				#print("CALL", i)
-				if i[1] != None:
-					self.__bbstart[i[1]] = "call"
-					self.todo(i[1], func, priv)
-		if 'ret' in t.a:
-			n = False
-			self.__bbend[t.start] = "ret"
-		if n:
-			self.todo(t.end, func, priv)
 
-	def markbb(self, a, why):
-		self.__bbstart[a] = why
+		if not 'flow' in t.a:
+			self.todo(t.end, func, priv)
+			return
+
+		for i in t.a['flow']:
+			if i[0] != "call":
+				ax = t.start
+				if not ax in self.__bbend:
+					self.__bbend[ax] = ()
+				self.__bbend[ax] += (i,)
+			else:
+				self.todo(t.end, func, priv)
+
+			if i[2] != None:
+				ax = i[2]
+				if not ax in self.__bbstart:
+					self.__bbstart[ax] = ()
+				self.__bbstart[ax] += ((i[0], i[1], t.start),)
+				self.todo(ax, func, priv)
+
+	def markbb(self, ax, why):
+		if not ax in self.__bbstart:
+			self.__bbstart[ax] = ()
+		self.__bbstart[ax] += (why,)
 
 	# Build runs of instructions.
 	#
@@ -111,35 +112,28 @@ class pyreveng(object):
 		for i in self.__bbstart:
 			if i in self.__bbx:
 				continue
-			x = self.__bbstart[i]
+			fo = ()
 			y = self.t.find(i, "ins")
 			if y == None:
 				continue
 			while True:
+				if 'flow' in y.a:
+					fo += y.a['flow']
 				j = y.end
 				if y.start in self.__bbend:
 					break
-				y = self.t.find(j, "run")
-				if y != None:
+				if y.end in self.__bbstart:
+					fo += (("nxt", "T", y.end),)
 					break
 				y = self.t.find(j, "ins")
 				if y == None:
 					j = None
 					break
-				if y.start in self.__bbstart:
-					break
-				if 'ret' in y.a:
-					j = y.end
-					break
-				if 'jmp' in y.a:
-					j = y.end
-					break
-				if 'cond' in y.a:
-					j = y.end
-					break
 			if j != None:
 				x = self.t.add(i,j,"run")
 				x.blockcmt += "\n"
+				x.a['flow_in'] = self.__bbstart[i]
+				x.a['flow'] = fo
 				self.__bbx[i] = x
 
 	###############################################################
@@ -242,6 +236,13 @@ class pyreveng(object):
 					fo.write(self.col1s + "; " + i + "\n")
 				else:
 					fo.write("\n")
+		if 'flow_in' in t.a:
+			for i in t.a['flow_in']:
+				if i[2] == None:
+					s = "@?"
+				else:
+					s = "@" + self.m.afmt(i[2])
+				fo.write(self.col1s + "; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
 
 		if t.descend == True and len(t.child) > 0:
 			a = t.start
