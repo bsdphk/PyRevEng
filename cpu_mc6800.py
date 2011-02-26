@@ -1,7 +1,11 @@
 #!/usr/local/bin/python
 #
+# Motorola 6800 CPU disassembler
+#
 
 from __future__ import print_function
+
+import const
 
 inscode = (
 	"0-???", "1 NOP", "0-???", "0-???", "0-???", "0-???", "1 TAP", "1 TPA",
@@ -73,7 +77,7 @@ class mc6800(object):
 			d = ','
 		return (s,)
 
-	def disass(self, p, adr, priv):
+	def disass(self, p, adr, priv = None):
 		try:
 			iw = p.m.rd(adr)
 		except:
@@ -147,3 +151,17 @@ class mc6800(object):
 			return
 		p.ins(x, self.disass)
 			
+
+	def __vector(self, p, adr, nm):
+		const.w16(p, adr)
+		w = p.m.w16(adr)
+		p.todo(w, p.cpu.disass)
+		p.setlabel(w, nm + "_VECTOR")
+		p.markbb(w, ("call", nm, None))
+
+	def vectors(self, p, adr = 0x10000):
+		self.__vector(p, adr - 2, "RST")
+		self.__vector(p, adr - 4, "NMI")
+		self.__vector(p, adr - 6, "SWI")
+		self.__vector(p, adr - 8, "IRQ")
+		p.t.add(adr - 8, adr, "tbl").blockcmt += "\n-\nMC6800 Vector Table\n\n"

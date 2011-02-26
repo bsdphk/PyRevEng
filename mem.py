@@ -229,7 +229,7 @@ class base_mem(object):
 #
 
 class byte_mem(base_mem):
-	def __init__(self, start=0, end=0, qualifiers=0, flags=False):
+	def __init__(self, start=0, end=0, qualifiers=0, flags=False, endian=None):
 		base_mem.__init__(self,
 		    start = start,
 		    end = end,
@@ -238,6 +238,18 @@ class byte_mem(base_mem):
 		    flags = flags)
 		# Number of bytes per line
 		self.bcols = 8
+		if endian == "big-endian":
+			self.w16 = self.b16
+			self.s16 = self.sb16
+			self.w32 = self.b32
+			#self.s32 = self.sb32
+		elif endian == "little-endian":
+			self.w16 = self.l16
+			self.s16 = self.sl16
+			self.w32 = self.l32
+			#self.s32 = self.sl32
+		elif endian != None:
+			raise MemError(0, "Unknown endianess (%s)" % endian)
 
 	# All these functions come in big and little endian
 	# signed versions have 's' prefix

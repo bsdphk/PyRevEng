@@ -234,7 +234,7 @@ class pyreveng(object):
 			print("FAIL flow_in from beyond end %x > %x" % (la, ea))
 			return
 		x = self.t.add(sa, ea, "proc")
-		x.blockcmt += "\n--------------------------------------------------------------\n"
+		x.blockcmt += "\n-\n"
 		x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
 		#x.a['flow_in'] = t.a['flow_in']
 		for i in x.child:
@@ -354,7 +354,9 @@ class pyreveng(object):
 
 		if t.blockcmt != "":
 			for i in t.blockcmt[:-1].split("\n"):
-				if i != "":
+				if i == "-":
+					fo.write(self.col1s + ";-----------------------------------------------------\n")
+				elif i != "":
 					fo.write(self.col1s + "; " + i + "\n")
 				else:
 					fo.write("\n")
