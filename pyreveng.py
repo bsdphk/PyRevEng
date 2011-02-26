@@ -43,9 +43,10 @@ class pyreveng(object):
 		# @render
 		self.cmt_start = 56
 		self.gaps = 0
+		self.indent = ""
 
 	###############################################################
-	# TODO
+	# TODO list processing
 	#
 
 	def todo(self, adr, func, priv = None):
@@ -233,15 +234,18 @@ class pyreveng(object):
 			print("BUILD_FUNC: " + self.m.afmt(a))
 			print("FAIL flow_in from beyond end %x > %x" % (la, ea))
 			return
-		x = self.t.add(sa, ea, "proc")
+		try:
+			x = self.t.add(sa, ea, "proc")
+		except:
+			return
 		x.blockcmt += "\n-\n"
 		x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
+		x.a['indent'] = True
 		#x.a['flow_in'] = t.a['flow_in']
 		for i in x.child:
 			if not i.start in done:
 				print("BUILD_FUNC: " + self.m.afmt(a))
 				print("ORPHAN", i)
-				exit(1)
 			else:
 				i.a['in_proc'] = True
 		return x
@@ -295,31 +299,36 @@ class pyreveng(object):
 	###############################################################
 	# Rendering
 	#
+	def __pad_to(self, r, w):
+		while len(r.expandtabs()) <= w - 8:
+			r += "\t"
+		while len(r.expandtabs()) < w:
+			r += " "
+		return r
 
-	def __f2(self, a, b, fo, lvl):
-		for i in self.m.col1(self, a, b, lvl):
+	def __render_xxx(self, start, end, fo, lvl):
+		for i in self.m.col1(self, start, end, lvl):
 			fo.write(i + ".XXX\n")
-		self.gaps += b - a
+		self.gaps += end - start
 
-	def __f(self, a, b, fo, lvl):
-		if a == b:
+	# 'xxx' render readable locations in this gap
+	def __render_gaps(self, start, end, fo, lvl):
+		if start == end:
 			return
 		s = False
-		for j in range(a, b):
+		for j in range(start, end):
 			try:
 				x = self.m.rd(j)
 				if s == False:
 					s = j
 			except:
 				if s != False:
-					self.__f2(s, j, fo, lvl)
+					self.__render_xxx(s, j, fo, lvl)
 				s = False
-				continue
 		if s != False:
-			self.__f2(s, b, fo, lvl)
-		s = False
+			self.__render_xxx(s, end, fo, lvl)
 
-	def __eas(self, adr, cond):
+	def __render_ea(self, adr, cond):
 		if cond != None:
 			t = "EA(%s)=" % cond
 		else:
@@ -334,52 +343,58 @@ class pyreveng(object):
 		return t
 		
 	# Emit effective address comments
-	def __ear(self, t, c):
+	def __render_ea_cmt(self, t, c):
 		s = ""
 		d = ""
 		if 'flow' in t.a:
 			for x in t.a['flow']:
 				if x[2] != None:
-					s += d + self.__eas(x[2], x[0] + "," + x[1])
+					s += d + self.__render_ea(x[2], x[0] + "," + x[1])
 					d = ", "
 		if 'EA' in t.a:
 			# XXX: multiple EA's per instrution, how ?
 			for ii in t.a['EA']:
-				s += d + self.__eas(ii, None)
+				s += d + self.__render_ea(ii, None)
 				d = ", "
 		if s != "":
 			c.append(s)
 
-	def __r(self, t, lvl, fo):
+
+	# Render, recursively, one tree node
+	def __render(self, t, lvl, fo):
 
 		if t.blockcmt != "":
 			for i in t.blockcmt[:-1].split("\n"):
 				if i == "-":
+					# XXX: width should be self.param
 					fo.write(self.col1s + ";-----------------------------------------------------\n")
 				elif i != "":
 					fo.write(self.col1s + "; " + i + "\n")
 				else:
 					fo.write("\n")
 
-
 		if 'flow_in' in t.a:
+			# XXX: supress if internal to procedure ? (how) ?
 			for i in t.a['flow_in']:
 				if i[2] == None:
 					s = "@?"
 				else:
 					s = "@" + self.m.afmt(i[2])
-				# XXX: use cmt_start
-				fo.write(self.col1s + "\t\t\t; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
+				fo.write(self.col1c + "; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
 
 		if t.descend == True and len(t.child) > 0:
+			if 'indent' in t.a:
+				oindent = self.indent
+				self.indent = oindent + "\t"
 			a = t.start
 			for i in t.child:
-				self.__f(a, i.start, fo, lvl)
-				self.__r(i, lvl + 1, fo)
+				self.__render_gaps(a, i.start, fo, lvl)
+				self.__render(i, lvl + 1, fo)
 				a = i.end
-			self.__f(a, t.end, fo, lvl)
+			self.__render_gaps(a, t.end, fo, lvl)
+			if 'indent' in t.a:
+				self.indent = oindent
 			return
-
 
 		if t.start in self.__label:
 			fo.write(self.col1s + self.__label[t.start] + ":\n")
@@ -406,7 +421,7 @@ class pyreveng(object):
 			a = t.render(self, t, lvl)
 		b = self.m.col1(self, t.start, t.end, lvl)
 		c = t.cmt
-		self.__ear(t, c)
+		self.__render_ea_cmt(t, c)
 
 		i = 0
 		w = len(b[0])
@@ -420,10 +435,7 @@ class pyreveng(object):
 				r += b[i]
 			if i < len(a):
 				r += a[i]
-			while len(r.expandtabs()) < self.cmt_start - 8:
-				r += "\t"
-			while len(r.expandtabs()) < self.cmt_start:
-				r += " "
+			r = self.__pad_to(r, self.cmt_start)
 			if i < len(c):
 				r += "; " + c[i]
 			fo.write(r.rstrip() + "\n")
@@ -457,17 +469,17 @@ class pyreveng(object):
 			break
 		xx = self.m.col1(self, a, a + 1, 0)[0]
 		self.col1w = len(xx.expandtabs())
-		self.col1s = ""
-		for i in range(0, self.col1w/8):
-			self.col1s += "\t"
-		for i in range(0, self.col1w & 7):
-			self.col1s += " "
+		self.col1s = self.__pad_to("", self.col1w)
+		self.col1c = self.__pad_to("", self.cmt_start)
 
-		self.__r(self.t, 0, fo)
+		self.__render(self.t, 0, fo)
 
 		print("%d locations xxx'ed" % self.gaps)
 
+	###############################################################
 	# A general purpose hexdumping routine
+	#
+
 	def hexdump(self, start = None, end = None, fo = sys.stdout, wid=16):
 		if start == None:
 			start = self.m.start

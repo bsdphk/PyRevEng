@@ -11,6 +11,7 @@ import mem
 import tree
 import const
 import pyreveng
+import hp53xx
 import cpu_mc6800
 
 #----------------------------------------------------------------------
@@ -20,7 +21,7 @@ import cpu_mc6800
 m = mem.byte_mem(0, 0x10000, 0, True, "big-endian")
 m.bcols = 3
 p = pyreveng.pyreveng(m)
-p.cmt_start = 48
+p.cmt_start = 56
 
 #----------------------------------------------------------------------
 # Load the EPROM image
@@ -37,6 +38,12 @@ p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
 
 p.cpu = cpu_mc6800.mc6800()
 p.cpu.vectors(p,0x8000)
+
+#----------------------------------------------------------------------
+hp53xx.eprom(p, 0x6000, 0x8000, 0x400)
+
+#----------------------------------------------------------------------
+#hp53xx.nmi_debugger(p, p.m.w16(0x7ffc))
 
 #######################################################################
 
@@ -71,9 +78,15 @@ Address Map:
 	0x0000:R Data In
 	0x0000:W Data Out
 	0x0001:R Inq In
-	0x0001:W Status Out
+	0x0001:W Status Out (P3-18)
+		0x80 = Running NMI Debug monitor
+		0x40 = Service Requested
+		0x20 = Oven heater on
+		0x10 = External Timebase
+		0x0f = Error message if bit 7 "is used"
 	0x0002:R Cmd In
 	0x0002:W Control Out
+		0x02 = NMI gate
 		0x10 = EOI out {0x61e9}
 	0x0003:R State In
 
@@ -89,6 +102,8 @@ Address Map:
 			0x02 = ROM test
 			0x01 = RAM test
 	0x0054-0x0055:R	LEN2 signal
+		0x0054:R
+			0xc0 = Oven heater + External Clock
 	0x0056-0x0057:R	LEN1 signal
 	0x0058-0x0059:R	LEN0 signal
 	0x005a-0x005b:R	A16U17+A16U19 MUX
@@ -321,52 +336,11 @@ class dot_float(tree.tree):
 		p.t.add(adr, adr + 7, "dot-float", True, self)
 		self.render = self.rfunc
 		self.nbr = float_render(p, adr)
-		p.setlabel(adr, "FP=" + self.nbr)
+		self.a['const'] = "FP=" + self.nbr
 
 	def rfunc(self, p, t, lvl):
 		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
-
-
-#######################################################################
-# The image was orginally written for 8 1K*8 (2708 ?) EPROMS
-# This structure still shows, with individual checksums and
-# chip numbers in each 1KB of the image.
-
-
-def do_eprom(p,start,eprom_size):
-	x = p.t.add(i, i + eprom_size, "eprom")
-	x.blockcmt += "EPROM at 0x%x-0x%x\n" % (i, i + eprom_size - 1)
-
-	# Calculate checksum
-	j = 0^p.m.b16(i) 
-	for jj in range(2, eprom_size):
-		j += p.m.rd(i + jj)
-	j &= 0xffff
-	if j == 0xffff:
-		j = "OK"
-	else:
-		printf("NB: Bad Eprom checksum @%x" % start)
-		j = "BAD"
-
-	x = const.w16(p, i)
-	x.cmt.append("EPROM checksum (%s)" % j)
-
-	x = const.byte(p, i + 2)
-	x.cmt.append("EPROM number")
-
-	# Handle any 0xff fill at the end of this EPROM
-	n = 0
-	for a in range(i + eprom_size - 1, i, -1):
-		if p.m.rd(a) != 0xff:
-			break;
-		n += 1
-	if n > 1:
-		x = p.t.add(i + eprom_size - n, i + eprom_size, "fill")
-		x.render = ".FILL\t%d, 0xff" % n
-
-for i in range(0x6000,0x8000,0x400):
-	do_eprom(p, i, 0x400)
 
 #######################################################################
 # NMI/GPIB debugger
@@ -434,18 +408,8 @@ x = p.t.add(0x6f00,0x7000, "tbl")
 x.blockcmt += "Table of I^2>>8\n"
 
 #######################################################################
-# Table of EPROM ranges
-x = p.t.add(0x7ead, 0x7ebf, "tbl")
-x.blockcmt += "Table of EPROM start addresses\n"
-for a in range(0x7ead, 0x7ebf, 2):
-	dot_ptr(p, a)
 
-#######################################################################
-x = p.t.add(0x7eed, 0x7ef9, "tbl")
-x.blockcmt += "Write test byte values (?)\n"
-for i in range(x.start, x.end):
-	const.byte(p, i)
-
+hp53xx.wr_test_val(p)
 
 #######################################################################
 # jmp table 
@@ -471,15 +435,10 @@ for i in range(0x77d7,0x77f7,4):
 
 dot_code(p, 0x7909)
 dot_ptr(p, 0x7915)
+
 #######################################################################
 # BCD->7seg table
-x = p.t.add(0x7e30, 0x7e40, "7seg")
-x.blockcmt += "-\nBCD to 7 segment table\n"
-p.setlabel(0x7e30, "CHARGEN")
-sevenseg = "0123456789.#-Er "
-for i in range(0,16):
-	y = const.byte(p, x.start + i)
-	y.cmt.append("'%s'" % sevenseg[i])
+hp53xx.chargen(p, 0x6000,0x8000)
 
 #######################################################################
 # List of two-letter HPIB commands
@@ -586,6 +545,7 @@ while p.run():
 
 p.build_bb()
 p.eliminate_trampolines()
+p.build_procs()
 
 #######################################################################
 # Manual markup
@@ -698,6 +658,22 @@ if True:
 	p.setlabel(0x7f6b, "LAMP_TEST()")
 #######################################################################
 
+if False:
+	nmi = p.m.w16(0x7ffc)
+
+
+	p.setlabel(nmi + 0x000c, "NMI_LOOP()")
+	p.setlabel(nmi + 0x0022, "NMI_CMD_01_WRITE() [X,L,D...]")
+	p.setlabel(nmi + 0x0031, "NMI_CMD_02_READ() [X,L]")
+	p.setlabel(nmi + 0x0040, "NMI_CMD_03()")
+	p.setlabel(nmi + 0x0046, "NMI_CMD_04_TX_X()")
+	p.setlabel(nmi + 0x0054, "NMI_CMD_05_END()")
+	p.setlabel(nmi + 0x005a, "NMI_RX_X()")
+	p.setlabel(nmi + 0x0067, "NMI_RX_A()")
+	p.setlabel(nmi + 0x0070, "NMI_TX_A()")
+
+#######################################################################
+
 def dottage(t):
 	fx = open("/tmp/_.dot", "w")
 
@@ -731,8 +707,6 @@ def dottage(t):
 	""")
 
 
-p.build_procs()
-			
 
 # Tail-recursion resolution candidates:
 #x = build_func(p, 0x7173)
