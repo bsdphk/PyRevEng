@@ -179,6 +179,90 @@ class pyreveng(object):
 		while self.t.recurse(self.__elim):
 			continue
 
+
+
+	def __build_func(self, a):
+		done = dict()
+		todo = dict()
+		l = list()
+
+		t = self.t.find(a, "run")
+		done[a] = t
+		sa = t.start
+		ea = t.end
+		la = t.end
+		y = t
+		while True:
+			if y.start < sa:
+				print("BUILD_FUNC: " + self.m.afmt(a))
+				print("FAIL start before entry %x < %x" % (y.start, sa), y)
+				return
+			if y.end > ea:
+				ea = y.end
+			for i in y.a['flow']:
+				if i[0] == "call":
+					continue
+				if i[2] == None:
+					continue
+				if i[2] in done:
+					continue
+				if i[2] in todo:
+					continue
+				todo[i[2]] = True
+				l.append(i[2])
+			for i in y.a['flow_in']:
+				if i[0] == "call" and y.start == sa:
+					continue
+				if i[2] == None:
+					print("BUILD_FUNC: " + self.m.afmt(a))
+					print("FAIL flow_in <none>", i)
+					return
+				if i[2] < sa:
+					print("BUILD_FUNC: " + self.m.afmt(a))
+					print("FAIL flow_in before entry %x < %x" % (i[2], sa), i)
+					return
+				if i[2] > la:
+					la = i[2]
+			if len(l) == 0:
+				break
+			xa = l.pop()
+			del todo[xa]
+			y = self.t.find(xa, "run")
+			done[xa] = y
+		if la > ea:
+			print("BUILD_FUNC: " + self.m.afmt(a))
+			print("FAIL flow_in from beyond end %x > %x" % (la, ea))
+			return
+		x = self.t.add(sa, ea, "proc")
+		x.blockcmt += "\n--------------------------------------------------------------\n"
+		x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
+		#x.a['flow_in'] = t.a['flow_in']
+		for i in x.child:
+			if not i.start in done:
+				print("BUILD_FUNC: " + self.m.afmt(a))
+				print("ORPHAN", i)
+				exit(1)
+			else:
+				i.a['in_proc'] = True
+		return x
+
+	def __recurse_proc(self, t, p, l):
+		if t.tag != "run":
+			return
+		if 'in_proc' in t.a:
+			return
+		if not 'flow_in' in t.a:
+			return
+		for i in t.a['flow_in']:
+			if i[0] == "call":
+				self.__build_func(t.start)
+				return True
+
+	def build_procs(self, t = None):
+		if t == None:
+			t = self.t
+		t.recurse(self.__recurse_proc)
+
 	###############################################################
 
 	def setlabel(self, a, lbl):
@@ -267,19 +351,23 @@ class pyreveng(object):
 			c.append(s)
 
 	def __r(self, t, lvl, fo):
+
 		if t.blockcmt != "":
 			for i in t.blockcmt[:-1].split("\n"):
 				if i != "":
 					fo.write(self.col1s + "; " + i + "\n")
 				else:
 					fo.write("\n")
+
+
 		if 'flow_in' in t.a:
 			for i in t.a['flow_in']:
 				if i[2] == None:
 					s = "@?"
 				else:
 					s = "@" + self.m.afmt(i[2])
-				fo.write(self.col1s + "; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
+				# XXX: use cmt_start
+				fo.write(self.col1s + "\t\t\t; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
 
 		if t.descend == True and len(t.child) > 0:
 			a = t.start
@@ -289,6 +377,7 @@ class pyreveng(object):
 				a = i.end
 			self.__f(a, t.end, fo, lvl)
 			return
+
 
 		if t.start in self.__label:
 			fo.write(self.col1s + self.__label[t.start] + ":\n")

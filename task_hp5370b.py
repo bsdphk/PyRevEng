@@ -48,12 +48,13 @@ CPU Vector Table
 
 #######################################################################
 
-if True:
+if False:
 	while p.run():
 		pass
 
 	p.build_bb()
 	p.eliminate_trampolines()
+	p.build_procs()
 	p.render("/tmp/_hp5370b")
 	#p.t.recurse()
 	exit(0)
@@ -799,63 +800,8 @@ def dottage(t):
 	""")
 
 
-def build_func(p, a):
-	done = dict()
-	todo = dict()
-	l = list()
-
-	print("BUILD_FUNC %x" % a)
-	t = p.t.find(a, "run")
-	done[a] = t
-	sa = t.start
-	ea = t.end
-	y = t
-	while True:
-		if y.start < sa:
-			print("FAIL start before entry %x < %x" % (y.start, sa), y)
-			#return
-		if y.end > ea:
-			ea = y.end
-		for i in y.a['flow']:
-			if i[0] == "call":
-				continue
-			if i[2] == None:
-				continue
-			if i[2] in done:
-				continue
-			if i[2] in todo:
-				continue
-			todo[i[2]] = True
-			l.append(i[2])
-		for i in y.a['flow_in']:
-			if i[0] == "call" and y.start == sa:
-				continue
-			if i[2] == None:
-				print("NB flow_in <none>", i)
-				continue
-			if i[2] < sa:
-				print("NB flow_in before entry %x < %x" % (i[2], sa), i)
-				continue
-			if i[2] > ea:
-				ea = i[2]
-		if len(l) == 0:
-			break
-		xa = l.pop()
-		del todo[xa]
-		y = p.t.find(xa, "run")
-		done[xa] = y
-	print("COMPLETE %x..%x" % (sa, ea))
-	x = p.t.add(sa, ea, "proc")
-	x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
-	for i in x.child:
-		if not i.start in done:
-			print("ORPHAN", i)
-	print("")
-	return x
-
-#build_func(p, 0x7fe9)
-#build_func(p, 0x7f79)
-#build_func(p, 0x72d3)
+p.build_procs()
+			
 
 # Tail-recursion resolution candidates:
 #x = build_func(p, 0x7173)
