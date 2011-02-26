@@ -223,6 +223,29 @@ class base_mem(object):
 				raise MemError(adr, "Write forbidden")
 		self.mem[i] = (x & ~self.qmask) | (qual << self.bits)
 
+	# Find a particular pattern
+	# 'None' is a wildcard
+	def find(self, start, end, pattern):
+		l = list()
+		lx = len(pattern)
+		i = 0
+		for ax in range(start, end-lx):
+			if pattern[i] != None:
+				try:
+					x = self.rd(ax)
+				except:
+					i = 0
+					continue
+				if pattern[i] != x:
+					i = 0
+					continue
+			i += 1
+			if i < lx:
+				continue
+			l.append(ax - (lx-1))
+			i = 0
+		return l
+
 #######################################################################
 #
 # The normal microprocessor byte addressable model
@@ -336,6 +359,7 @@ class byte_mem(base_mem):
 					s += " %02x" % x
 					t += ascii(x)
 			s += "  " + t + "|\t"
+			s += p.indent
 			l.append(s)
 			start += self.bcols
 		return l
