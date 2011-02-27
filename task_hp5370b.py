@@ -66,30 +66,15 @@ if False:
 # Manual polishing below this point
 #
 
-p.t.blockcmt += """
+p.t.blockcmt += """-
 HP5370B ROM disassembly
 =======================
 
-Address Map:
-------------
+"""
 
-0x0000-0x0003	GPIB {P8-30}
+hp53xx.gpib_board(p)
 
-	0x0000:R Data In
-	0x0000:W Data Out
-	0x0001:R Inq In
-	0x0001:W Status Out (P3-18)
-		0x80 = Running NMI Debug monitor
-		0x40 = Service Requested
-		0x20 = Oven heater on
-		0x10 = External Timebase
-		0x0f = Error message if bit 7 "is used"
-	0x0002:R Cmd In
-	0x0002:W Control Out
-		0x02 = NMI gate
-		0x10 = EOI out {0x61e9}
-	0x0003:R State In
-
+p.t.blockcmt += """-
 0x0050-0x005f	A16 Arming
 
 	0x0050-0x0051:R	LDACSR signal
@@ -109,15 +94,11 @@ Address Map:
 	0x005a-0x005b:R	A16U17+A16U19 MUX
 		 Eventcounter
 	{more}
+"""
 
-0x0060-0x007f	Front panel
+hp53xx.display_board(p)
 
-	0x0060:R Buttons
-		0xf0: scan lines
-		0x07: sense lines
-	0x0060-0x006f:W	LEDS
-	0x0070-0x007f:W	7segs
-
+p.t.blockcmt += """-
 0x0080-0x0200	RAM
 
 	0x0080-0x0086:	SW \  FLOAT
@@ -125,7 +106,7 @@ Address Map:
 	0x008e-0x0094:	SY  > SW=top
 	0x0095-0x009b:	SX  | SX=bot
 	0x009c-0x00a2:	SA /  SA=spill
-	
+
 	0x00ae:	0b.......0: EA0 Ext Arm dis
 	       	0b.......1: EA1 Ext Arm ena
 	0x00b6:
@@ -166,7 +147,7 @@ Address Map:
 		0b........ .111.... ST3 Disp All
 		0b........ 0....... Ref clear
 		0b........ 1....... Ref set
-		
+
 	0x00f4:
 		0bX.......: TB[01]
 
@@ -186,7 +167,7 @@ Address Map:
 
 0x4000-?	Possibly Service/Expansion EPROM
 0x6000-0x7fff	EPROMS
-				
+
 """
 
 
@@ -259,7 +240,7 @@ gpib_expl = {
 # HP5370B uses its own (weird|smart) floating point format.
 #
 # As far as I can tell, it looks like this: S{1}M{47}E{8} where the
-# exponent is 2's complement.  But there are two scaling factors 
+# exponent is 2's complement.  But there are two scaling factors
 # involved, so the value is:  (S * M{31.16} * 2^e * 5e-9)
 #
 # XXX: Hmm, the mantissa may be a 32.16 2' complement number...
@@ -412,7 +393,7 @@ x.blockcmt += "Table of I^2>>8\n"
 hp53xx.wr_test_val(p)
 
 #######################################################################
-# jmp table 
+# jmp table
 dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "DS7")
 j=0
 for i in range(0x6848,0x6858,2):
@@ -449,7 +430,7 @@ x.blockcmt += "Table of two-letter HPIB commands\n"
 for i in range(0x7c64,0x7c98,2):
 	const.txtlen(p,i,2)
 	hpib_cmd.append(p.m.ascii(i, 2))
-	
+
 #######################################################################
 # jmp table, see 7962->6054->63ec
 
@@ -570,7 +551,7 @@ if True:
 
 	x = p.t.add(0x7df8, 0x7e30, "block")
 	x.blockcmt += """
-	Display "Err N.M" 
+	Display "Err N.M"
 	"""
 
 	x = p.t.add(0x7e40, 0x7ebf, "block")

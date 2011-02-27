@@ -368,10 +368,8 @@ class pyreveng(object):
 				if i == "-":
 					# XXX: width should be self.param
 					fo.write(self.col1s + ";-----------------------------------------------------\n")
-				elif i != "":
-					fo.write(self.col1s + "; " + i + "\n")
 				else:
-					fo.write("\n")
+					fo.write(self.col1s + "; " + i + "\n")
 
 		if 'flow_in' in t.a:
 			# XXX: supress if internal to procedure ? (how) ?

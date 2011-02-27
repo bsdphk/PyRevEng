@@ -41,7 +41,24 @@ p.cpu.vectors(p,0x8000)
 
 #----------------------------------------------------------------------
 
-p.t.blockcmt += """
+p.t.blockcmt += """-
+HP5359A ROM disassembly
+=======================
+
+"""
+
+hp53xx.gpib_board(p)
+hp53xx.display_board(p)
+
+p.t.blockcmt += """-
+0x0010-0x002f PROCESSOR INTERFACE (A16)
+
+	0x0011:R
+		x x 0 0 x x x x 	read/write/loop test mode
+		x x 0 1 x x x x 	read/loop test mode
+		0x10	Service switch (?)
+		0x20	Service switch (?)
+		0x30
 
 	(from p3-5:)
 	Err 1:		Illegal Remote Command or an undefined function
@@ -54,14 +71,16 @@ p.t.blockcmt += """
 	Err 7.9:	ROM missing
 	Probe Err 8.n:	Unable to calibrate using external probes
 	Err 9.n:	Calibrate error
+"""
 
-	
+p.t.blockcmt += """-
+0x0080-0x0200	RAM
+
 	0x0080-0x0087	SW	X X X X X X X X
 	0x0088-0x008f	SZ	X X X X X X X X
 	0x0090-0x0097	SY	m m m m m m m X
 	0x0098-0x009f	SX	m m m m m m m X
 	0x00a0-0x00a7	SA	X X X X X X X X
-
 
 	0x00e2-0x0123	TEach/LearN data
 			0x00e2	X		0x0012 copy
@@ -76,10 +95,10 @@ p.t.blockcmt += """
 				0x08 - Output Offset
 			0x00e6	m m m m m m m e
 			0x00ee	m m m m m m m e
-			0x00f6	X 
+			0x00f6	X
 				0x01 - External Compensation Enable
 				0x80 - Sync Delay Preset
-			0x00f7	X 
+			0x00f7	X
 			0x00f8	X
 			0x00f9	X
 				0x80 - Frequency
@@ -88,11 +107,12 @@ p.t.blockcmt += """
 				0x10 - Period
 			0x00fa	X
 			0x00fb	X
-			0x00fc	X X X X X X
-			0x0102	X X X X X X X X
-			0x010a	X X X X X X X X
-			0x0112	X X X X X X X X
-			0x011a	X X X X X X X X
+			0x00fc	X X X
+			0x00ff  m m m m m m m e
+			0x0107  m m m m m m m e
+			0x010f  m m m m m m m e
+			0x0117  m m m m m m m e
+			0x011f	X X X
 			0x0122	X 		0x002e copy
 			0x0123	X 		0x002c copy
 
@@ -122,11 +142,20 @@ p.t.blockcmt += """
 	0x016f-		HPIB_CMD_BUF
 
 	0x0175		HPIB.STATUS_OUT copy (=spoll))
-			
-				
+
+
 """
 
-p.setlabel(0x0001, "HPIB.STATUS_OUT")
+#----------------------------------------------------------------------
+def ea(p,adr):
+	adr = p.m.w16(adr)
+	while True:
+		if p.m.rd(adr) != 0x7e:
+			return adr
+		adr = p.m.w16(adr + 1)
+
+
+#----------------------------------------------------------------------
 p.setlabel(0x0098, "SX.m")
 p.setlabel(0x009f, "SX.e")
 p.setlabel(0x00e4, "COPY_16")
@@ -142,6 +171,7 @@ p.setlabel(0x016b, "HPIB_RX_FUNC1")
 p.setlabel(0x016d, "HPIB_RX_FUNC")
 
 
+#----------------------------------------------------------------------
 p.setlabel(0x60f6, "HPIB_SEND(*X,A)")
 p.setlabel(0x6123, "HPIB_RECV(*X,A,B=nowait)")
 p.setlabel(0x6175, "RX_HPIB()")
@@ -162,7 +192,8 @@ p.setlabel(0x6511, "SX.m+=SY.m")
 p.setlabel(0x6641, "A=OR(SX.m)")
 p.setlabel(0x6670, "(X).m /= 10")
 p.setlabel(0x668a, "(X).m *= 10")
-p.setlabel(0x6a4e, "MAIN_LOOP()")
+p.setlabel(0x6dc3, "DELAY(X)")
+p.setlabel(0x6f72, "START_UP()")
 p.setlabel(0x6ff1, "Err2_Data_Out_Of_Range()")
 p.setlabel(0x7030, "HPIBCMD(-0x14 [0x0c-0x20])")
 p.setlabel(0x72f1, "LED=Err(A)")
@@ -170,6 +201,16 @@ p.setlabel(0x7394, "A=(X+A)")
 p.setlabel(0x73b8, "ERR=5")
 p.setlabel(0x77eb, "Err9_Calibrate_Error(A)")
 
+#----------------------------------------------------------------------
+# two Keyboard row (Page before Fig 8-25)
+
+p.setlabel(ea(p, 0x7045), "KEY_LocalRemote")
+p.setlabel(ea(p, 0x7047), "KEY_ManTrig")
+p.setlabel(ea(p, 0x704b), "KEY_DispLev")
+p.setlabel(ea(p, 0x704d), "KEY_ns")
+p.setlabel(ea(p, 0x704f), "KEY_us")
+p.setlabel(ea(p, 0x7051), "KEY_ms")
+p.setlabel(ea(p, 0x7053), "KEY_EVTS")
 
 #----------------------------------------------------------------------
 # HP53xx EPROM structure
@@ -187,14 +228,20 @@ hp53xx.wr_test_val(p)
 if True:
 	for ax in range(0x703d,0x7055,2):
 		x = const.w16(p, ax)
-		w = p.m.w16(ax)
-		x.a['EA'] = (w,)
-		p.todo(w, p.cpu.disass)
+		x.a['EA'] = (ea(p, ax),)
+		p.todo(p.m.w16(ax), p.cpu.disass)
 	for ax in range(0x707d,0x708f,2):
 		x = const.w16(p, ax)
-		w = p.m.w16(ax)
-		x.a['EA'] = (w,)
-		p.todo(w, p.cpu.disass)
+		eax = ea(p,ax)
+		x.a['EA'] = (eax,)
+		p.setlabel(eax, "SRVKEY_%04x" % ax)
+		p.todo(p.m.w16(ax), p.cpu.disass)
+
+p.setlabel(0x6912, "SRVKEY_DISP_012c")
+p.setlabel(0x6918, "SRVKEY_DISP_0124")
+p.setlabel(0x691e, "SRVKEY_DISP_0134")
+p.setlabel(0x6924, "SRVKEY_DISP_015c")
+p.setlabel(ea(p, 0x707d), "KEY_NOKEY")
 
 
 #----------------------------------------------------------------------
@@ -277,13 +324,13 @@ for ax in range(0, ncmd * 2, 2):
 
 	x = const.w16(p, ay)
 	wx = p.m.w16(ay)
-	x.a['EA'] = (wx,)
+	x.a['EA'] = (ea(p, ay),)
 
+	p.setlabel(ea(p, ay), "CMD_" + sx + ssx)
 	p.todo(wx, p.cpu.disass)
-	if p.m.rd(wx) == 0x7e:
-		p.setlabel(p.m.w16(wx + 1), "CMD_" + sx + ssx)
-	else:
-		p.setlabel(wx, "CMD_" + sx + ssx)
+
+# Overwrite this one
+p.setlabel(0x6a4e, "MAIN_LOOP()")
 
 #----------------------------------------------------------------------
 # SWI jmp's to X
@@ -323,7 +370,7 @@ class dot_float(tree.tree):
                 self.nbr = hp5359_nbr(p, adr)
                 self.a['const'] = "FLOAT=" + self.nbr
 		p.setlabel(adr, self.a['const'])
-                        
+
         def rfunc(self, p, t, lvl):
                 s = ".FLOAT\t%s" % self.nbr
                 return (s,)

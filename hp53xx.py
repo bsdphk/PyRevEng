@@ -13,7 +13,7 @@ import const
 
 #----------------------------------------------------------------------
 # Structure of (virtual) EPROMS
-# 
+#
 def one_eprom(p, start, eprom_size):
 
 	x = p.t.add(start, start + eprom_size, "eprom")
@@ -21,7 +21,7 @@ def one_eprom(p, start, eprom_size):
 	    (start, start + eprom_size - 1)
 
 	# Calculate checksum
-	j = 0^p.m.w16(start) 
+	j = 0^p.m.w16(start)
 	for jj in range(2, eprom_size):
 		j += p.m.rd(start + jj)
 	j &= 0xffff
@@ -74,7 +74,7 @@ def eprom(p, start, end, sz):
 
 #----------------------------------------------------------------------
 # Character Generator for 7-segments
-# 
+#
 
 def sevenseg(p, y, val):
 	if val & 0x01:
@@ -137,7 +137,7 @@ def chargen(p, start = 0x6000, end = 0x8000, chars=16):
 
 #----------------------------------------------------------------------
 # Write test values
-# 
+#
 
 def wr_test_val(p, start = 0x6000, end = 0x8000):
 	px = ( 0x00, 0xff, 0xaa, 0x55, 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01)
@@ -152,8 +152,8 @@ def wr_test_val(p, start = 0x6000, end = 0x8000):
 		const.byte(p, i)
 
 #----------------------------------------------------------------------
-# 
-# 
+#  See HPJ 1978-08 p23
+#
 def nmi_debugger(p, nmi):
 	#print("%x" % nmi)
 	#x = p.t.find(nmi, "ins")
@@ -177,4 +177,57 @@ def nmi_debugger(p, nmi):
 	#p.setlabel(nmi + 0x0071 + a, "NMI_TX_A()")
 
 	return
+
+
+#----------------------------------------------------------------------
+#
+
+def gpib_board(p):
+
+	p.t.blockcmt += """-
+0x0000-0x0003	GPIB BOARD (A15) {See HP5370B manual P8-30}
+
+	0x0000:R Data In
+	0x0000:W Data Out
+	0x0001:R Inq In
+	0x0001:W Status Out (P3-18)
+		0x80 = Running NMI Debug monitor
+		0x40 = Service Requested
+		0x20 = Oven heater on
+		0x10 = External Timebase
+		0x0f = Error message if bit 7 "is used"
+	0x0002:R Cmd In
+	0x0002:W Control Out
+		0x02 = NMI gate
+		0x10 = EOI out {0x61e9}
+	0x0003:R State In
+
+"""
+
+	p.setlabel(0x0000, "HPIB__DATA_IN__DATA_OUT")
+	p.setlabel(0x0001, "HPIB__INQ_IN__STATUS_OUT")
+	p.setlabel(0x0002, "HPIB__CMD_IN__CTRL_OUT")
+	p.setlabel(0x0003, "HPIB__STATE_IN")
+
+#----------------------------------------------------------------------
+#
+
+def display_board(p):
+
+	p.t.blockcmt += """-
+0x0060-0x007f	DISPLAY BOARD (A11)
+
+	0x0060:R Buttons
+		0xf0: scan lines
+		0x07: sense lines
+	0x0060-0x006f:W	LEDS
+	0x0070-0x007f:W	7segs
+
+"""
+
+	p.setlabel(0x0060, "DISPLAY__KBD_IN__LED#0_OUT")
+	p.setlabel(0x0070, "DISPLAY__7SEG#0_OUT")
+	for i in range (1,16):
+		p.setlabel(0x0070 + i, "DISPLAY__7SEG#%d_OUT" % i)
+		p.setlabel(0x0060 + i, "DISPLAY__LED#%d_OUT" % i)
 
