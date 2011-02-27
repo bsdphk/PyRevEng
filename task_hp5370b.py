@@ -672,6 +672,13 @@ if False:
 	p.setlabel(nmi + 0x0067, "NMI_RX_A()")
 	p.setlabel(nmi + 0x0070, "NMI_TX_A()")
 
+
+#######################################################################
+
+for ax in (0x7e23, 0x7e27):
+	x = p.t.find(ax, "ins")
+	hp53xx.sevenseg(p, x, p.m.rd(x.start + 1))
+
 #######################################################################
 
 def dottage(t):

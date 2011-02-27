@@ -113,7 +113,9 @@ class mc6800(object):
 			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),)
 			x.a['EA'] = (p.m.rd(adr + 1),)
 		elif c[1] == "e":
-			x.a['oper'] = ("0x%04x" % p.m.b16(adr + 1),)
+			aa = p.m.b16(adr + 1)
+			x.a['oper'] = ("0x%04x" % aa,)
+			x.a['EA'] = (aa,)
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)

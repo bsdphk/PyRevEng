@@ -76,24 +76,64 @@ def eprom(p, start, end, sz):
 # Character Generator for 7-segments
 # 
 
-def chargen(p, start = 0x6000, end = 0x8000):
+def sevenseg(p, y, val):
+	if val & 0x01:
+		y.cmt.append("  --")
+	else:
+		y.cmt.append("    ")
+
+	if val & 0x20:
+		s = " |"
+	else:
+		s = "  "
+	if val & 0x02:
+		y.cmt.append(s + "  |")
+	else:
+		y.cmt.append(s + "   ")
+
+	if val & 0x40:
+		y.cmt.append("  --")
+	else:
+		y.cmt.append("    ")
+
+	if val & 0x10:
+		s = " |"
+	else:
+		s = "  "
+	if val & 0x04:
+		y.cmt.append(s + "  |")
+	else:
+		y.cmt.append(s + "   ")
+
+	if val & 0x08:
+		s = "  -- "
+	else:
+		s = "     "
+	if val & 0x80:
+		y.cmt.append(s + ".")
+	else:
+		y.cmt.append(s)
+	y.cmt.append(" ")
+
+
+def chargen(p, start = 0x6000, end = 0x8000, chars=16):
 
 	px = (0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07,
 	     0x7f, 0x6f, 0x80, 0xff, 0x40, 0x79, 0x50, 0x00)
-	sevenseg = "0123456789.#-Er "
-	assert len(sevenseg) == len(px)
 
 	l = p.m.find(start, end, px)
 	assert len(l) == 1
 
 	ax = l[0]
-	x = p.t.add(ax, ax + 16, "tbl")
+	x = p.t.add(ax, ax + chars, "tbl")
 	print("CHARGEN", x)
 	x.blockcmt += "\n-\nBCD to 7 segment table\n\n"
 	p.setlabel(ax, "CHARGEN")
-	for i in range(0,16):
+	for i in range(0,chars):
 		y = const.byte(p, x.start + i)
-		y.cmt.append("'%s'" % sevenseg[i])
+		w = p.m.rd(x.start + i)
+		sevenseg(p, y, w)
+
 
 #----------------------------------------------------------------------
 # Write test values
