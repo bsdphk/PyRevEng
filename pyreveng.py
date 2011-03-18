@@ -62,6 +62,9 @@ class pyreveng(object):
 				continue
 			self.__did[c] = True
 			#print(">>> 0x%x" % c[0])
+			if False:
+				c[1](self, c[0], c[2])
+				continue
 			try:
 				c[1](self, c[0], c[2])
 			except:
@@ -200,6 +203,10 @@ class pyreveng(object):
 		la = t.end
 		y = t
 		while True:
+			if y == None:
+				print("BUILD_FUNC: " + self.m.afmt(a))
+				print("FAIL (y = None)")
+				return
 			if y.start < sa:
 				print("BUILD_FUNC: " + self.m.afmt(a))
 				print("FAIL start before entry %x < %x" % (y.start, sa), y)

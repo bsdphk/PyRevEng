@@ -265,12 +265,12 @@ class byte_mem(base_mem):
 			self.w16 = self.b16
 			self.s16 = self.sb16
 			self.w32 = self.b32
-			#self.s32 = self.sb32
+			self.s32 = self.b32
 		elif endian == "little-endian":
 			self.w16 = self.l16
 			self.s16 = self.sl16
 			self.w32 = self.l32
-			#self.s32 = self.sl32
+			self.s32 = self.l32
 		elif endian != None:
 			raise MemError(0, "Unknown endianess (%s)" % endian)
 
@@ -296,10 +296,12 @@ class byte_mem(base_mem):
 		if a & 0x8000:
 			a -= 65536
 		return a
+
 	def l32(self, adr):
 		return self.rd(adr + 3) << 24 | \
 		    self.rd(adr + 2) << 16 | \
 		    self.rd(adr + 1) << 8 | self.rd(adr)
+
 	def b32(self, adr):
 		return self.rd(adr) << 24 | \
 		    self.rd(adr + 1) << 16 | \
