@@ -62,7 +62,11 @@ class pyreveng(object):
 				continue
 			self.__did[c] = True
 			#print(">>> 0x%x" % c[0])
-			c[1](self, c[0], c[2])
+			try:
+				c[1](self, c[0], c[2])
+			except:
+				print("FAILED %x" % c[0], c)	
+				
 		return True
 
 	###############################################################
@@ -72,18 +76,20 @@ class pyreveng(object):
 	# Register an instruction that goes places
 	def ins(self, t, func, priv = None):
 
+		if type(t.a['mne']) != str:
+			print("XXX: Fail ins, mne != str @%x", t.start)
 		if not 'flow' in t.a:
 			self.todo(t.end, func, priv)
 			return
 
 		for i in t.a['flow']:
-			if i[0] != "call":
+			if i[0] == "call":
+				self.todo(t.end, func, priv)
+			else:
 				ax = t.start
 				if not ax in self.__bbend:
 					self.__bbend[ax] = list()
 				self.__bbend[ax] += (i,)
-			else:
-				self.todo(t.end, func, priv)
 
 			if i[2] != None:
 				ax = i[2]
@@ -425,8 +431,12 @@ class pyreveng(object):
 		w = len(b[0])
 		while True:
 			r = ""
-			if i >= len(b) and i >= len(a) and i >= len(c):
-				break
+			if t.descend == None:
+				if i >= len(a) and i >= len(c):
+					break
+			else:
+				if i >= len(b) and i >= len(a) and i >= len(c):
+					break
 			if i >= len(b):
 				r += self.col1s
 			else:
