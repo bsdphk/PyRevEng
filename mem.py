@@ -326,7 +326,7 @@ class byte_mem(base_mem):
 			adr += 1
 		return s
 
-	def fromfile(self, fn, offset, step):
+	def fromfile(self, fn, offset = 0, step = 1):
 		f = open(fn, "rb")
 		d = f.read()
 		d = bytearray(d)
