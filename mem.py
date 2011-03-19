@@ -70,6 +70,13 @@ class base_mem(object):
 			self.acc_read =		1 << (w + 4)
 			self.acc_write =	1 << (w + 5)
 			w += 6
+		else:
+			self.can_read =		0
+			self.can_write =	0
+			self.invalid =		0
+			self.undef =		0
+			self.acc_read =		0
+			self.acc_write =	0
 		if w <= 8:
 			self.mem = array.array('B', bytearray(end - start))
 		elif w <= 16:
@@ -261,12 +268,12 @@ class byte_mem(base_mem):
 		    flags = flags)
 		# Number of bytes per line
 		self.bcols = 8
-		if endian == "big-endian":
+		if endian == "big-endian" or endian == ">":
 			self.w16 = self.b16
 			self.s16 = self.sb16
 			self.w32 = self.b32
 			self.s32 = self.b32
-		elif endian == "little-endian":
+		elif endian == "little-endian" or endian == "<":
 			self.w16 = self.l16
 			self.s16 = self.sl16
 			self.w32 = self.l32
