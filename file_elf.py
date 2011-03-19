@@ -333,12 +333,13 @@ class elf(object):
 			s = j.st_info[1]
 			if s == "STT_FUNC":
 				s = "function"
+				p.setlabel(j.st_load_addr, j.st_name)
 			elif s == "STT_OBJECT":
 				s = "data"
-			p.t.add(j.st_load_addr,
+			x = p.t.add(j.st_load_addr,
 			    j.st_load_addr + j.st_size,
-			    s + " " + j.st_name,
-			    above=False)
+			    s, above=False)
+			x.a['name'] = j.st_name
 
 		print("Doing Relocations")
 		for i in self.relocs:
