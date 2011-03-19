@@ -83,10 +83,13 @@ class x86(object):
 				d = ', '
 		return (s,)
 
-	def unknown(self, p, adr, adr2):
+	def unknown(self, p, adr, adr2 = None):
 		from subprocess import call
+
+		if adr2 == None:
+			adr2 = adr
 		j=bytearray()
-		for i in range(0,16):
+		for i in range(0,32):
 			j.append(p.m.rd(adr + i))
 
 		f = open("/tmp/_x86.bin", "wb")
@@ -125,17 +128,23 @@ class x86(object):
 			if mod == 0 and rm == 6:
 				x = p.m.s16(adr + l)
 				l += 2
-				ea += "(#%04x)" % x
+				ea += "(0x%04x)" % x
 			elif mod == 0:
 				ea += "(" + modrm16[rm] + ")"
 			elif mod == 1:
 				x = p.m.s8(adr + l)
 				l += 1
-				ea += "(" + modrm16[rm] + "+#%02x)" % x
+				if x < 0:
+					ea += "(" + modrm16[rm] + "-0x%02x)" % (-x)
+				else:
+					ea += "(" + modrm16[rm] + "+0x%02x)" % x
 			elif mod == 2:
 				x = p.m.s16(adr + l)
 				l += 2
-				ea += "(" + modrm16[rm] + "+#%04x)" % x
+				if x < 0:
+					ea += "(" + modrm16[rm] + "-0x%04x)" % (-x)
+				else:
+					ea += "(" + modrm16[rm] + "+0x%04x)" % x
 			elif mod == 3:
 				ea = gReg[osz][rm]
 			else:
@@ -156,7 +165,7 @@ class x86(object):
 			elif mod == 2:
 				x = p.m.s32(adr + l)
 				l += 4
-				ea = self.seg + "(%s+#%08x)" % ( reg32[rm], x)
+				ea = self.seg + "(%s+0x%08x)" % ( reg32[rm], x)
 			else:
 				print("Unhandled 32bit ModRM @%x: %x = (%x %x %x)" % 
 				    (adr, p.m.rd(adr), mod, reg, rm))
@@ -248,9 +257,6 @@ class x86(object):
 			iw |= p.m.rd(adr + l)
 			l += 1
 
-		if adr == 0xf60f7:
-			self.unknown(p, adr, self.ia)
-			
 		if 0x00 == iw & 0xffcf:
 			#  ['ADD', 'reg/mem8 reg8', '00', '/r', '\n']
 			mne=("ADD", "ADC", "AND", "XOR")[(iw>>4) & 3]
@@ -286,7 +292,7 @@ class x86(object):
 		elif 0x04 == iw & 0xffcf:
 			#  ['ADD', 'reg16 reg/mem16', '03', '/r', '\n']
 			#  etc
-			mne=alu[(iw>>4) & 3]
+			mne=("ADD", "ADC", "AND", "XOR")[(iw>>4) & 3]
 			o.append("%al")
 			x = self.imm(p, adr + l, 8)
 			l += x[0]
@@ -665,6 +671,9 @@ class x86(object):
 			l += x[0]
 			o.append(x[1])
 			flow = (('call', 'T', None),)
+		elif 0xcf == iw:
+			mne="IRET"
+			flow = (('ret', 'T', None),)
 		elif 0xd0 == iw:
 			#  ['ROL', 'reg/mem8 1', 'D0', '/0', '\n']
 			#  &c
