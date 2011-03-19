@@ -96,6 +96,15 @@ Elf32_Sym = (
 	)
 )
 
+Elf32_Rel = (
+	8,
+	"I I",
+	(
+		( "r_offset", ),
+		( "r_info", ),
+	)
+)
+
 class ElfError(Exception):
 	def __init__(self, filename, reason):
 		self.fn = filename
@@ -105,10 +114,11 @@ class ElfError(Exception):
 		return repr(self.value)
 
 class estruct(object):
-	def __init__(self, sspec, endian,ptr, off):
+	def __init__(self, sspec, endian, ptr, off):
 		t = str(ptr[off:off+sspec[0]])
 		l = struct.unpack(endian + sspec[1], t)
 		n = 0
+		self.flds = list()
 		for i in sspec[2]:
 			v = l[n]
 			if len(i) == 2:
@@ -116,13 +126,13 @@ class estruct(object):
 					v = i[1][v]
 			self.__setattr__(i[0], v)
 			n += 1
-		self.flds = sspec[2]
+			self.flds.append(i[0])
 
 	def print(self, f=sys.stdout):
 		for i in self.flds:
-			v = self.__dict__[i[0]]
+			v = self.__dict__[i]
 			if v != 0:
-				f.write("%-20s" % i[0] + " " + str(v) + "\n")
+				f.write("%-20s" % i + " " + str(v) + "\n")
 
 class elf(object):
 	def __init__(self, filename):
@@ -163,6 +173,7 @@ class elf(object):
 			    self.d,
 			    self.e_hdr.e_shoff + i * self.e_hdr.e_shentsize)
 			self.e_sh.append(sh)
+			sh.__setattr__("sh_index", i)
 
 		self.shstrtab = self.e_sh[self.e_hdr.e_shstrndx]
 		if self.shstrtab.sh_type != "SHT_STRTAB":
@@ -184,6 +195,7 @@ class elf(object):
 				self.strtab = i
 
 		# Read symbols
+		# XXX: What if there are multiple symbol sections ?
 		self.syms = list()
 		self.symbyname = dict()
 		for j in range(0, self.symtab.sh_size, Elf32_Sym[0]):
@@ -208,6 +220,25 @@ class elf(object):
 			if nm != "":
 				self.symbyname[str(nm)] = ss
 		
+		# Read Relocations
+		self.relocs = list()
+		for i in self.e_sh:
+			if i.sh_type != "SHT_REL":
+				continue
+			for j in range(0, i.sh_size, Elf32_Rel[0]):
+				k = estruct(
+				    Elf32_Rel,
+				    self.endian,
+				    self.d,
+				    i.sh_offset + j)
+				k.__setattr__('r_sym', k.r_info >> 8)
+				k.__setattr__('r_type', k.r_info & 0xff)
+				k.__setattr__('r_sec', i.sh_info)
+				k.flds.append("r_sym")
+				k.flds.append("r_type")
+				k.flds.append("r_sec")
+				self.relocs.append(k)
+
 	def elfstr(self, off, sec):
 		if off < 0 or off >= sec.sh_size:
 			raise ElfError(filename, "Invalid string index")
@@ -215,69 +246,162 @@ class elf(object):
 		for i in range(0, sec.sh_size-off):
 			if self.d[p + i] == 0:
 				break
-		return self.d[p:p+i]
+		return str(self.d[p:p+i])
+
+	###############################################################
+	# Load ELF files into PyRevEng memory
+	# 
 
 	def load_size(self):
 		# Make list of sections we will load.
 		l=list()
 		sz = 0
 		for i in self.e_sh:
-			if i.sh_size == 0:
-				continue
 			if not i.sh_flags & 0x2:
 				continue
 			if i.sh_type == "SHT_PROGBITS":
 				l.append(i)
 				sz += i.sh_size
-				i.print()
 			if i.sh_type == "SHT_NOBITS":
 				l.append(i)
 				sz += i.sh_size
-				i.print()
-		print(sz)
+		# We cut the address space into 16^n sized chunks so
+		# that each section can be identified by the first hex-digit.
 		ss = 0x10
 		for i in l:
 			while i.sh_size > ss:
 				ss <<= 4
 		return(l, ss, sz)
 
+	###############################################################
+	# Return a mem.byte_mem of right proportions
+	#
 	def load_mem(self):
 		l,ss,sz = self.load_size()
+		# We want flags because part of the mem will be undefined
 		m = mem.byte_mem(end = len(l) * ss, endian = self.endian,
 		    flags=True)
 		return m
 
+	###############################################################
+	# Load the contents 
+	#
 	def load(self, p):
 		l,ss,sz = self.load_size()
 		m = p.m
+
+		# First load the actual bits
 		ba = 0
 		for i in l:
-			print(i.sh_name)
+			print("Loading section[%d] " % i.sh_index,
+			    i.sh_name, " at 0x%x" % ba)
+			i.__setattr__("sh_load_addr", ba)
+			i.flds.append("sh_load_addr")
+
 			if i.sh_type == "SHT_PROGBITS":
 				for j in range(0, i.sh_size):
 					m.setflags(ba + j, None,
 					    m.can_read|m.can_write,
 					    m.invalid|m.undef)
 					m.wr(ba + j, self.d[i.sh_offset + j])
-			p.t.add(ba, ba + i.sh_size, "section " + i.sh_name)
+			if i.sh_size > 0:
+				p.t.add(ba, ba + i.sh_size, "section " + i.sh_name)
 			ba += ss
 
+		# Next load the actual symbols
+		print("Symbols:")
+		for j in self.syms:
+			if j.st_shndx >= self.e_hdr.e_shnum or j.st_shndx ==0:
+				continue
+			i = self.e_sh[j.st_shndx]
+			if not i.sh_flags & 2:
+				continue
+			ba = i.sh_load_addr
+			p.setlabel(ba + j.st_value, j.st_name)
+			j.__setattr__("st_load_addr", ba + j.st_value)
+			j.flds.append("st_load_addr")
+
+			print("    %s %4x %4x %s" %
+			    (i.sh_name, j.st_load_addr, j.st_size, j.st_name))
+
+			# We skip section symbols, we did our own above
+			if j.st_info[1] == "STT_SECTION":
+				continue
+
+			if j.st_size == 0:
+				continue
+			s = j.st_info[1]
+			if s == "STT_FUNC":
+				s = "function"
+			elif s == "STT_OBJECT":
+				s = "data"
+			p.t.add(j.st_load_addr,
+			    j.st_load_addr + j.st_size,
+			    s + " " + j.st_name,
+			    above=False)
+
+		print("Doing Relocations")
+		for i in self.relocs:
+			sec = self.e_sh[i.r_sec]
+			sym = self.syms[i.r_sym]
+			if False:
+				print('---')
+				i.print()
+				sec.print()
+				sym.print()
+			if i.r_type == 1:
+				da = sec.sh_load_addr
+				da += i.r_offset
+				dv = sym.st_load_addr
+				ov = p.m.w32(da)
+				print("Reloc R_386_32 0x%x + 0x%x -> 0x%x  %s" %
+				    (dv, ov, da,sym.st_name))
+				dv += ov
+				# XXX: endianess
+				p.m.wr(da+0, (dv >> 0) & 0xff)
+				p.m.wr(da+1, (dv >> 8) & 0xff)
+				p.m.wr(da+2, (dv >> 16) & 0xff)
+				p.m.wr(da+3, (dv >> 24) & 0xff)
+				x = p.t.add(da, da + 4, "ea")
+				if sym.st_name != "":
+					x.a['ea'] = sym.st_name
+			elif i.r_type == 2:
+				da = sec.sh_load_addr
+				da += i.r_offset
+				ov = p.m.w32(da)
+				print("Reloc R_386_PC32 XXX %x -> 0x%x  %s" %
+				    (ov, da,sym.st_name))
+				x = p.t.add(da, da + 4, "ea")
+				if sym.st_name != "":
+					x.a['ea'] = sym.st_name
+			else:
+				print("Unhandled Reloc:")
+				i.print()
+				sym.print()
+
 if __name__ == "__main__":
-	try:
-		e = elf("file_elf.py")
-	except:
-		pass
-	e = elf("Soekris/hda.o")
-	#e = elf("Soekris/cpu_nb_basic_init_memory.o")
+	#e = elf("Soekris/geometry.o")
+	e = elf("Soekris/cpu_nb_shell.o")
 
 	if True:
 		print("ELF header")
 		e.e_hdr.print()
 		n=0
+	if True:
+		print("\nSubsections")
 		for i in e.e_sh:
 			print("\nSubSection[%d]" % n, i.sh_name)
 			n += 1
 			i.print()
+	if True:
+		print("\nSymbols")
+		n = 0
 		for i in e.syms:
-			print("\nSymbol(%s)" % i.st_name)
+			print("\nSymbol[%d] (%s)" % (n, i.st_name))
+			i.print()
+			n += 1
+
+	if True:
+		print("\nRelocations")
+		for i in e.relocs:
 			i.print()
