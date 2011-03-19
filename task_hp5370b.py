@@ -88,9 +88,21 @@ p.t.blockcmt += """-
 			0x01 = RAM test
 	0x0054-0x0055:R	LEN2 signal
 		0x0054:R
-			0xc0 = Oven heater + External Clock
+			0x80 = Oven heater ("LOVEN")
+			0x40 = External Tb ("LEXT")
+			0x3f = N/C
+		0x0055:R
+			0x80 = Event counter range/overflow flag ("HN30R")
+			0x40 = End of measurement ("LPROC")
+			0x20 = Sign of N0 ("SIGN")
+			0x10 = Armed flag ("ERMD")
+			0x08 = PLL out of lock
+			0x04 = N0 range/overflow flag
+			0x03 = 257*(N1-N2) counter bits
 	0x0056-0x0057:R	LEN1 signal
+		N0 counter, see TB1 description
 	0x0058-0x0059:R	LEN0 signal
+		257*(N1-N2) counter, see TB1 description
 	0x005a-0x005b:R	A16U17+A16U19 MUX
 		 Eventcounter
 	{more}
