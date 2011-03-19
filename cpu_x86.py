@@ -64,6 +64,10 @@ class x86(object):
 			self.mosz=16
 			self.masz=16
 			self.arch="i8086"
+		elif mode == "32bit":
+			self.mosz=32
+			self.masz=32
+			self.arch="i385"
 		else:
 			assert False
 
@@ -124,56 +128,78 @@ class x86(object):
 		reg = (modrm >> 3) & 7
 		rm = modrm & 7
 		ea = self.seg
+
+		if mod == 3:
+			ea = gReg[osz][rm]
+			return (l, mod, reg, rm, ea)
+
 		if asz == 16:
 			if mod == 0 and rm == 6:
 				x = p.m.s16(adr + l)
 				l += 2
 				ea += "(0x%04x)" % x
-			elif mod == 0:
-				ea += "(" + modrm16[rm] + ")"
-			elif mod == 1:
-				x = p.m.s8(adr + l)
-				l += 1
-				if x < 0:
-					ea += "(" + modrm16[rm] + "-0x%02x)" % (-x)
-				else:
-					ea += "(" + modrm16[rm] + "+0x%02x)" % x
-			elif mod == 2:
-				x = p.m.s16(adr + l)
-				l += 2
-				if x < 0:
-					ea += "(" + modrm16[rm] + "-0x%04x)" % (-x)
-				else:
-					ea += "(" + modrm16[rm] + "+0x%04x)" % x
-			elif mod == 3:
-				ea = gReg[osz][rm]
+				return (l, mod, reg, rm, ea)
 			else:
-				print("Bad 16bit ModRM @%x: %x = (%x %x %x)" % 
-				    (adr, p.m.rd(adr), mod, reg, rm))
-				assert False
+				rx = modrm16[rm]
 		elif asz == 32:
 			if rm == 4:
+				sip = p.m.rd(adr + l)
+				l += 1
+				sip_s = 1 << (sip >> 6)
+				sip_i = (sip >> 3) & 7
+				sip_b = sip & 7
+				print("SIP = %02x (%d %d %d)" % (sip, sip_s, sip_i, sip_b))
 				print("Unhandled 32bit ModRM (SIP) @%x: %x = (%x %x %x)" % 
 				    (adr, p.m.rd(adr), mod, reg, rm))
-				assert False
-			if mod == 0:
-				ea = self.seg + "(" + reg32[rm] + ")"
-			elif mod == 1:
-				x = p.m.s8(adr + l)
-				l += 1
-				ea = self.seg + "(%s+#%02x)" % ( reg32[rm], x)
-			elif mod == 2:
-				x = p.m.s32(adr + l)
-				l += 4
-				ea = self.seg + "(%s+0x%08x)" % ( reg32[rm], x)
-			else:
-				print("Unhandled 32bit ModRM @%x: %x = (%x %x %x)" % 
+				if sip_i != 4:
+					rx = reg32[sip_i] + "+"
+					if sip_s > 1:
+						rx += "*%d+" % sip_s
+				else:
+					rx = ""
+				if sip_b != 5:
+					rx += reg32[sip_b]
+				else:
+					print("Unhandled 32bit ModRM (rIP) @%x: %x = (%x %x %x)" % 
+					    (adr, p.m.rd(adr), mod, reg, rm))
+					return None
+				print("RX= <%s>" % rx)
+			elif mod == 0 and rm == 5:
+				print("Unhandled 32bit ModRM (rIP) @%x: %x = (%x %x %x)" % 
 				    (adr, p.m.rd(adr), mod, reg, rm))
-				assert False
-	
+				return None
+			else:
+				rx = reg32[rm]
 		else:
-				print("Unhandled ModRM %d-bit @%x: %x = (%x %x %x)" % 
-				    (asz, adr, p.m.rd(adr), mod, reg, rm))
+			print("Unhandled ModRM %d-bit @%x: %x = (%x %x %x)" % 
+			    (asz, adr, p.m.rd(adr), mod, reg, rm))
+			assert False
+
+		if mod == 0:
+			ea = self.seg + "(" + rx + ")"
+			return (l, mod, reg, rm, ea)
+
+		if mod == 1:
+			x = p.m.s8(adr + l)
+			l += 1
+			f = "0x%02x"
+		elif mod == 2 and asz == 16:
+			x = p.m.s16(adr + l)
+			l += 2
+			f = "0x%04x"
+		elif mod == 2 and asz == 32:
+			x = p.m.s32(adr + l)
+			l += 4
+			f = "0x%08x"
+		else:
+			print("Unhandled 32bit ModRM @%x: %x = (%x %x %x)" % 
+			    (adr, p.m.rd(adr), mod, reg, rm))
+			assert False
+
+		if x < 0:
+			ea += "(" + rx + "-" + f % (-x) + ")" 
+		else:
+			ea += "(" + rx + "+" + f % x + ")" 
 		return (l, mod, reg, rm, ea)
 
 	# Return:
@@ -646,6 +672,8 @@ class x86(object):
 			#  ['MOV', 'reg/mem16 imm16', 'C7', '/0 iw', '\n']
 			mne="MOV"
 			x = self.modRM(p, adr + l, self.osz, self.asz)
+			if x == None:
+				return
 			l += x[0]
 			if x[2] != 0:
 				return
@@ -751,7 +779,7 @@ class x86(object):
 			if self.asz == 16:
 				oo = p.m.s16(adr + l)
 				l += 2
-			elif self.asz == 16:
+			elif self.asz == 32:
 				oo = p.m.s32(adr + l)
 				l += 4
 			else:
@@ -925,6 +953,8 @@ class x86(object):
 			#  ['MOVZX', 'reg64 reg/mem16', '0F B7', '/r', '\n']
 			mne = "MOVZX"
 			x = self.modRM(p, adr + l, 16, self.asz)
+			if x == None:
+				return
 			l += x[0]
 			o.append(gReg[self.osz][x[2]])
 			o.append(x[4])
@@ -932,8 +962,14 @@ class x86(object):
 			#  ['JB', 'rel16off', '0F 82', 'cw', '\n']
 			cx = cc[iw & 0xf]
 			mne = "J" + cx
-			of = p.m.s16(adr + l)
-			l += 2
+			if self.asz == 16:
+				of = p.m.s16(adr + l)
+				l += 2
+			elif self.asz == 32:
+				of = p.m.s32(adr + l)
+				l += 4
+			else:
+				assert False
 			da = adr + l + of
 			o.append("0x%04x" % da)
 			flow = (
