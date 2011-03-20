@@ -50,6 +50,10 @@ class pyreveng(object):
 	#
 
 	def todo(self, adr, func, priv = None):
+		try:
+			self.m.chkadr(adr)
+		except:
+			return
 		self.__tlist.append((adr, func, priv))
 
 	def run(self):
@@ -62,7 +66,7 @@ class pyreveng(object):
 				continue
 			self.__did[c] = True
 			#print(">>> 0x%x" % c[0])
-			if False:
+			if True:
 				c[1](self, c[0], c[2])
 				continue
 			try:
@@ -78,6 +82,8 @@ class pyreveng(object):
 
 	# Register an instruction that goes places
 	def ins(self, t, func, priv = None):
+
+		t.descend = False
 
 		if type(t.a['mne']) != str:
 			print("XXX: Fail ins, mne != str @%x", t.start)
@@ -120,6 +126,10 @@ class pyreveng(object):
 	def build_bb(self):
 		for i in self.__bbstart:
 			if i in self.__bbx:
+				continue
+			try:
+				self.m.chkadr(i)
+			except:
 				continue
 			fo = ()
 			y = self.t.find(i, "ins")
@@ -292,6 +302,10 @@ class pyreveng(object):
 	def resolve_ea(self, a):
 		while True:
 			if a == None:
+				return None
+			try:
+				self.m.chkadr(a)
+			except:
 				return None
 			x = self.t.find(a, "ins")
 			if x == None:
