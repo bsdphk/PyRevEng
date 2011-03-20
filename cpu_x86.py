@@ -98,6 +98,8 @@ shortform = {
 	0x0f95:	("setne",	"Eb",	None),
 	0x0fa2:	("cpuid",	None,	None),
 	0x0faf:	("imul",	"Gv",	"Ev"),
+	0x0fb6:	("movzbl",	"Gv",	"Eb"),
+	0x0fb7:	("movzwl",	"Gv",	"Ew"),
 	0x0fbc:	("bsf",		"Gv",	"Ev"),
 }
 
@@ -169,7 +171,6 @@ class x86(object):
 		rm = modrm & 7
 		ea = self.seg
 		l = None
-		#print("MODRM %02x (" % modrm, mod, reg, rm, ")")
 
 		if mod == 3:
 			ea = gReg[osz][rm]
@@ -192,14 +193,11 @@ class x86(object):
 				sip_s = 1 << (sip >> 6)
 				sip_i = (sip >> 3) & 7
 				sip_b = sip & 7
-				if sip_b != 5:
-					rx = "(" + reg32[sip_b]
-				elif mod == 0:
+				if mod == 0 and sip_b == 5:
 					rx = "0x%x(" % p.m.w32(self.na)
 					self.na += 4
 				else:
-					raise X86Error(self.ia,
-					    "Unhandled 32bit ModRM (rIP)")
+					rx = "(" + reg32[sip_b]
 				if sip_i != 4:
 					rx += "," + reg32[sip_i]
 					rx += ",%d" % sip_s
@@ -487,6 +485,9 @@ class x86(object):
 		elif 0x69 == iw:
 			self.__short(p, "imul", "Gv", "Ev")
 			self.o.insert(0, self.imm(p, self.osz))
+		elif 0x6b == iw:
+			self.__short(p, "imul", "Gv", "Ev")
+			self.o.insert(0, self.imm(p, 8))
 		elif 0x70 == iw & 0xfff0:
 			#  ['Jcc', 'rel8off', '75', 'cb', '\n']
 			cx = cc[iw & 0xf]
@@ -596,12 +597,8 @@ class x86(object):
 			self.modRM(p, self.osz, self.asz)
 			self.__short(p, shifts[self.mrm[1]], "Ev")
 		elif 0xd2 == iw:
-			#  ['RCL', 'reg/mem8 CL', 'D2', '/2 bit', '\n']
-			#  &c
-			x = self.modRM(p, 8, self.asz)
-			self.mne = shifts[x[2]]
-			self.o.append(x[4])
-			self.o.append("%cl")
+			self.modRM(p, self.osz, self.asz)
+			self.__short(p, shifts[self.mrm[1]], "Eb", "CL")
 		elif 0xd3 == iw:
 			self.modRM(p, self.osz, self.asz)
 			self.__short(p, shifts[self.mrm[1]], "Ev", "CL")
@@ -728,21 +725,6 @@ class x86(object):
 			if x[2] == 2:
 				self.mne ="LGDT"
 				self.o.append(x[4])
-		elif 0x0fb6 == iw:
-			#  ['MOVZX', 'reg16 reg/mem8', '0F B6', '/r', '\n']
-			#  ['MOVZX', 'reg32 reg/mem8', '0F B6', '/r', '\n']
-			#  ['MOVZX', 'reg64 reg/mem8', '0F B6', '/r', '\n']
-			self.mne = "movzbl"
-			self.modRM(p, 8, self.asz)
-			self.o.append(self.mrm[3])
-			self.o.append(gReg[self.osz][self.mrm[1]])
-		elif 0x0fb7 == iw:
-			#  ['MOVZX', 'reg32 reg/mem16', '0F B7', '/r', '\n']
-			#  ['MOVZX', 'reg64 reg/mem16', '0F B7', '/r', '\n']
-			self.mne = "movzwl"
-			self.modRM(p, 16, self.asz)
-			self.o.append(self.mrm[3])
-			self.o.append(gReg[self.osz][self.mrm[1]])
 		elif 0x0f80 == iw & 0xfff0:
 			#  ['JB', 'rel16off', '0F 82', 'cw', '\n']
 			cx = cc[iw & 0xf]
