@@ -372,6 +372,11 @@ class elf(object):
 				ov = p.m.w32(da)
 				print("Reloc R_386_PC32 XXX %x -> 0x%x  %s" %
 				    (ov, da,sym.st_name))
+				dv = 0x40000000
+				p.m.wr(da+0, (dv >> 0) & 0xff)
+				p.m.wr(da+1, (dv >> 8) & 0xff)
+				p.m.wr(da+2, (dv >> 16) & 0xff)
+				p.m.wr(da+3, (dv >> 24) & 0xff)
 				x = p.t.add(da, da + 4, "ea")
 				if sym.st_name != "":
 					x.a['ea'] = sym.st_name
