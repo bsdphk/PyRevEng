@@ -115,7 +115,7 @@ class ElfError(Exception):
 
 class estruct(object):
 	def __init__(self, sspec, endian, ptr, off):
-		t = str(ptr[off:off+sspec[0]])
+		t = ptr[off:off+sspec[0]]
 		l = struct.unpack(endian + sspec[1], t)
 		n = 0
 		self.flds = list()
@@ -141,8 +141,13 @@ class elf(object):
 		f = open(filename, "rb")
 		self.d = bytearray(f.read())
 
+		self.filename = filename
+
 		# Check Ident
-		if self.d[0] != 0x7f or self.d[1:4] != "ELF":
+		if self.d[0] != 0x7f or \
+		   self.d[1] != 0x45 or \
+		   self.d[2] != 0x4c or \
+		   self.d[3] != 0x46:
 			raise ElfError(filename, "ELF magic not '\x7fELF'")
 
 		# Determine size
@@ -246,7 +251,8 @@ class elf(object):
 		for i in range(0, sec.sh_size-off):
 			if self.d[p + i] == 0:
 				break
-		return str(self.d[p:p+i])
+		print(off, sec,self.d[p:p+i].decode('ascii'))
+		return self.d[p:p+i].decode('ascii')
 
 	###############################################################
 	# Load ELF files into PyRevEng memory
@@ -353,7 +359,10 @@ class elf(object):
 			if i.r_type == 1:
 				da = sec.sh_load_addr
 				da += i.r_offset
-				dv = sym.st_load_addr
+				try:
+					dv = sym.st_load_addr
+				except:
+					dv = 0x60000000
 				ov = p.m.w32(da)
 				print("Reloc R_386_32 0x%x + 0x%x -> 0x%x  %s" %
 				    (dv, ov, da,sym.st_name))
@@ -384,10 +393,10 @@ class elf(object):
 				print("Unhandled Reloc:")
 				i.print()
 				sym.print()
+		print("ELF loaded (%s)" % self.filename)
 
 if __name__ == "__main__":
-	#e = elf("Soekris/geometry.o")
-	e = elf("Soekris/cpu_nb_shell.o")
+	e = elf("bla.o")
 
 	if True:
 		print("ELF header")
