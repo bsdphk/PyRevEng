@@ -144,7 +144,11 @@ class pyreveng(object):
 				if y.end in self.__bbstart:
 					fo += (("nxt", "T", y.end),)
 					break
-				y = self.t.find(j, "ins")
+				try:
+					y = self.t.find(j, "ins")
+				except:
+					j = None
+					break
 				if y == None:
 					j = None
 					break
