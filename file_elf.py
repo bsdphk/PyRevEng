@@ -251,7 +251,6 @@ class elf(object):
 		for i in range(0, sec.sh_size-off):
 			if self.d[p + i] == 0:
 				break
-		print(off, sec,self.d[p:p+i].decode('ascii'))
 		return self.d[p:p+i].decode('ascii')
 
 	###############################################################
@@ -327,8 +326,10 @@ class elf(object):
 			j.__setattr__("st_load_addr", ba + j.st_value)
 			j.flds.append("st_load_addr")
 
-			print("    %s %4x %4x %s" %
-			    (i.sh_name, j.st_load_addr, j.st_size, j.st_name))
+			if False:
+				print("    %s %4x %4x %s" %
+				    (i.sh_name, j.st_load_addr,
+				    j.st_size, j.st_name))
 
 			# We skip section symbols, we did our own above
 			if j.st_info[1] == "STT_SECTION":
@@ -364,8 +365,10 @@ class elf(object):
 				except:
 					dv = 0x60000000
 				ov = p.m.w32(da)
-				print("Reloc R_386_32 0x%x + 0x%x -> 0x%x  %s" %
-				    (dv, ov, da,sym.st_name))
+				if False:
+					print("Reloc R_386_32 0x%x + 0x%x " +
+					    "-> 0x%x  %s" %
+					    (dv, ov, da,sym.st_name))
 				dv += ov
 				# XXX: endianess
 				p.m.wr(da+0, (dv >> 0) & 0xff)
@@ -379,8 +382,9 @@ class elf(object):
 				da = sec.sh_load_addr
 				da += i.r_offset
 				ov = p.m.w32(da)
-				print("Reloc R_386_PC32 XXX %x -> 0x%x  %s" %
-				    (ov, da,sym.st_name))
+				if False:
+					print("Reloc R_386_PC32 XXX %x -> 0x%x  %s" %
+					    (ov, da,sym.st_name))
 				dv = 0x40000000
 				p.m.wr(da+0, (dv >> 0) & 0xff)
 				p.m.wr(da+1, (dv >> 8) & 0xff)
