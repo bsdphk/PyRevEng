@@ -78,17 +78,15 @@ class base_mem(object):
 			self.acc_read =		0
 			self.acc_write =	0
 		if w <= 8:
-			self.mem = array.array('B', bytearray(end - start))
+			self.mem = array.array('B')
 		elif w <= 16:
-			self.mem = array.array('H', bytearray(end - start))
+			self.mem = array.array('H')
 		elif w <= 32:
-			self.mem = array.array('L', bytearray(end - start))
+			self.mem = array.array('L')
 		else:
 			raise MemError(w, "Too many bits wide")
-		if self.flags:
-			for a in range(self.start, self.end):
-				self.mem[a - self.start] |= \
-				    self.invalid | self.undef
+		for a in range(self.start, self.end):
+			self.mem.append( self.invalid | self.undef)
 
 	# Format a memory address as a hex string
 	# If you don't like hex, you can override .afmt or subclass
