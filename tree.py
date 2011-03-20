@@ -102,7 +102,6 @@ class tree(object):
 	def find(self, start, tag):
 		i = bisect.bisect_right(self.cend, start)
 		if i < 0 or i >= len(self.child):
-			print("FIND ??", start, tag, i)
 			raise TreeError(self, start, "Out of Bounds")
 			return None
 		x = self.child[i]
