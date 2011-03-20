@@ -51,6 +51,7 @@ shortform = {
 	0x6e:	("outsb",	"DX",	"Xb"),
 	0x84:	("test",	"Eb",	"Gb"),
 	0x85:	("test",	"Ev",	"Gv"),
+	0x88:	("mov",		"Eb",	"Gb"),
 	0x89:	("mov",		"Ev",	"Gv"),
 	0x8a:	("mov",		"Gb",	"Eb"),
 	0x8b:	("mov",		"Gv",	"Ev"),
@@ -59,18 +60,15 @@ shortform = {
 	0x8e:	("mov",		"Sw",	"Ev"),
 	0x90:	("nop",		None,	None),
 	0x99:	("cltd",	None,	None),
+	0x9b:	("fwait",	None,	None),
 	0xa0:	("mov",		"AL",	"Ob"),
-	0xa9:	("test",	"rAX",	"Iz"),
-	0xb0:	("mov",		"AL",	"Ib"),
-	0xb3:	("mov",		"BL",	"Ib"),
-	0xa1:	("mov", 	"AL", 	"Ob"),
 	0xa1:	("mov", 	"rAX", 	"Ov"),
 	0xa2:	("mov", 	"Ob", 	"AL"),
 	0xa3:	("mov", 	"Ov", 	"rAX"),
 	0xa8:	("test",	"AL",	"Ib"),
+	0xa9:	("test",	"rAX",	"Iz"),
 	0xaa:	("stos",	"Yb",	"AL"),
 	0xab:	("stos",	"Yv",	"rAX"),
-	0xb4:	("mov",		"AH",	"Ib"),
 	0xc9:	("leave",	None,	None),
 	0xcc:	("int3",	None,	None),
 	0xe4:	("in",		"AL",	"Ib"),
@@ -520,14 +518,6 @@ class x86(object):
 			x = self.modRM(p, self.osz, self.asz)
 			self.o.append(gReg[self.osz][x[2]])
 			self.o.append(x[4])
-		elif 0x88 == iw:
-			self.__short(p, "mov", "Eb", "Gb")
-			if False:
-				#  ['MOV', 'reg/mem8 reg8', '88', '/r', '\n']
-				self.mne = "MOV"
-				x = self.modRM(p, 8, self.asz)
-				self.o.append(x[4])
-				self.o.append(reg8[x[2]])
 		elif 0x8c == iw:
 			#  ['MOV', 'reg16/32/64/mem16 segReg', '8C', '/r', '\n']
 			self.mne = "MOV"
@@ -548,12 +538,11 @@ class x86(object):
 			if x[2] == 0:
 				self.mne = "POP"
 				self.o.append(x[4])
-		elif 0x9b == iw:
-			self.mne = "FWAIT"
+		elif 0xb0 == iw & 0xfff8:
+			self.mne ="mov"
+			self.o.append(self.imm(p, 8))
+			self.o.append(reg8[iw & 7])
 		elif 0xb8 == iw & 0xfff8:
-			#  ['MOV', 'reg16 imm16', 'B0', '+rw iw', '\n']
-			#  ['MOV', 'reg32 imm32', 'B0', '+rd id', '\n']
-			#  ['MOV', 'reg64 imm64', 'B0', '+rq iq', '\n']
 			self.mne ="mov"
 			self.o.append(self.imm(p, self.osz))
 			self.o.append(gReg[self.osz][iw & 7])
