@@ -16,62 +16,71 @@ class X86Error(Exception):
                 return repr(self.value)
 shortform = {
 	# Args in same order as manual
-	0x27:	("daa",		None,	None),
-	0x60:	("pusha",	None,	None),
-	0x61:	("popa",	None,	None),
-	0x68:	("push",	"Iz",	None),
-	0x6a:	("push",	"Ib",	None),
-	0x6c:	("ins",		"Yb",	"DX"),
-	0x6e:	("outs",	"DX",	"Xb"),
-	0x84:	("test",	"Eb",	"Gb"),
-	0x85:	("test",	"Ev",	"Gv"),
-	0x88:	("mov",		"Eb",	"Gb"),
-	0x89:	("mov",		"Ev",	"Gv"),
-	0x8a:	("mov",		"Gb",	"Eb"),
-	0x8b:	("mov",		"Gv",	"Ev"),
+	0x27:	("daa",		( None,	None),),
+	0x60:	("pusha",	( None,	None),),
+	0x61:	("popa",	( None,	None),),
+	0x68:	("push",	( "Iz",	None),),
+	0x6a:	("push",	( "Ib",	None),),
+	0x6c:	("ins",		( "Yb",	"DX"),),
+	0x6e:	("outs",	( "DX",	"Xb"),),
+	0x80:	("$alu",	( "Eb", "Ib"),	8,	True),
+	0x81:	("$alu",	( "Ev", "Iz"),	0,	True),
+	0x83:	("$alu",	( "Ev", "Ib"),	0,	True),
+	0x84:	("test",	( "Eb",	"Gb"),),
+	0x85:	("test",	( "Ev",	"Gv"),),
+	0x88:	("mov",		( "Eb",	"Gb"),),
+	0x89:	("mov",		( "Ev",	"Gv"),),
+	0x8a:	("mov",		( "Gb",	"Eb"),),
+	0x8b:	("mov",		( "Gv",	"Ev"),),
 	#XXX: objdump bug ?
-	#0x8e:	("mov",		"Sw",	"Ew"),
-	0x8e:	("mov",		"Sw",	"Ev"),
-	0x90:	("nop",		None,	None),
-	0x99:	("cltd",	None,	None),
-	0x9b:	("fwait",	None,	None),
-	0xa0:	("mov",		"AL",	"Ob"),
-	0xa1:	("mov", 	"rAX", 	"Ov"),
-	0xa2:	("mov", 	"Ob", 	"AL"),
-	0xa3:	("mov", 	"Ov", 	"rAX"),
-	0xa8:	("test",	"AL",	"Ib"),
-	0xa9:	("test",	"rAX",	"Iz"),
-	0xaa:	("stos",	"Yb",	"AL"),
-	0xab:	("stos",	"Yv",	"rAX"),
-	0xc9:	("leave",	None,	None),
-	0xcc:	("int3",	None,	None),
-	0xe4:	("in",		"AL",	"Ib"),
-	0xe5:	("in",		"eAX",	"Ib"),
-	0xe6:	("out",		"Ib",	"AL"),
-	0xe7:	("out",		"Ib",	"eAX"),
-	0xec:	("in",		"AL",	"DX"),
-	0xed:	("in",		"eAX",	"DX"),
-	0xee:	("out",		"DX",	"AL"),
-	0xef:	("out",		"DX",	"eAX"),
-	0xf3:	("repz",	None,	None),
-	0xf8:	("clc",		None,	None),
-	0xfa:	("cli",		None,	None),
-	0xfb:	("sti",		None,	None),
-	0xfc:	("cld",		None,	None),
-	0x0f08:	("invd",	None,	None),
-	0x0f09:	("wbinvd",	None,	None),
-	0x0f20:	("mov",		"Rd/q",	"Cd/q"),
-	0x0f22:	("mov",		"Cd/q",	"Rd/q"),
-	0x0f30:	("wrmsr",	None,	None),
-	0x0f32:	("rdmsr",	None,	None),
-	0x0f6e: ("movd",	"Pq",	"Ed/q"),
-	0x0f77:	("emms",	None,	None),
-	0x0f94:	("sete",	"Eb",	None),
-	0x0f95:	("setne",	"Eb",	None),
-	0x0fa2:	("cpuid",	None,	None),
-	0x0faf:	("imul",	"Gv",	"Ev"),
-	0x0fb7:	("movzwl",	"Gv",	"Ew"),
-	0x0fbc:	("bsf",		"Gv",	"Ev"),
+	#0x8e:	("mov",		( "Sw",	"Ew"),),
+	0x8e:	("mov",		( "Sw",	"Ev"),),
+	0x90:	("nop",		( None,	None),),
+	0x99:	("cltd",	( None,	None),),
+	0x9b:	("fwait",	( None,	None),),
+	0xa0:	("mov",		( "AL",	"Ob"),),
+	0xa1:	("mov", 	( "rAX","Ov"),),
+	0xa2:	("mov", 	( "Ob", "AL"),),
+	0xa3:	("mov", 	( "Ov", "rAX"),),
+	0xa8:	("test",	( "AL",	"Ib"),),
+	0xa9:	("test",	( "rAX","Iz"),),
+	0xaa:	("stos",	( "Yb",	"AL"),),
+	0xab:	("stos",	( "Yv",	"rAX"),),
+	0xc0:	("$shifts",	( "Eb",	"Ib"),  8),
+	0xc1:	("$shifts",	( "Ev",	"Ib"),	0),
+	0xc9:	("leave",	( None,	None),),
+	0xcc:	("int3",	( None,	None),),
+	0xd0:	("$shifts",	( "Eb",),),
+	0xd1:	("$shifts",	( "Ev",),),
+	0xd2:	("$shifts",	( "Eb", "CL"),),
+	0xd3:	("$shifts",	( "Ev", "CL"),),
+	0xe4:	("in",		( "AL",	"Ib"),),
+	0xe5:	("in",		( "eAX","Ib"),),
+	0xe6:	("out",		( "Ib",	"AL"),),
+	0xe7:	("out",		( "Ib",	"eAX"),),
+	0xec:	("in",		( "AL",	"DX"),),
+	0xed:	("in",		( "eAX","DX"),),
+	0xee:	("out",		( "DX",	"AL"),),
+	0xef:	("out",		( "DX",	"eAX"),),
+	0xf3:	("repz",	( None,	None),),
+	0xf8:	("clc",		( None,	None),),
+	0xfa:	("cli",		( None,	None),),
+	0xfb:	("sti",		( None,	None),),
+	0xfc:	("cld",		( None,	None),),
+	0x0f08:	("invd",	( None,	None),),
+	0x0f09:	("wbinvd",	( None,	None),),
+	0x0f20:	("mov",		( "Rd/q","Cd/q"),),
+	0x0f22:	("mov",		( "Cd/q","Rd/q"),),
+	0x0f30:	("wrmsr",	( None,	None),),
+	0x0f32:	("rdmsr",	( None,	None),),
+	0x0f6e: ("movd",	( "Pq",	"Ed/q"),),
+	0x0f77:	("emms",	( None,	None),),
+	0x0f94:	("sete",	( "Eb",	None),),
+	0x0f95:	("setne",	( "Eb",	None),),
+	0x0fa2:	("cpuid",	( None,	None),),
+	0x0faf:	("imul",	( "Gv",	"Ev"),),
+	0x0fb7:	("movzwl",	( "Gv",	"Ew"),),
+	0x0fbc:	("bsf",		( "Gv",	"Ev"),),
 }
 
 class x86(object):
@@ -98,7 +107,7 @@ class x86(object):
 		self.cc=("o", "no", "b", "nb", "z", "nz", "be", "nbe", 
 		    "s", "ns", "p", "np", "l", "nl", "le", "nle")
 
-		self.shifts=("rol", "shr", "shr", "shr",
+		self.shifts=("rol", "ror", "rcl", "rcr",
 		    "shl", "shr", "sal", "sar")
 		self.alu=(   "add", "or",  "adc", "sbb",
 		    "and", "sub", "xor", "cmp")
@@ -351,13 +360,19 @@ class x86(object):
 			self.o.append("%es:(%edi)")
 		else:
 			raise X86Error(self.ia,
-			    "Unknown short (%s)" % i)
+			    "Unknown short (%s)" % str(i))
 
 
-	def sfrm(self, p, mne, dst, src = None, suff=False):
-		self.short = (mne, dst, src, suff)
+	def sfrm(self, p, mne, args, suff=False):
+		self.short = (mne, args, suff)
 		self.mne = mne
-		for i in (src, dst):
+		x = list(args)
+		while len(x) < 2:
+			x.append(None)
+		x.reverse()
+		src = x[0]
+		dst = x[1]
+		for i in x:
 			if i == "Ib":
 				if dst == "Eb" or self.mrm == None:
 					self.o.append(self.imm(p, 8))
@@ -439,20 +454,39 @@ class x86(object):
 
 		if iw in shortform:
 			ss = shortform[iw]
-			self.sfrm(p, ss[0], ss[1], ss[2])
+			mne = ss[0]
+			arg = ss[1]
+			if len(ss) > 3:
+				suf = ss[3]
+			else:
+				suf = False
+			if len(ss) > 2:
+				wid = ss[2]
+				if wid == 0:
+					wid = self.osz
+				self.modRM(p, wid, self.asz)	
+			if self.mrm == None:
+				i = (p.m.rd(self.na) >> 3) & 7
+			else:
+				i = self.mrm[1]
+			if mne == "$shifts":
+				mne = self.shifts[i]
+			if mne == "$alu":
+				mne = self.alu[i]
+			self.sfrm(p, mne, arg, suf)
 		elif 0x00 == iw & 0xffcc:
 			self.sfrm(p, 
 			    ("add", "adc", "and", "xor")[(iw>>4) & 3],
-			    ("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
-			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3])
+			    (("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
+			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3]))
 		elif 0x04 == iw & 0xffcf:
 			self.sfrm(p, 
 			    ("add", "adc", "and", "xor")[(iw>>4) & 3],
-			    "AL", "Ib")
+			    ("AL", "Ib"))
 		elif 0x05 == iw & 0xffcf:
 			self.sfrm(p, 
 			    ("add", "adc", "and", "xor")[(iw>>4) & 3],
-			    "rAX", "Iz")
+			    ("rAX", "Iz"))
 		elif 0x06 == iw:
 			#  ['PUSH', 'ES', '06', '', '\n']
 			self.mne ="PUSH"
@@ -464,16 +498,16 @@ class x86(object):
 		elif 0x08 == iw & 0xffcc:
 			self.sfrm(p, 
 			    ("or", "sbb", "sub", "cmp")[(iw>>4) & 3],
-			    ("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
-			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3])
+			    (("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
+			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3]))
 		elif 0x0c == iw & 0xffcf:
 			self.sfrm(p, 
 			    ("or", "sbb", "sub", "cmp")[(iw>>4) & 3],
-			    "AL", "Ib")
+			    ("AL", "Ib"))
 		elif 0x0d == iw & 0xffcf:
 			self.sfrm(p, 
 			    ("or", "sbb", "sub", "cmp")[(iw>>4) & 3],
-			    "rAX", "Iz")
+			    ("rAX", "Iz"))
 		elif 0x0e == iw:
 			self.mne ="PUSH"
 			self.o.append("%cs")
@@ -499,10 +533,10 @@ class x86(object):
 			self.mne ="pop"
 			self.o.append(self.gReg[self.osz][iw & 0x07])
 		elif 0x69 == iw:
-			self.sfrm(p, "imul", "Gv", "Ev")
+			self.sfrm(p, "imul", ("Gv", "Ev"))
 			self.setarg3(self.imm(p, self.osz))
 		elif 0x6b == iw:
-			self.sfrm(p, "imul", "Gv", "Ev")
+			self.sfrm(p, "imul", ("Gv", "Ev"))
 			self.setarg3(self.imm(p, 8))
 		elif 0x70 == iw & 0xfff0:
 			#  ['Jcc', 'rel8off', '75', 'cb', '\n']
@@ -515,15 +549,6 @@ class x86(object):
 			    ('cond', cx, da),
 			    ('cond', self.cc[(iw ^ 1) & 0xf], self.ia + 2)
 			)
-		elif 0x80 == iw:
-			self.modRM(p, 8, self.asz)
-			self.sfrm(p, self.alu[self.mrm[1]], "Eb", "Ib", True)
-		elif 0x81 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.alu[self.mrm[1]], "Ev", "Iz", True)
-		elif 0x83 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.alu[self.mrm[1]], "Ev", "Ib", True)
 		elif 0x86 == iw:
 			#  ['XCHG', 'reg/mem8 reg8', '86', '/r', '\n']
 			self.mne = "XCHG"
@@ -567,12 +592,6 @@ class x86(object):
 			self.setargs(
 			    self.imm(p, self.osz),
 			    self.gReg[self.osz][iw & 7])
-		elif 0xc0 == iw:
-			self.modRM(p, 8, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Eb", "Ib")
-		elif 0xc1 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Ev", "Ib")
 		elif 0xc3 == iw:
 			#  ['RET', '', 'E3', '', '\n']
 			self.mne ="ret"
@@ -580,11 +599,11 @@ class x86(object):
 		elif 0xc6 == iw:
 			self.modRM(p, 8, self.asz)
 			if self.mrm[1] == 0:
-				self.sfrm(p, 'mov', 'Eb', 'Ib', True)
+				self.sfrm(p, 'mov', ('Eb', 'Ib'), True)
 		elif 0xc7 == iw:
 			self.modRM(p, self.osz, self.asz)
 			if self.mrm[1] == 0:
-				self.sfrm(p, 'mov', 'Ev', 'Iz', True)
+				self.sfrm(p, 'mov', ('Ev', 'Iz'), True)
 		elif 0xc8 == iw:
 			#  ['ENTER', 'imm16 0', 'C8', 'iw 00', '\n']
 			#  ['ENTER', 'imm16 1', 'C8', 'iw 01', '\n']
@@ -600,18 +619,6 @@ class x86(object):
 		elif 0xcf == iw:
 			self.mne ="IRET"
 			self.flow = (('ret', 'T', None),)
-		elif 0xd0 == iw:
-			self.modRM(p, 8, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Eb")
-		elif 0xd1 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Ev")
-		elif 0xd2 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Eb", "CL")
-		elif 0xd3 == iw:
-			self.modRM(p, self.osz, self.asz)
-			self.sfrm(p, self.shifts[self.mrm[1]], "Ev", "CL")
 		elif 0xd9 == iw:
 			# FP
 			self.modRM(p, self.osz, self.asz)
@@ -691,44 +698,44 @@ class x86(object):
 			# &c
 			self.modRM(p, 8, self.asz)
 			if self.mrm[1] < 2:
-				self.sfrm(p, "test", "Eb", "Ib", True)
+				self.sfrm(p, "test", ("Eb", "Ib"), True)
 
 		elif 0xf7 == iw:
 			self.modRM(p, self.osz, self.asz)
 			if self.mrm[1] < 2:
-				self.sfrm(p, "test", "Ev", "Iz", True)
+				self.sfrm(p, "test", ("Ev", "Iz"), True)
 			else:
 				self.sfrm(p,
 				    ("", "", "not", "neg", "mul", "imul",
 				    "div", "idiv")[self.mrm[1]],
-				    "Ev", None, True)
+				    ("Ev",), True)
 		elif 0xfe == iw:
 			self.modRM(p, 8, self.asz)
 			if self.mrm[1] < 2:
 				self.sfrm(p,
 				    ("inc", "dec")[self.mrm[1]],
-				    "Eb", None, True)
+				    ("Eb",), True)
 
 		elif 0xff == iw:
 			self.modRM(p, self.osz, self.asz)
 			if self.mrm[1] == 0:
-				self.sfrm(p, "inc", "Ev", None, True)
+				self.sfrm(p, "inc", ("Ev",), True)
 			elif self.mrm[1] == 1:
-				self.sfrm(p, "dec", "Ev", None, True)
+				self.sfrm(p, "dec", ("Ev",), True)
 			elif self.mrm[1] == 2:
 				self.mne = "CALL"
 				self.o.append(x[4])
 				# XXX: can we do better ?
 				self.flow = (("call", "T", None),)
 			elif self.mrm[1] == 4:
-				self.sfrm(p, "jmp", "Ev")
+				self.sfrm(p, "jmp", ("Ev",))
 				self.o[0] = "*" + self.o[0]
 				#self.mne = "JMP"
 				#self.o.append(x[4])
 				# XXX: can we do better ?
 				self.flow = (("cond", "T", None),)
 			elif self.mrm[1] == 6:
-				self.sfrm(p, "push", "Ev", None, True)
+				self.sfrm(p, "push", ("Ev",), True)
 	
 		elif 0x0f01 == iw:
 			x = self.modRM(p, 16, self.asz)
@@ -754,20 +761,20 @@ class x86(object):
 			    ('cond', self.cc[(iw ^ 1) & 0xf], self.na)
 			)
 		elif 0x0fac == iw:
-			self.sfrm(p, "shrd", "Ev", "Gv")
+			self.sfrm(p, "shrd", ("Ev", "Gv"))
 			self.setarg3(self.imm(p, 8))
 		elif 0x0fb6 == iw:
 			x = self.modRM(p, 8, self.asz)
 			if self.syntax == "intel":
-				self.sfrm(p, "movzx", "Gv", "Eb"),
+				self.sfrm(p, "movzx", ("Gv", "Eb"))
 			else:
-				self.sfrm(p, "movzbl", "Gv", "Eb"),
+				self.sfrm(p, "movzbl", ("Gv", "Eb"))
 		elif 0x0fba == iw:
 			self.modRM(p, self.osz, self.asz)
 			if self.mrm[1] > 3:
 				self.sfrm(p,
 				    ("bt", "bts", "btr", "btc")[self.mrm[1]&3],
-				    "Ev", "Ib")
+				    ("Ev", "Ib"))
 			
 		elif 0xdbe3 == iw:
 			self.mne = "FNINIT"
@@ -1053,10 +1060,15 @@ class x86_intel(x86):
 		else:
 			x86.fmarg(self,p,i)
 
-	def sfrm(self, p, mne, dst, src = None, suff=False):
-		self.short = (mne, dst, src, suff)
+	def sfrm(self, p, mne, args, suff=False):
+		self.short = (mne, args, suff)
 		self.mne = mne
-		for i in (dst, src):
+		x = list(args)
+		while len(x) < 2:
+			x.append(None)
+		src = x[1]
+		dst = x[0]
+		for i in x:
 			if i == "Ib":
 				if dst == "Eb" or self.mrm == None:
 					self.o.append(self.imm(p, 8))
