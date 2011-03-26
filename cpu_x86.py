@@ -24,15 +24,15 @@ shortform = {
 	0x1e:	("push",	( "DS",),	None),
 	0x1f:	("pop",		( "DS",),	None),
 	0x27:	("daa",		( None,),),
-	0x60:	("pusha",	( None,),	None,	True),
-	0x61:	("popa",	( None,),	None,	True),
+	0x60:	("pusha",	( None,),	None,	),
+	0x61:	("popa",	( None,),	None,	),
 	0x68:	("push",	( "Iz",),	None),
 	0x69:	("imul",	( "Gv", "Ev", "Iz"),),
 	0x6a:	("push",	( "Ib",),	None),
 	0x6b:	("imul",	( "Gv", "Ev", "Ib"),),
-	0x6c:	("ins",		( "Yb",	"DX"),	None),
+	0x6c:	(("ins","insb"),( "Yb",	"DX"),	None),
 	0x6d:	("insw",	( "Yz",	"DX"),	None),
-	0x6e:	("outs",	( "DX",	"Xb"),	None),
+	0x6e:	(("outs","outsb"),( "DX",	"Xb"),	None),
 	0x6f:	("outsw",	( "DX",	"Xz"),	None),
 	0x80:	("$alu",	( "Eb", "Ib"),	8,	True),
 	0x81:	("$alu",	( "Ev", "Iz"),	0,	True),
@@ -49,18 +49,18 @@ shortform = {
 	0x90:	("nop",		( None,),),
 	0x99:	("cltd",	( None,),),
 	0x9b:	("fwait",	( None,),),
-	0x9c:	("pushf",	( None,),),
-	0x9d:	("popf",	( None,),),
+	0x9c:	("pushf",	( None,),	None,	True),
+	0x9d:	("popf",	( None,),	None,	True),
 	0xa0:	("mov",		( "AL",	"Ob"),	None),
 	0xa1:	("mov", 	( "rAX","Ov"),	None),
 	0xa2:	("mov", 	( "Ob", "AL"),	None),
 	0xa3:	("mov", 	( "Ov", "rAX"),	None),
 	0xa4:	("movsb", 	( "Yb", "Xb"),	None),
-	0xa5:	("movsw", 	( "Yv", "Xv"),	0),
+	0xa5:	("movsw", 	( "Yv", "Xv"),	None),
 	0xa6:	("cmpsb", 	( "Xb", "Yb"),	None),
 	0xa7:	("cmpsw", 	( "Xv", "Yv"),	None),
 	0xa8:	("test",	( "AL",	"Ib"),	None),
-	0xa9:	("test",	( "rAX","Iz"),),
+	0xa9:	("test",	( "rAX","Iz"),	None),
 	0xaa:	("stos",	( "Yb",	"AL"),	None),
 	0xab:	("stos",	( "Yv",	"rAX"),	None),
 	0xac:	("lods",	( "AL",	"Xb"),	None),
@@ -104,6 +104,7 @@ shortform = {
 	0x0f94:	("sete",	( "Eb",),),
 	0x0f95:	("setne",	( "Eb",),),
 	0x0fa2:	("cpuid",	( None,),),
+	0x0fac:	("shrd",	( "Ev", "Gv", "Ib"),),
 	0x0faf:	("imul",	( "Gv",	"Ev"),),
 	0x0fbc:	("bsf",		( "Gv",	"Ev"),),
 }
@@ -136,6 +137,11 @@ class x86(object):
 		    "%cr4", "%cr5", "%cr6", "%cr7")
 
 		self.gReg = { 8:  self.reg8, 16: self.reg16, 32: self.reg32, }
+		self.xReg = { 16: "(%si)", 32: "(%esi)" }
+		self.yReg = { 16: "(%di)", 32: "(%edi)" }
+
+		self.mReg = "%mm"
+		self.dReg = "(%dx)"
 
 		self.cc=("o", "no", "b", "nb", "z", "nz", "be", "nbe", 
 		    "s", "ns", "p", "np", "l", "nl", "le", "nle")
@@ -156,7 +162,7 @@ class x86(object):
 		elif mode == "32bit":
 			self.mosz=32
 			self.masz=32
-			self.arch="i385"
+			self.arch="i386"
 		else:
 			assert False
 
@@ -195,46 +201,48 @@ class x86(object):
 		print(r.decode('ascii'))
 		print("--------------------------------------------------")
 
-	# Return:
-	#	x[0] = mod
-	#	x[1] = reg
-	#	x[2] = rm
-	#	x[3] = oper
-	#
 	def modRM(self, p):
-		if self.mrm != None:
-			return self.mrm
+		assert self.mrm == None
 
 		modrm = p.m.rd(self.na)
 		self.na += 1
 		mod = modrm >> 6
 		reg = (modrm >> 3) & 7
 		rm = modrm & 7
+		self.mrm = (mod, reg, rm)
+
+	def ea(self, p, hint=None):
+		if hint != None and hint[1] == 'b':
+			mosz = 8
+		elif hint != None and hint[1] == 'w':
+			mosz = 16
+		else:
+			mosz = self.osz
+
 		ea = self.seg
 		l = None
 
-		if mod == 3:
-			ea = self.gReg[self.osz][rm]
-			self.mrm = (mod, reg, rm, ea)
-			return
+		if self.mrm[0] == 3:
+			ea = self.gReg[mosz][self.mrm[2]]
+			return ea
 
 		if self.asz == 16:
-			if mod == 0 and rm == 6:
+			if self.mrm[0] == 0 and self.mrm[2] == 6:
 				x = p.m.s16(self.na)
 				self.na += 2
 				ea += "%d" % x
-				self.mrm = (mod, reg, rm, ea)
-				return
+				return ea
 			else:
-				rx = "(" + self.modrm16[rm]
+				rx = "(" + self.modrm16[self.mrm[2]]
 		elif self.asz == 32:
-			if rm == 4:
-				self.sip = p.m.rd(self.na)
+			if self.mrm[2] == 4:
+				sip = p.m.rd(self.na)
 				self.na += 1
-				sip_s = 1 << (self.sip >> 6)
-				sip_i = (self.sip >> 3) & 7
-				sip_b = self.sip & 7
-				if mod == 0 and sip_b == 5:
+				sip_s = 1 << (sip >> 6)
+				sip_i = (sip >> 3) & 7
+				sip_b = sip & 7
+				self.sip = (sip_s, sip_i, sip_b)
+				if self.mrm[0] == 0 and sip_b == 5:
 					rx = "0x%x(" % p.m.w32(self.na)
 					self.na += 4
 				else:
@@ -242,32 +250,32 @@ class x86(object):
 				if sip_i != 4:
 					rx += "," + self.reg32[sip_i]
 					rx += ",%d" % sip_s
-			elif mod == 0 and rm == 5:
+			elif self.mrm[0] == 0 and self.mrm[2] == 5:
 				rx = "0x%x" % p.m.w32(self.na)
 				self.na += 4
 			else:
-				rx = "(" + self.reg32[rm]
+				rx = "(" + self.reg32[self.mrm[2]]
 		else:
 			raise X86Error(self.ia, "Unhandled 32bit ModRM")
 
-		if mod == 0:
+		if self.mrm[0] == 0:
 			ea = self.seg + rx
 			f = None
-		elif self.asz == 16 and mod == 1:
+		elif self.asz == 16 and self.mrm[0] == 1:
 			x = p.m.s8(self.na)
 			self.na += 1
 			f = "%d"
-		elif mod == 1:
+		elif self.mrm[0] == 1:
 			x = p.m.rd(self.na)
 			self.na += 1
 			if x & 0x80:
 				x |= 0xffffff00
 			f = "0x%02x"
-		elif mod == 2 and self.asz == 16:
+		elif self.mrm[0] == 2 and self.asz == 16:
 			x = p.m.w16(self.na)
 			self.na += 2
 			f = "0x%04x"
-		elif mod == 2 and self.asz == 32:
+		elif self.mrm[0] == 2 and self.asz == 32:
 			x = p.m.w32(self.na)
 			self.na += 4
 			f = "0x%08x"
@@ -282,12 +290,8 @@ class x86(object):
 			ea += f % x + rx
 		if ea.find("(") > -1:
 			ea += ")"
-		self.mrm = (mod, reg, rm, ea)
-		return
+		return ea
 
-	# Return:
-	#	x[0] = len
-	#	x[1] = oper
 	def dir(self, p, sz):
 		if sz == 8:
 			w =  p.m.rd(self.na)
@@ -303,15 +307,12 @@ class x86(object):
 			return ("0x%x" % w, w)
 		raise X86Error(self.na, "Wrong dir width (%d)" % sz)
 
-	# Return:
-	#	x[0] = len
-	#	x[1] = oper
 	def imm(self, p, sz, se = False):
 		#print("IMM", p, sz, se)
 		if sz == 8:
 			f = self.immpfx + "0x%02x"
 			v = p.m.rd(self.na)
-			if v & 0x80 and se:
+			if v & 0x80 and self.osz > 8:
 				v |= 0xffffff00
 			self.na += 1
 		elif sz == 16:
@@ -348,7 +349,7 @@ class x86(object):
 		elif i == "CS":
 			self.o.append(self.sReg[1])
 		elif i == "DX":
-			self.o.append("(%dx)")
+			self.o.append(self.dReg)
 		elif i == "DS":
 			self.o.append(self.sReg[3])
 		elif i == "ES":
@@ -360,20 +361,20 @@ class x86(object):
 		elif i == "Iz":
 			self.o.append(self.imm(p, self.osz))
 		elif i == "Eb":
-			self.o.append(self.mrm[3])
+			self.o.append(self.ea(p, i))
 		elif i == "Ev":
-			self.o.append(self.mrm[3])
+			self.o.append(self.ea(p, i))
 		elif i == "Ew":
-			self.o.append(self.mrm[3])
+			self.o.append(self.ea(p, i))
 		elif i == "Ed/q":
-			self.o.append(self.mrm[3])
+			self.o.append(self.ea(p))
 		elif i == "Gv":
 			self.o.append(self.gReg[self.osz][self.mrm[1]])
 		elif i == "Gb":
 			self.o.append(self.gReg[8][self.mrm[1]])
 		elif i == "Ms":
 			# XXX: must be memory
-			self.o.append(self.mrm[3])
+			self.o.append(self.ea(p))
 		elif i == "Rd/q":
 			if self.mrm[0] != 3:
 				raise X86Error(self.ia, "Rd/q mod!=3")
@@ -385,7 +386,7 @@ class x86(object):
 			x = self.dir(p, self.asz)
 			self.o.append(x[0])
 		elif i == "Pq":
-			self.o.append("%mm" + "%d" % self.mrm[1])
+			self.o.append(self.mReg + "%d" % self.mrm[1])
 		elif i == "SS":
 			self.o.append(self.sReg[2])
 		elif i == "Sw":
@@ -394,34 +395,28 @@ class x86(object):
 			if self.seg != "":
 				s = self.seg
 			else:
-				s = "%ds:"
-			if self.asz == 16:
-				self.o.append(s + "(%si)")
-			else:
-				self.o.append(s + "(%esi)")
+				s = self.sReg[3] + ":"
+			self.o.append(s + self.xReg[self.asz])
 		elif i[0] == "Y":
 			if self.seg != "":
 				s = self.seg
 			else:
-				s = "%es:"
-			if self.asz == 16:
-				self.o.append(s + "(%di)")
-			else:
-				self.o.append(s + "(%edi)")
+				s = self.sReg[0] + ":"
+			self.o.append(s + self.yReg[self.asz])
 		else:
 			raise X86Error(self.ia,
 			    "Unknown short (%s)" % str(i))
 
 
-	def sfrm(self, p, mne, args, suff=False, wid=0):
+	def sfrm(self, p, mne, args, suff=None, wid=0):
 		self.short = (mne, args, suff, self.osz, self.asz)
 		self.mne = mne
 
 		if self.asz != self.masz:
 			self.mne = "addr32 " + self.mne
 
-		if suff:
-			if self.mrm != None and self.mrm[0] == 3:
+		if suff != None:
+			if self.mrm != None and self.mrm[0] == 3 and suff != "*":
 				pass
 			elif args[0] == "Sw":
 				self.mne += "w"
@@ -431,8 +426,6 @@ class x86(object):
 				self.mne += "w"
 			elif len(args) > 1 and args[1] == "Sw":
 				self.mne += "w"
-			elif self.osz == self.mosz:
-				pass
 			elif self.osz == 32:
 				self.mne += "l"
 			elif self.osz == 16:
@@ -445,18 +438,15 @@ class x86(object):
 		x = list(args)
 		while len(x) < 2:
 			x.append(None)
-		x.reverse()
 		src = x[0]
 		dst = x[1]
 		for i in x:
 			self.fmarg(p, i)
+		self.o.reverse()
 
 	def setargs(self, a, b):
 		self.o.append(a)
 		self.o.append(b)
-
-	def setarg3(self, a):
-		self.o.insert(0, a)
 
 	def __decode(self, p):
 
@@ -509,7 +499,7 @@ class x86(object):
 			if len(ss) > 3:
 				suf = ss[3]
 			else:
-				suf = False
+				suf = None
 
 			if len(ss) > 2 and ss[2] == None:
 				# Explicitly: No ModRM byte
@@ -534,8 +524,13 @@ class x86(object):
 				i = self.mrm[1]
 			if mne == "$shifts":
 				mne = self.shifts[i]
-			if mne == "$alu":
+			elif mne == "$alu":
 				mne = self.alu[i]
+			elif type(mne) != str:
+				if self.syntax == "intel":
+					mne = mne[0]
+				else:
+					mne = mne[1]
 			self.sfrm(p, mne, arg, suf)
 		elif 0x00 == iw & 0xffcc:
 			if not iw & 1:
@@ -546,6 +541,7 @@ class x86(object):
 			    (("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
 			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3]))
 		elif 0x04 == iw & 0xffcf:
+			self.osz = 8
 			self.sfrm(p, 
 			    ("add", "adc", "and", "xor")[(iw>>4) & 3],
 			    ("AL", "Ib"))
@@ -562,6 +558,7 @@ class x86(object):
 			    (("Eb",  "Ev",  "Gb",  "Gv" )[iw & 3],
 			    ("Gb",  "Gv",  "Eb",  "Ev" )[iw & 3]))
 		elif 0x0c == iw & 0xffcf:
+			self.osz = 8
 			self.sfrm(p, 
 			    ("or", "sbb", "sub", "cmp")[(iw>>4) & 3],
 			    ("AL", "Ib"))
@@ -598,7 +595,7 @@ class x86(object):
 			self.modRM(p)
 			self.setargs (
 				self.sReg[self.mrm[1]],
-				self.mrm[3]
+				self.ea(p)
 			)
 		elif 0x8d == iw:
 			#  ['LEA', 'reg16 mem', '8D', '/r', '\n']
@@ -608,14 +605,15 @@ class x86(object):
 			# XXX: osz or asz ?? 
 			self.modRM(p)
 			self.setargs(
-			    self.mrm[3],
+			    self.ea(p),
 			    self.gReg[self.osz][self.mrm[1]])
 		elif 0x8f == iw:
 			self.modRM(p)
 			if self.mrm[1] == 0:
 				self.mne = "ppp"
-				self.o.append(self.mrm[3])
+				self.o.append(self.ea(p))
 		elif 0xb0 == iw & 0xfff8:
+			self.osz = 8
 			self.mne ="mov"
 			self.setargs(
 			    self.imm(p, 8),
@@ -695,7 +693,6 @@ class x86(object):
 		elif 0xea == iw:
 			#  ['JMP', 'FAR pntr16:16', 'EA', 'cd', '\n']
 			#  ['JMP', 'FAR pntr16:32', 'EA', 'cp', '\n']
-			self.mne ="jmp"
 			if self.asz == 16:
 				off = p.m.w16(self.na)
 				fx = "0x%04x"
@@ -706,9 +703,15 @@ class x86(object):
 				self.na += 4
 			sg = p.m.w16(self.na)
 			self.na += 2
-			self.o.append("FAR")
-			self.o.append("0x%04x" % sg)
-			self.o.append(fx % off)
+			if self.syntax == "intel":
+				self.mne ="jmp"
+				self.o.append("FAR")
+				self.o.append("0x%04x" % sg)
+				self.o.append(fx % off)
+			else:
+				self.mne ="ljmp"
+				self.o.append("$0x%04x" % sg)
+				self.o.append("$0x%x" % off)
 			if self.mode == "real":
 				self.flow=(('cond', 'T', (sg << 4) + off),)
 			else:
@@ -758,12 +761,13 @@ class x86(object):
 				self.sfrm(p, "dec", ("Ev",), True)
 			elif self.mrm[1] == 2:
 				self.mne = "call"
-				self.o.append(self.mrm[3])
+				self.o.append(self.ea(p))
 				# XXX: can we do better ?
 				self.flow = (("call", "T", None),)
 			elif self.mrm[1] == 4:
 				self.sfrm(p, "jmp", ("Ev",))
-				self.o[0] = "*" + self.o[0]
+				if self.syntax == "att":
+					self.o[0] = "*" + self.o[0]
 				#self.mne = "JMP"
 				#self.o.append(x[4])
 				# XXX: can we do better ?
@@ -794,21 +798,18 @@ class x86(object):
 			    ('cond', cx, da),
 			    ('cond', self.cc[(iw ^ 1) & 0xf], self.na)
 			)
-		elif 0x0fac == iw:
-			self.sfrm(p, "shrd", ("Ev", "Gv"))
-			self.setarg3(self.imm(p, 8))
 		elif 0x0fb6 == iw:
 			self.modRM(p)
 			if self.syntax == "intel":
 				self.sfrm(p, "movzx", ("Gv", "Eb"))
 			else:
-				self.sfrm(p, "movzb", ("Gv", "Eb"), True)
+				self.sfrm(p, "movzb", ("Gv", "Eb"), suff="*")
 		elif 0x0fb7 == iw:
 			self.modRM(p)
 			if self.syntax == "intel":
-				self.sfrm(p, "movzx", ("Gv", "Eb"))
+				self.sfrm(p, "movzx", ("Gv", "Ew"))
 			else:
-				self.sfrm(p, "movzw", ("Gv", "Ew"), True)
+				self.sfrm(p, "movzw", ("Gv", "Ew"), suff="*")
 		elif 0x0fba == iw:
 			self.modRM(p)
 			if self.mrm[1] > 3:
@@ -980,6 +981,10 @@ class x86_intel(x86):
 		     "fs",  "gs",  None,   None)
 		self.cReg = ( "cr0", "cr1", "cr2", "cr3",
 		    "cr4", "cr5", "cr6", "cr7")
+		self.mReg = "mm"
+		self.dReg = "[dx]"
+		self.xReg = { 16: "[si]", 32: "[esi]" }
+		self.yReg = { 16: "[di]", 32: "[edi]" }
 
 		self.gReg = { 8:  self.reg8, 16: self.reg16, 32: self.reg32, }
 
@@ -987,158 +992,181 @@ class x86_intel(x86):
 		self.o.append(b)
 		self.o.append(a)
 
-	def setarg3(self, a):
-		self.o.append(a)
-
-	# Return:
-	#	x[0] = mod
-	#	x[1] = reg
-	#	x[2] = rm
-	#	x[3] = oper
-	#
-	def modRM(self, p, osz, asz):
-		if self.mrm != None:
-			return self.mrm
-
-		modrm = p.m.rd(self.na)
-		self.na += 1
-		mod = modrm >> 6
-		reg = (modrm >> 3) & 7
-		rm = modrm & 7
-		ea = self.seg
-		l = None
-
-		if mod == 3:
-			ea = self.gReg[osz][rm]
-			self.mrm = (mod, reg, rm, ea)
-			return
-
-		if asz == 16:
-			if mod == 0 and rm == 6:
-				x = p.m.s16(self.na + l)
-				l += 2
-				ea += "(0x%04x)" % x
-				self.mrm = (mod, reg, rm, ea)
-				return
-			else:
-				rx = "[" + self.modrm16[rm]
-		elif asz == 32:
-			if rm == 4:
-				self.sip = p.m.rd(self.na)
-				self.na += 1
-				sip_s = 1 << (self.sip >> 6)
-				sip_i = (self.sip >> 3) & 7
-				sip_b = self.sip & 7
-				l=list()
-				if mod == 0 and sip_b == 5:
-					w = p.m.w32(self.na)
-					self.na += 4
-					if w != 0:
-						rx = "0x%x[" % w
-					else:
-						rx = "[" 
-				else:
-					rx = "["
-					l.append(self.reg32[sip_b])
-				if sip_i != 4:
-					ww = self.reg32[sip_i]
-					if sip_s != 1:
-						ww += "*%d" % sip_s
-					l.append(ww)
-				rx += "+".join(l)
-			elif mod == 0 and rm == 5:
-				rx = "0x%x" % p.m.w32(self.na)
-				self.na += 4
-			else:
-				rx = "[" + self.reg32[rm]
-		else:
-			raise X86Error(self.ia, "Unhandled 32bit ModRM")
-
-		if mod == 0:
-			ea = self.seg + rx
-			f = None
-		elif mod == 1:
-			x = p.m.s8(self.na)
-			self.na += 1
-			f = "0x%02x"
-		elif mod == 2 and asz == 16:
-			x = p.m.s16(self.na)
-			self.na += 2
-			f = "0x%04x"
-		elif mod == 2 and asz == 32:
-			x = p.m.s32(self.na)
-			self.na += 4
-			f = "0x%08x"
-		else:
-			raise X86Error(self.ia, "Unhandled 32bit ModRM")
-
-		if f != None:
-			if x == 0:
-				ea = rx
-			elif x < 0:
-				ea = rx + "-%d" % (-x) 
-			else:
-				ea = rx + "+%d" % x
-		if ea.find("[") > -1:
-			ea += "]"
-		self.mrm = (mod, reg, rm, ea)
-		return
-
-
-	def fmarg(self, p, i):
-		if i == "Ov":
-			x = self.dir(p, self.asz)
-			self.o.append("ds:" + x[0])
-		elif i == "Xb":
-			self.o.append("ds:[esi]")
-		elif i == "Yb":
-			self.o.append("es:[edi]")
-		elif i == "Yv":
-			self.o.append("es:[edi]")
-		elif i == "DX":
-			self.o.append("[dx]")
-		elif i == "Pq":
-			self.modRM(p, 32, self.asz)
-			self.o.append("mm" + "%d" % self.mrm[1])
-		else:
-			x86.fmarg(self,p,i)
-
-	def sfrm(self, p, mne, args, suff=False):
-		self.short = (mne, args, suff)
+	def sfrm(self, p, mne, args, suff=False, wid=0):
+		self.short = (mne, args, suff, self.osz, self.asz)
 		self.mne = mne
+
+		if False and self.asz != self.masz:
+			self.mne = "addr32 " + self.mne
+
 		x = list(args)
 		while len(x) < 2:
 			x.append(None)
-		src = x[1]
-		dst = x[0]
+		src = x[0]
+		dst = x[1]
 		for i in x:
-			if i == "Ib":
-				if dst == "Eb" or self.mrm == None:
-					self.o.append(self.imm(p, 8))
-				else:
-					self.o.append(self.imm(p, 8, True))
+			self.fmarg(p, i)
+
+	def ea(self, p, hint=None):
+		if hint != None and hint[1] == 'b':
+			mosz = 8
+		elif hint != None and hint[1] == 'w':
+			mosz = 16
+		else:
+			mosz = self.osz
+
+		ea = self.seg
+		l = None
+
+		if self.mrm[0] == 3:
+			ea = self.gReg[mosz][self.mrm[2]]
+			return ea
+
+		if self.asz == 16:
+			if self.mrm[0] == 0 and self.mrm[2] == 6:
+				x = p.m.s16(self.na)
+				self.na += 2
+				ea += "%d" % x
+				return ea
 			else:
-				self.fmarg(p, i)
+				rx = "(" + self.modrm16[self.mrm[2]]
+		elif self.asz == 32:
+			if self.mrm[0] == 0 and self.mrm[2] == 5:
+				v = p.m.w32(self.na)
+				self.na += 4
+				if self.seg == "":
+					return "ds:0x%x" % v
+				else:
+					return self.seg + "0x%x" % v
 
-		if self.mrm == None:
-			return
+			if self.mrm[2] == 4:
+				sip = p.m.rd(self.na)
+				self.na += 1
+				sip_s = 1 << (sip >> 6)
+				sip_i = (sip >> 3) & 7
+				sip_b = sip & 7
 
-		if self.mrm[0] == 0 and self.mrm[2] == 5:
-			if dst[0] == "E":
-				self.o[0] = "ds:" + self.o[0]
-			if src != None and src[0] == "E":
-				self.o[1] = "ds:" + self.o[1]
+				b=""
+				r=""
+				o=""
+				if self.mrm[0] == 0 and sip_b == 5:
+					w = p.m.s32(self.na)
+					self.na += 4
+					if w < 0:
+						o = "%d" % w
+					elif w > 0:
+						o = "+%d" % w
+				elif self.mrm[0] == 1 and sip_b == 5:
+					#w = p.m.s8(self.na)
+					#self.na += 1
+					#if w < 0:
+					#	o = "%d" % w
+					#if w > 0:
+					#	o = "+%d" % w
+					b="ebp"
+				elif self.mrm[0] == 2 and sip_b == 5:
+					b="ebp"
+					o = "+%d" % p.m.w32(self.na)
+					self.na += 4
+				else:
+					b = self.reg32[sip_b]
 
-		elif self.mrm[0] != 3:
-			if dst == "Ev":
-				self.o[0] = "DWORD PTR " + self.o[0]
-			if dst == "Ew":
-				self.o[0] = "WORD PTR " + self.o[0]
-			if dst == "Eb":
-				self.o[0] = "BYTE PTR " + self.o[0]
-			if src == "Ev":
-				self.o[1] = "DWORD PTR " + self.o[1]
-			if src == "Ew":
-				self.o[1] = "WORD PTR " + self.o[1]
-			if src == "Eb":
-				self.o[1] = "BYTE PTR " + self.o[1]
+				if sip_i != 4:
+					r = self.reg32[sip_i]
+					if sip_s != 1:
+						r += "*%d" % sip_s
+
+				self.sip = (sip_s, sip_i, sip_b, b,r,o)
+				rx = b
+				if r != "":
+					if rx != "":
+						rx += "+"
+					rx += r
+				if o != "":
+					rx += o
+
+			else:
+				rx = self.reg32[self.mrm[2]]
+		else:
+			raise X86Error(self.ia, "Unhandled 32bit ModRM")
+
+		if self.mrm[0] == 0:
+			f = None
+		elif self.asz == 16 and self.mrm[0] == 1:
+			x = p.m.s8(self.na)
+			self.na += 1
+			f = "%d"
+		elif self.mrm[0] == 1:
+			x = p.m.s8(self.na)
+			self.na += 1
+			if x < 0:
+				rx += "%d" % x
+			elif x > 0:
+				rx += "+%d" % x
+		elif self.mrm[0] == 2 and self.asz == 16:
+			x = p.m.w16(self.na)
+			self.na += 2
+			f = "0x%04x"
+		elif self.mrm[0] == 2 and self.asz == 32:
+			x = p.m.s32(self.na)
+			self.na += 4
+			if x < 0:
+				rx += "%d" % x
+			elif x > 0:
+				rx += "+%d" % x
+		else:
+			raise X86Error(self.ia, "Unhandled 32bit ModRM")
+
+		ea = '[' + rx + ']'
+
+		if hint == None:
+			pass
+		elif hint[1] == 'w':
+			ea = "WORD PTR " + ea
+		elif hint[1] == 'b':
+			ea = "BYTE PTR " + ea
+		elif hint[1] == 'v':
+			if mosz == 16:
+				ea = "WORD PTR " + ea
+			elif mosz == 32:
+				ea = "DWORD PTR " + ea
+
+		if self.seg != "":
+			ea = self.seg + ea
+		return ea
+
+	def imm(self, p, sz, se = False):
+		#print("IMM", p, sz, se)
+		if sz == 8:
+			v = p.m.rd(self.na)
+			if v & 0x80 and self.osz > 8:
+				v |= 0xffffff00
+			self.na += 1
+		elif sz == 16:
+			v = p.m.w16(self.na)
+			self.na += 2
+		elif sz == 32:
+			v = p.m.w32(self.na)
+			self.na += 4
+		else:
+			raise X86Error(self.na, "Wrong imm width (%d)" % sz)
+		f = self.immpfx + "0x%x"
+		return f % v
+
+	def dir(self, p, sz):
+		sg = self.seg
+		if sg == "":
+			sg = "ds:"
+		if sz == 8:
+			w =  p.m.rd(self.na)
+			self.na += 1
+			return (sg + "0x%x" % w, w)
+		if sz == 16:
+			w =  p.m.w16(self.na)
+			self.na += 2
+			return (sg + "0x%x" % w, w)
+		if sz == 32:
+			w =  p.m.w32(self.na)
+			self.na += 4
+			return (sg + "0x%x" % w, w)
+		raise X86Error(self.na, "Wrong dir width (%d)" % sz)
