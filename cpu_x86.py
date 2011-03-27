@@ -30,9 +30,9 @@ shortform = {
 	0x69:	("imul",	( "Gv", "Ev", "Iz"),),
 	0x6a:	("push",	( "Ib",),	None),
 	0x6b:	("imul",	( "Gv", "Ev", "Ib"),),
-	0x6c:	(("ins","insb"),( "Yb",	"DX"),	None),
+	0x6c:	(("ins","insb"),( "Yb",	"DX"),	-8),
 	0x6d:	("insw",	( "Yz",	"DX"),	None),
-	0x6e:	(("outs","outsb"),( "DX",	"Xb"),	None),
+	0x6e:	(("outs","outsb"),( "DX",	"Xb"),	-8),
 	0x6f:	("outsw",	( "DX",	"Xz"),	None),
 	0x80:	("$alu",	( "Eb", "Ib"),	8,	True),
 	0x81:	("$alu",	( "Ev", "Iz"),	0,	True),
@@ -47,7 +47,7 @@ shortform = {
 	0x8b:	("mov",		( "Gv",	"Ev"),),
 	0x8e:	("mov",		( "Sw",	"Ew"),	16,	True),
 	0x90:	("nop",		( None,),),
-	0x99:	("cltd",	( None,),),
+	0x99:	(("cdq","cltd"),( None,),),
 	0x9b:	("fwait",	( None,),),
 	0x9c:	("pushf",	( None,),	None,	True),
 	0x9d:	("popf",	( None,),	None,	True),
@@ -61,7 +61,7 @@ shortform = {
 	0xa7:	("cmpsw", 	( "Xv", "Yv"),	None),
 	0xa8:	("test",	( "AL",	"Ib"),	None),
 	0xa9:	("test",	( "rAX","Iz"),	None),
-	0xaa:	("stos",	( "Yb",	"AL"),	None),
+	0xaa:	("stos",	( "Yb",	"AL"),	-8),
 	0xab:	("stos",	( "Yv",	"rAX"),	None),
 	0xac:	("lods",	( "AL",	"Xb"),	None),
 	0xad:	("lods",	( "rAX","Xv"),	None),
@@ -72,14 +72,14 @@ shortform = {
 	0xc8:	("enter",	( "Ib", "Iw"),	None),
 	0xc9:	("leave",	( None,),),
 	0xcc:	("int3",	( None,),),
-	0xd0:	("$shifts",	( "Eb",),	8,	True),
-	0xd1:	("$shifts",	( "Ev",),	0,	True),
+	0xd0:	("$shifts",	( "Eb", "1"),	8,	True),
+	0xd1:	("$shifts",	( "Ev", "1"),	0,	True),
 	0xd2:	("$shifts",	( "Eb", "CL"),	8,	True),
 	0xd3:	("$shifts",	( "Ev", "CL"),	0,	True),
 	0xd4:	("aam",		( "Ib",),	None),
 	0xe4:	("in",		( "AL",	"Ib"),	None),
 	0xe5:	("in",		( "eAX","Ib"),	None),
-	0xe6:	("out",		( "Ib",	"AL"),	None),
+	0xe6:	("out",		( "Ib",	"AL"),	8),
 	0xe7:	("out",		( "Ib",	"eAX"),	None),
 	0xec:	("in",		( "AL",	"DX"),	None),
 	0xed:	("in",		( "eAX","DX"),	None),
@@ -196,7 +196,7 @@ class x86(object):
 		f.write(j)
 		f.close()
 		print("--------------------------------------------------")
-		r = check_output("objdump -b binary -D -mi386 -M" + self.arch +
+		r = check_output("/usr/local/bin/objdump -b binary -D -mi386 -M" + self.arch +
 		    " /tmp/_x86.bin", shell=True)
 		print(r.decode('ascii'))
 		print("--------------------------------------------------")
@@ -243,8 +243,12 @@ class x86(object):
 				sip_b = sip & 7
 				self.sip = (sip_s, sip_i, sip_b)
 				if self.mrm[0] == 0 and sip_b == 5:
-					rx = "0x%x(" % p.m.w32(self.na)
+					w = p.m.s32(self.na)
 					self.na += 4
+					if w < 0:
+						rx = "-0x%x(" % (-w)
+					else:
+						rx = "0x%x(" % w
 				else:
 					rx = "(" + self.reg32[sip_b]
 				if sip_i != 4:
@@ -260,34 +264,33 @@ class x86(object):
 
 		if self.mrm[0] == 0:
 			ea = self.seg + rx
-			f = None
+			x = None
 		elif self.asz == 16 and self.mrm[0] == 1:
 			x = p.m.s8(self.na)
 			self.na += 1
-			f = "%d"
 		elif self.mrm[0] == 1:
-			x = p.m.rd(self.na)
+			x = p.m.s8(self.na)
 			self.na += 1
-			if x & 0x80:
-				x |= 0xffffff00
-			f = "0x%02x"
+			#if x & 0x80:
+			#	x |= 0xffffff00
 		elif self.mrm[0] == 2 and self.asz == 16:
 			x = p.m.w16(self.na)
 			self.na += 2
-			f = "0x%04x"
 		elif self.mrm[0] == 2 and self.asz == 32:
-			x = p.m.w32(self.na)
+			x = p.m.s32(self.na)
 			self.na += 4
-			f = "0x%08x"
 		else:
 			raise X86Error(self.ia, "Unhandled 32bit ModRM")
 
-		if self.asz == 16 and f != None:
+		if self.asz == 16 and x != None:
 			f = "%d"
 			ea += f % x + rx
-		elif f != None:
+		elif x != None:
 			f = "0x%x"
-			ea += f % x + rx
+			if x < 0:
+				ea += "-" + f % (-x) + rx
+			else:
+				ea += f % x + rx
 		if ea.find("(") > -1:
 			ea += ")"
 		return ea
@@ -396,13 +399,28 @@ class x86(object):
 				s = self.seg
 			else:
 				s = self.sReg[3] + ":"
+			if self.syntax == "att":
+				pass
+			elif i == "Xb":
+				s = "BYTE PTR " + s
+			elif self.osz == 32:
+				s = "DWORD PTR " + s
 			self.o.append(s + self.xReg[self.asz])
 		elif i[0] == "Y":
 			if self.seg != "":
 				s = self.seg
 			else:
 				s = self.sReg[0] + ":"
+			if self.syntax == "att":
+				pass
+			elif i == "Yb":
+				s = "BYTE PTR " + s
+			elif self.osz == 32:
+				s = "DWORD PTR " + s
 			self.o.append(s + self.yReg[self.asz])
+		elif i == "1":
+			if self.syntax == "intel":
+				self.o.append("1")
 		else:
 			raise X86Error(self.ia,
 			    "Unknown short (%s)" % str(i))
@@ -493,7 +511,6 @@ class x86(object):
 
 		if iw in shortform:
 			ss = shortform[iw]
-			mne = ss[0]
 			arg = ss[1]
 
 			if len(ss) > 3:
@@ -504,10 +521,10 @@ class x86(object):
 			if len(ss) > 2 and ss[2] == None:
 				# Explicitly: No ModRM byte
 				pass
-			elif len(ss) > 2 and ss[2] != 0:
-				assert type(ss[2]) == int
-				wid = ss[2]
-				self.osz = wid
+			elif len(ss) > 2 and ss[2] < 0:
+				self.osz = -ss[2]
+			elif len(ss) > 2 and ss[2] > 0:
+				self.osz = ss[2]
 				self.modRM(p)
 			elif arg[0] == None:
 				# No args, no ModRM
@@ -522,6 +539,8 @@ class x86(object):
 				i = (p.m.rd(self.na) >> 3) & 7
 			else:
 				i = self.mrm[1]
+
+			mne = ss[0]
 			if mne == "$shifts":
 				mne = self.shifts[i]
 			elif mne == "$alu":
@@ -914,7 +933,7 @@ class x86(object):
 		f.write(j)
 		f.close()
 		r = check_output(
-		    "objdump " +
+		    "/usr/local/bin/objdump " +
 		    "-b binary " +
 		    "-D " +
 		    "-mi386 " +
@@ -923,8 +942,8 @@ class x86(object):
 		    "," + self.syntax +
 		    " /tmp/_x86.bin", shell=True)
 		r = r.decode('ascii').split("\n")
-		r6 = r[6].split()
-		r7 = r[7].split()
+		r6 = r[7].split()
+		r7 = r[8].split()
 		s6 = "0:"
 		s7 = "7:"
 		for i in range(x.start, x.end):
@@ -982,7 +1001,7 @@ class x86_intel(x86):
 		self.cReg = ( "cr0", "cr1", "cr2", "cr3",
 		    "cr4", "cr5", "cr6", "cr7")
 		self.mReg = "mm"
-		self.dReg = "[dx]"
+		self.dReg = "dx"
 		self.xReg = { 16: "[si]", 32: "[esi]" }
 		self.yReg = { 16: "[di]", 32: "[edi]" }
 
@@ -1016,7 +1035,8 @@ class x86_intel(x86):
 			mosz = self.osz
 
 		ea = self.seg
-		l = None
+
+		dpl=True
 
 		if self.mrm[0] == 3:
 			ea = self.gReg[mosz][self.mrm[2]]
@@ -1035,11 +1055,12 @@ class x86_intel(x86):
 				v = p.m.w32(self.na)
 				self.na += 4
 				if self.seg == "":
-					return "ds:0x%x" % v
+					ea = "ds:0x%x" % v
 				else:
-					return self.seg + "0x%x" % v
+					ea = self.seg + "0x%x" % v
+				dpl=False
 
-			if self.mrm[2] == 4:
+			elif self.mrm[2] == 4:
 				sip = p.m.rd(self.na)
 				self.na += 1
 				sip_s = 1 << (sip >> 6)
@@ -1053,9 +1074,9 @@ class x86_intel(x86):
 					w = p.m.s32(self.na)
 					self.na += 4
 					if w < 0:
-						o = "%d" % w
-					elif w > 0:
-						o = "+%d" % w
+						o = "-0x%x" % (-w)
+					else:
+						o = "+0x%x" % w
 				elif self.mrm[0] == 1 and sip_b == 5:
 					#w = p.m.s8(self.na)
 					#self.na += 1
@@ -1073,8 +1094,7 @@ class x86_intel(x86):
 
 				if sip_i != 4:
 					r = self.reg32[sip_i]
-					if sip_s != 1:
-						r += "*%d" % sip_s
+					r += "*%d" % sip_s
 
 				self.sip = (sip_s, sip_i, sip_b, b,r,o)
 				rx = b
@@ -1090,34 +1110,38 @@ class x86_intel(x86):
 		else:
 			raise X86Error(self.ia, "Unhandled 32bit ModRM")
 
-		if self.mrm[0] == 0:
-			f = None
-		elif self.asz == 16 and self.mrm[0] == 1:
-			x = p.m.s8(self.na)
-			self.na += 1
-			f = "%d"
-		elif self.mrm[0] == 1:
-			x = p.m.s8(self.na)
-			self.na += 1
-			if x < 0:
-				rx += "%d" % x
-			elif x > 0:
-				rx += "+%d" % x
-		elif self.mrm[0] == 2 and self.asz == 16:
-			x = p.m.w16(self.na)
-			self.na += 2
-			f = "0x%04x"
-		elif self.mrm[0] == 2 and self.asz == 32:
-			x = p.m.s32(self.na)
-			self.na += 4
-			if x < 0:
-				rx += "%d" % x
-			elif x > 0:
-				rx += "+%d" % x
-		else:
-			raise X86Error(self.ia, "Unhandled 32bit ModRM")
+		if dpl:
+			if self.mrm[0] == 0:
+				f = None
+			elif self.asz == 16 and self.mrm[0] == 1:
+				x = p.m.s8(self.na)
+				self.na += 1
+				f = "%d"
+			elif self.mrm[0] == 1:
+				x = p.m.s8(self.na)
+				self.na += 1
+				if x < 0:
+					rx += "-0x%x" % (-x)
+				else:
+					rx += "+0x%x" % x
+			elif self.mrm[0] == 2 and self.asz == 16:
+				x = p.m.w16(self.na)
+				self.na += 2
+				f = "0x%04x"
+			elif self.mrm[0] == 2 and self.asz == 32:
+				x = p.m.s32(self.na)
+				self.na += 4
+				if x < 0:
+					rx += "-0x%x" % (-x)
+				else:
+					rx += "+0x%0x" % x
+			else:
+				raise X86Error(self.ia, "Unhandled 32bit ModRM")
 
-		ea = '[' + rx + ']'
+			ea = '[' + rx + ']'
+
+		if self.seg != "":
+			ea = self.seg + ea
 
 		if hint == None:
 			pass
@@ -1131,8 +1155,6 @@ class x86_intel(x86):
 			elif mosz == 32:
 				ea = "DWORD PTR " + ea
 
-		if self.seg != "":
-			ea = self.seg + ea
 		return ea
 
 	def imm(self, p, sz, se = False):
