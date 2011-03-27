@@ -493,14 +493,15 @@ class pyreveng(object):
 		# Calculate space string for non-col1 lines
 		# XXX: hackish:
 
-		while True:
+		xx = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+		for i in range (0,100):
 			a = int(random.random() * (end - start) + start)
 			try:
 				self.m.rd(a)
+				xx = self.m.col1(self, a, a + 1, 0)[0]
 			except:
 				continue
 			break
-		xx = self.m.col1(self, a, a + 1, 0)[0]
 		self.col1w = len(xx.expandtabs())
 		self.col1s = self.__pad_to("", self.col1w)
 		self.col1c = self.__pad_to("", self.cmt_start)
