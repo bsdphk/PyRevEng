@@ -103,6 +103,10 @@ shortform = {
 	0x0f77:	("emms",		( None,),),
 	0x0f94:	("sete",		( "Eb",),),
 	0x0f95:	("setne",		( "Eb",),),
+	0x0fa0:	("push",		( "FS",),		None),
+	0x0fa1:	("push",		( "FS",),		None),
+	0x0fa8:	("push",		( "GS",),		None),
+	0x0fa9:	("push",		( "GS",),		None),
 	0x0fa2:	("cpuid",		( None,),),
 	0x0fac:	("shrd",		( "Ev", "Gv", "Ib"),),
 	0x0faf:	("imul",		( "Gv",	"Ev"),),
@@ -353,6 +357,10 @@ class x86(object):
 			self.o.append(self.reg8[1])
 		elif i == "CS":
 			self.o.append(self.sReg[1])
+		elif i == "FS":
+			self.o.append(self.sReg[4])
+		elif i == "GS":
+			self.o.append(self.sReg[5])
 		elif i == "DX":
 			self.o.append(self.dReg)
 		elif i == "DS":
@@ -788,6 +796,7 @@ class x86(object):
 				self.o[0] = "*" + self.o[0]
 			elif self.mrm[1] == 4:
 				self.sfrm(p, "jmp", ("Ev",))
+				self.o[0] = "*" + self.o[0]
 				#if self.syntax == "att":
 				#	self.o[0] = "*" + self.o[0]
 				#self.mne = "JMP"
@@ -795,7 +804,7 @@ class x86(object):
 				# XXX: can we do better ?
 				self.flow = (("cond", "T", None),)
 			elif self.mrm[1] == 6:
-				self.sfrm(p, "push", ("Ev",), True)
+				self.sfrm(p, "push", ("Ev",), "*")
 	
 		elif 0x0f01 == iw:
 			self.osz = 16
