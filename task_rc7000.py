@@ -24,10 +24,10 @@ def radix40(y):
 	v1 = y[0]
 	v2 = y[1]
 	l3 = v1 % 40
-	l2 = (v1 / 40) % 40
-	l1 = (v1 / (40*40)) % 40
-	l5 = (v2 / 32) % 40
-	l4 = (v2 / (40 * 32)) % 40
+	l2 = int(v1 / 40) % 40
+	l1 = int(v1 / (40*40)) % 40
+	l5 = int(v2 / 32) % 40
+	l4 = int(v2 / (40 * 32)) % 40
 	#print(len(s), l1, l2, l3, l4, l5, s[l1], s[l2], s[l3], s[l4], s[l5])
 	return ((s[l1] + s[l2] + s[l3] + s[l4] + s[l5]).strip(), v2 & 0x1f)
 
@@ -315,12 +315,12 @@ if __name__ == "__main__":
 	fn = dn + "__.TT009"
 	fn = dn + "__.CATIX"
 	fn = dn + "__.PTP"
-	fn = dn + "__.DOMUS"
 	fn = dn + "__.MUI"
 	fn = dn + "__.CATLI"
 	fn = dn + "__.INT"
 	fn = dn + "__.CAP2"
 	fn = dn + "__.MUM"
+	fn = dn + "__.DOMUS"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()

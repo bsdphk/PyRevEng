@@ -9,7 +9,7 @@ class domus(cpu_nova.nova):
 	def __init__(self):
 		cpu_nova.nova.__init__(self)
 		self.special = dict()
-		self.special[006002] = (
+		self.special[0o006002] = (
 			"WAIT",
 			(
 				"     Call    Return   Error",
@@ -25,7 +25,7 @@ class domus(cpu_nova.nova):
 				"MESSAGE"
 			)
 		)
-		self.special[006003] = (
+		self.special[0o006003] = (
 			"WAITINTERRUPT",
 			(
 				"     Call    Return",
@@ -38,7 +38,7 @@ class domus(cpu_nova.nova):
 				"INTERRUPT"
 			)
 		)
-		self.special[006004] = (
+		self.special[0o006004] = (
 			"SENDMESSAGE",
 			(
 				"     Call    Return Error",
@@ -48,7 +48,7 @@ class domus(cpu_nova.nova):
 				"AC3  link    cur    cur"
 			),
 		)
-		self.special[006005] = (
+		self.special[0o006005] = (
 			"WAITANSWER",
 			(
 				"     Call    Return",
@@ -58,7 +58,7 @@ class domus(cpu_nova.nova):
 				"AC3  link    cur",
 			)
 		)
-		self.special[006006] = (
+		self.special[0o006006] = (
 			"WAITEEVENT",
 			(
 				"     Call    Return",
@@ -71,67 +71,67 @@ class domus(cpu_nova.nova):
 				"MESSAGE"
 			)
 		)
-		self.special[006007] = ( "SENDANSWER",)
-		self.special[006010] = ( "SEARCHITEM",)
-		self.special[006011] = ( "CLEANPROCESS",)
-		self.special[006012] = ( "BREAKPROCESS",)
-		self.special[006013] = ( "STOPPROCESS",)
-		self.special[006014] = ( "STARTPROCESS",)
-		self.special[006015] = ( "RECHAIN",)
-		self.special[006164] = ( "NEXTOPERATION", (), ("CONTROL", "INPUT", "OUTPUT"))
-		self.special[006165] = ( "RETURANSWER",)
-		self.special[006167] = ( "WAITOPERATION", (), ("TIMER", "INTERRUPT", "ANSWER", "CONTROL", "INPUT", "OUTPUT"))
-		self.special[006170] = ( "SETINTERRUPT",)
-		self.special[006171] = ( "SETRESERVATION",)
-		self.special[006172] = ( "SETCONVERSION",)
-		self.special[006173] = ( "CONBYTE",)
-		self.special[006174] = ( "GETBYTE",)
-		self.special[006175] = ( "PUTBYTE",)
-		self.special[006176] = ( "MULTIPLY",)
+		self.special[0o006007] = ( "SENDANSWER",)
+		self.special[0o006010] = ( "SEARCHITEM",)
+		self.special[0o006011] = ( "CLEANPROCESS",)
+		self.special[0o006012] = ( "BREAKPROCESS",)
+		self.special[0o006013] = ( "STOPPROCESS",)
+		self.special[0o006014] = ( "STARTPROCESS",)
+		self.special[0o006015] = ( "RECHAIN",)
+		self.special[0o006164] = ( "NEXTOPERATION", (), ("CONTROL", "INPUT", "OUTPUT"))
+		self.special[0o006165] = ( "RETURANSWER",)
+		self.special[0o006167] = ( "WAITOPERATION", (), ("TIMER", "INTERRUPT", "ANSWER", "CONTROL", "INPUT", "OUTPUT"))
+		self.special[0o006170] = ( "SETINTERRUPT",)
+		self.special[0o006171] = ( "SETRESERVATION",)
+		self.special[0o006172] = ( "SETCONVERSION",)
+		self.special[0o006173] = ( "CONBYTE",)
+		self.special[0o006174] = ( "GETBYTE",)
+		self.special[0o006175] = ( "PUTBYTE",)
+		self.special[0o006176] = ( "MULTIPLY",)
 
-		self.special[006232] = ( "BINDEC",)
-		self.special[006233] = ( "DECBIN",)
-		self.special[006200] = ( "GETREC",)
-		self.special[006201] = ( "PUTREC",)
-		self.special[006202] = ( "WAITTRANSFER",)
-		self.special[006204] = ( "TRANSFER",)
-		self.special[006205] = ( "INBLOCK",)
-		self.special[006206] = ( "OUTBLOCK",)
-		self.special[006207] = ( "INCHAR",)
-		self.special[006210] = ( "FREESHARE",)
-		self.special[006211] = ( "OUTSPACE",)
-		self.special[006212] = ( "OUTCHAR",)
-		self.special[006213] = ( "OUTNL",)
-		self.special[006214] = ( "OUTEND",)
-		self.special[006215] = ( "OUTTEXT",)
-		self.special[006216] = ( "OUTOCTAL",)
-		self.special[006217] = ( "SETPOSITION",)
-		self.special[006220] = ( "CLOSE",)
-		self.special[006221] = ( "OPEN",)
-		self.special[006223] = ( "INNAME",)
-		self.special[006222] = ( "WAITZONE",)
-		self.special[006224] = ( "MOVE",)
-		self.special[006225] = ( "INTERPRETE",)
+		self.special[0o006232] = ( "BINDEC",)
+		self.special[0o006233] = ( "DECBIN",)
+		self.special[0o006200] = ( "GETREC",)
+		self.special[0o006201] = ( "PUTREC",)
+		self.special[0o006202] = ( "WAITTRANSFER",)
+		self.special[0o006204] = ( "TRANSFER",)
+		self.special[0o006205] = ( "INBLOCK",)
+		self.special[0o006206] = ( "OUTBLOCK",)
+		self.special[0o006207] = ( "INCHAR",)
+		self.special[0o006210] = ( "FREESHARE",)
+		self.special[0o006211] = ( "OUTSPACE",)
+		self.special[0o006212] = ( "OUTCHAR",)
+		self.special[0o006213] = ( "OUTNL",)
+		self.special[0o006214] = ( "OUTEND",)
+		self.special[0o006215] = ( "OUTTEXT",)
+		self.special[0o006216] = ( "OUTOCTAL",)
+		self.special[0o006217] = ( "SETPOSITION",)
+		self.special[0o006220] = ( "CLOSE",)
+		self.special[0o006221] = ( "OPEN",)
+		self.special[0o006223] = ( "INNAME",)
+		self.special[0o006222] = ( "WAITZONE",)
+		self.special[0o006224] = ( "MOVE",)
+		self.special[0o006225] = ( "INTERPRETE",)
 
-		self.special[006334] = ( "CDELAY",)
-		self.special[006335] = ( "WAITSE",)
-		self.special[006336] = ( "WAITCH",)
-		self.special[006337] = ( "CWANSW",)
-		self.special[006340] = ( "CTEST",)
-		self.special[006341] = ( "CPRINT",)
-		self.special[006343] = ( "CTOUT",)
-		self.special[006343] = ( "SIGNAL",)
-		self.special[006344] = ( "SIGCH",)
-		self.special[006345] = ( "CPASS",)
+		self.special[0o006334] = ( "CDELAY",)
+		self.special[0o006335] = ( "WAITSE",)
+		self.special[0o006336] = ( "WAITCH",)
+		self.special[0o006337] = ( "CWANSW",)
+		self.special[0o006340] = ( "CTEST",)
+		self.special[0o006341] = ( "CPRINT",)
+		self.special[0o006343] = ( "CTOUT",)
+		self.special[0o006343] = ( "SIGNAL",)
+		self.special[0o006344] = ( "SIGCH",)
+		self.special[0o006345] = ( "CPASS",)
 
-		self.special[006346] = ( "CREATEENTRY",)
-		self.special[006347] = ( "LOOKUPENTRY",)
-		self.special[006350] = ( "CHANGEENTRY",)
-		self.special[006351] = ( "REMOVEENTRY",)
-		self.special[006352] = ( "INITCATALOG",)
-		self.special[006353] = ( "SETENTRY",)
+		self.special[0o006346] = ( "CREATEENTRY",)
+		self.special[0o006347] = ( "LOOKUPENTRY",)
+		self.special[0o006350] = ( "CHANGEENTRY",)
+		self.special[0o006351] = ( "REMOVEENTRY",)
+		self.special[0o006352] = ( "INITCATALOG",)
+		self.special[0o006353] = ( "SETENTRY",)
 	
-		self.special[006354] = (
+		self.special[0o006354] = (
 			"COMON",
 			(
 				"     Call    @Dest",
@@ -145,7 +145,7 @@ class domus(cpu_nova.nova):
 			)
 		
 		)
-		self.special[006355] = (
+		self.special[0o006355] = (
 			"CALL",
 			(	
 				"     Call    @Dest",
@@ -158,7 +158,7 @@ class domus(cpu_nova.nova):
 				"RETURN"
 			)
 		)
-		self.special[006356] = (
+		self.special[0o006356] = (
 			"GOTO",
 			(	
 				"     Call    @Dest",
@@ -170,7 +170,7 @@ class domus(cpu_nova.nova):
 				None,
 			)
 		)
-		self.special[006357] = (
+		self.special[0o006357] = (
 			"GETADR",
 			(
 				"     Call    return",
@@ -180,7 +180,7 @@ class domus(cpu_nova.nova):
 				"AC3  link    address",
 			)
 		)
-		self.special[006360] = (
+		self.special[0o006360] = (
 			"GETPOINT",
 			(
 				"     Call    return",
@@ -191,12 +191,12 @@ class domus(cpu_nova.nova):
 			)
 		)
 
-		self.special[006364] = ( "CSENDM",)
-		self.special[006365] = ( "SIGGEN",)
-		self.special[006366] = ( "WAITGE",)
-		self.special[006367] = ( "CTOP",)
+		self.special[0o006364] = ( "CSENDM",)
+		self.special[0o006365] = ( "SIGGEN",)
+		self.special[0o006366] = ( "WAITGE",)
+		self.special[0o006367] = ( "CTOP",)
 
-		self.special[006177] = ( "DIVIDE",)
+		self.special[0o006177] = ( "DIVIDE",)
 
 	def disass(self, p, adr, priv = None):
 		try:
