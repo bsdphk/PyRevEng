@@ -179,8 +179,9 @@ class pyreveng(object):
 		if fl[0][2] == "None":
 			return
 
-		dst = self.t.find(fl[0][2], "run")
-		if dst == None:
+		try:
+			dst = self.t.find(fl[0][2], "run")
+		except:
 			return
 
 		# Remove trampoline from destination flow_in
@@ -311,7 +312,10 @@ class pyreveng(object):
 				self.m.chkadr(a)
 			except:
 				return None
-			x = self.t.find(a, "ins")
+			try:
+				x = self.t.find(a, "ins")
+			except:
+				return a
 			if x == None:
 				return a
 			if not 'flow' in x.a:

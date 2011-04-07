@@ -386,17 +386,17 @@ def hp5359_nbr(p, adr):
 	return "%.15fE%d" % (m,e)
 
 class dot_float(tree.tree):
-        def __init__(self, p, adr):
-                tree.tree.__init__(self, adr, adr + 8, "dot_float")
-                p.t.add(self.start, self.end, self.tag, True, self)
-                self.render = self.rfunc
-                self.nbr = hp5359_nbr(p, adr)
-                self.a['const'] = "FLOAT=" + self.nbr
+	def __init__(self, p, adr):
+		tree.tree.__init__(self, adr, adr + 8, "dot_float")
+		p.t.add(self.start, self.end, self.tag, True, self)
+		self.render = self.rfunc
+		self.nbr = hp5359_nbr(p, adr)
+		self.a['const'] = "FLOAT=" + self.nbr
 		p.setlabel(adr, self.a['const'])
 
-        def rfunc(self, p, t, lvl):
-                s = ".FLOAT\t%s" % self.nbr
-                return (s,)
+	def rfunc(self, p, t, lvl):
+		s = ".FLOAT\t%s" % self.nbr
+		return (s,)
 
 dot_float(p, 0x7f03)
 dot_float(p, 0x7f0b)
