@@ -132,7 +132,10 @@ class pyreveng(object):
 			except:
 				continue
 			fo = ()
-			y = self.t.find(i, "ins")
+			try:
+				y = self.t.find(i, "ins")
+			except:
+				continue
 			if y == None:
 				continue
 			while True:

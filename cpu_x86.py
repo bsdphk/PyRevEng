@@ -51,6 +51,8 @@ shortform = {
 	0x9b:	("fwait",		( None,),),
 	0x9c:	("pushf",		( None,),		None,	True),
 	0x9d:	("popf",		( None,),		None,	True),
+	0x9e:	("sahf",		( None,),		None,	True),
+	0x9f:	("lahf",		( None,),		None,	True),
 	0xa0:	("mov",			( "AL",	"Ob"),		None),
 	0xa1:	("mov", 		( "rAX","Ov"),		None),
 	0xa2:	("mov", 		( "Ob", "AL"),		None),
@@ -100,7 +102,9 @@ shortform = {
 	0x0f31:	("rdtsc",		( None,),),
 	0x0f32:	("rdmsr",		( None,),),
 	0x0f6e: ("movd",		( "Pq",	"Ed/q"),	32),
+	0x0f6f: ("movq",		( "Pq",	"Qq")),
 	0x0f77:	("emms",		( None,),),
+	0x0f7e:	("movd",		( "Ed/q", "Pd/q",),),
 	0x0f94:	("sete",		( "Eb",),),
 	0x0f95:	("setne",		( "Eb",),),
 	0x0fa0:	("push",		( "FS",),		None),
@@ -111,6 +115,7 @@ shortform = {
 	0x0fac:	("shrd",		( "Ev", "Gv", "Ib"),),
 	0x0faf:	("imul",		( "Gv",	"Ev"),),
 	0x0fbc:	("bsf",			( "Gv",	"Ev"),),
+	0x0fef:	("pxor",		( "Pq",	"Qq"),),
 }
 
 opersz = {
@@ -400,6 +405,10 @@ class x86(object):
 			self.o.append(x[0])
 		elif i == "Pq":
 			self.o.append(self.mReg + "%d" % self.mrm[1])
+		elif i == "Pd/q":
+			self.o.append(self.mReg + "%d" % self.mrm[1])
+		elif i == "Qq":
+			self.o.append(self.mReg + "%d" % self.mrm[2])
 		elif i == "SS":
 			self.o.append(self.sReg[2])
 		elif i == "Sw":
