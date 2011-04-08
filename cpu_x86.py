@@ -45,7 +45,7 @@ shortform = {
 	0x89:	("mov",			( "Ev",	"Gv"),),
 	0x8a:	("mov",			( "Gb",	"Eb"),),
 	0x8b:	("mov",			( "Gv",	"Ev"),),
-	0x8e:	("mov",			( "Sw",	"Ew"),		16,	True),
+	0x8e:	("mov",			( "Sw",	"Ev"),		32,	True),
 	0x90:	("nop",			( None,),),
 	0x99:	(("cdq","cltd"),	( None,),),
 	0x9b:	("fwait",		( None,),),
@@ -99,7 +99,7 @@ shortform = {
 	0x0f30:	("wrmsr",		( None,),),
 	0x0f31:	("rdtsc",		( None,),),
 	0x0f32:	("rdmsr",		( None,),),
-	0x0f6e: ("movd",		( "Pq",	"Ed/q"),),
+	0x0f6e: ("movd",		( "Pq",	"Ed/q"),	32),
 	0x0f77:	("emms",		( None,),),
 	0x0f94:	("sete",		( "Eb",),),
 	0x0f95:	("setne",		( "Eb",),),
@@ -724,22 +724,22 @@ class x86(object):
 			#  ['JMP', 'FAR pntr16:32', 'EA', 'cp', '\n']
 			if self.asz == 16:
 				off = p.m.w16(self.na)
-				fx = "0x%04x"
+				fx = "0x%x"
 				self.na += 2
 			else:
 				off = p.m.w32(self.na)
-				fx = "0x%08x"
+				fx = "0x%x"
 				self.na += 4
 			sg = p.m.w16(self.na)
 			self.na += 2
 			if self.syntax == "intel":
 				self.mne ="jmp"
-				self.o.append("FAR")
-				self.o.append("0x%04x" % sg)
+				fx = "0x%x:" % sg + fx
+				#self.o.append("0x%x" % sg)
 				self.o.append(fx % off)
 			else:
 				self.mne ="ljmp"
-				self.o.append("$0x%04x" % sg)
+				self.o.append("$0x%x" % sg)
 				self.o.append("$0x%x" % off)
 			if self.mode == "real":
 				self.flow=(('cond', 'T', (sg << 4) + off),)
@@ -796,7 +796,8 @@ class x86(object):
 				self.o[0] = "*" + self.o[0]
 			elif self.mrm[1] == 4:
 				self.sfrm(p, "jmp", ("Ev",))
-				self.o[0] = "*" + self.o[0]
+				if self.syntax == "att":
+					self.o[0] = "*" + self.o[0]
 				#if self.syntax == "att":
 				#	self.o[0] = "*" + self.o[0]
 				#self.mne = "JMP"
@@ -807,7 +808,7 @@ class x86(object):
 				self.sfrm(p, "push", ("Ev",), "*")
 	
 		elif 0x0f01 == iw:
-			self.osz = 16
+			# self.osz = 16
 			self.modRM(p)
 			if self.mrm[1] == 2:
 				self.sfrm(p, "lgdt", ("Ms",), "*")
@@ -849,7 +850,7 @@ class x86(object):
 				    ("Ev", "Ib"))
 			
 		elif 0xdbe3 == iw:
-			self.mne = "FNINIT"
+			self.mne = "fninit"
 
 		if self.mne == None:
 			raise X86Error(self.ia, "No Disass ")
@@ -858,6 +859,7 @@ class x86(object):
 			    "Old Style " + self.mne + " " + str(self.o))
 
 	def disass(self, p, adr, priv = None):
+
 
 		# Effective Operand Size
 		self.osz = self.mosz
@@ -920,12 +922,19 @@ class x86(object):
 		try:
 			x = p.t.add(self.ia, self.na, "ins")
 		except:
+			print("X86 %x %x" % (self.ia, self.na), self.mne, self.o)
 			return
 		x.a['mne'] = self.mne
 		x.a['oper'] = self.o
 		if self.flow != None:
 			x.a['flow'] = self.flow
 		x.render = self.render
+
+		try:
+			w = x.child[0].a["ea"]
+			x.cmt += ("EA= " + w,)
+		except:
+			pass
 		p.ins(x, self.disass)
 
 		try:
@@ -1019,8 +1028,8 @@ class x86_intel(x86):
 
 		self.gReg = { 8:  self.reg8, 16: self.reg16, 32: self.reg32, }
 
-		self.modrm16 = ("%bx+%si", "%bx+%di", "%bp+%si", "%bp+%di",
-			   "%si", "%di", "%bp", "%bx")
+		self.modrm16 = ("bx+si", "bx+di", "bp+si", "bp+di",
+			   "si", "di", "bp", "bx")
 
 	def setargs(self, a, b):
 		self.o.append(b)
@@ -1064,7 +1073,7 @@ class x86_intel(x86):
 				ea += "%d" % x
 				return ea
 			else:
-				rx = "(" + self.modrm16[self.mrm[2]]
+				rx = self.modrm16[self.mrm[2]]
 		elif self.asz == 32:
 			if self.mrm[0] == 0 and self.mrm[2] == 5:
 				v = p.m.w32(self.na)
