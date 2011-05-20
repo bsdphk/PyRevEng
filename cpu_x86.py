@@ -57,8 +57,8 @@ shortform = {
 	0xa1:	("mov", 		( "rAX","Ov"),		None),
 	0xa2:	("mov", 		( "Ob", "AL"),		None),
 	0xa3:	("mov", 		( "Ov", "rAX"),		None),
-	0xa4:	("movsb", 		( "Yb", "Xb"),		None),
-	0xa5:	("movsw", 		( "Yv", "Xv"),		None),
+	0xa4:	("movs", 		( "Yb", "Xb"),		None),
+	0xa5:	("movs", 		( "Yv", "Xv"),		None),
 	0xa6:	("cmpsb", 		( "Xb", "Yb"),		None),
 	0xa7:	("cmpsw", 		( "Xv", "Yv"),		None),
 	0xa8:	("test",		( "AL",	"Ib"),		-8),
@@ -111,6 +111,7 @@ shortform = {
 	0x0fa1:	("push",		( "FS",),		None),
 	0x0fa8:	("push",		( "GS",),		None),
 	0x0fa9:	("push",		( "GS",),		None),
+	0x0faa:	("rsm",			( None,),),
 	0x0fa2:	("cpuid",		( None,),),
 	0x0fac:	("shrd",		( "Ev", "Gv", "Ib"),),
 	0x0faf:	("imul",		( "Gv",	"Ev"),),
@@ -650,6 +651,13 @@ class x86(object):
 			if self.mrm[1] == 0:
 				self.mne = "pop"
 				self.o.append(self.ea(p))
+		elif 0x98 == iw:
+			if self.osz == 32:
+				self.mne = "cwde"
+			elif self.osz == 16:
+				self.mne = "cwdl"
+			else:
+				self.mne = "cbw"
 		elif 0xb0 == iw & 0xfff8:
 			self.osz = 8
 			self.mne ="mov"
@@ -676,7 +684,10 @@ class x86(object):
 				self.sfrm(p, 'mov', ('Ev', 'Iz'), True)
 		elif 0xcb == iw:
 			#  ['RET', '', 'E3', '', '\n']
-			self.mne ="lret"
+			if self.syntax == "intel":
+				self.mne ="retf"
+			else:
+				self.mne ="lret"
 			self.flow = (('ret', 'T', None),)
 		elif 0xcd == iw:
 			#  ['INT', 'imm8', 'CD', 'ib', '\n']
@@ -802,7 +813,8 @@ class x86(object):
 				self.o.append(self.ea(p))
 				# XXX: can we do better ?
 				self.flow = (("call", "T", None),)
-				self.o[0] = "*" + self.o[0]
+				if self.syntax == "att":
+					self.o[0] = "*" + self.o[0]
 			elif self.mrm[1] == 4:
 				self.sfrm(p, "jmp", ("Ev",))
 				if self.syntax == "att":
@@ -989,18 +1001,21 @@ class x86(object):
 		s7 = s7.split()
 		if r6 == s6 and r7 == s7:
 			return
-		if r6[1] == '0f' and r6[2][0] == '8':
-			return
-		if r6[1] == 'e2':
-			return
-		if r6[1] == 'e9':
-			return
-		if r6[1] == 'e8':
-			return
-		if r6[1] == 'eb':
-			return
-		if r6[1][0] == '7':
-			return
+		if True:
+			# XXX: These will never match due to addres differences
+			if r6[1] == '0f' and r6[2][0] == '8':
+				return
+			if r6[1] == 'e2':
+				return
+			if r6[1] == 'e9':
+				return
+			if r6[1] == 'e8':
+				return
+			if r6[1] == 'eb':
+				return
+			if r6[1][0] == '7':
+				return
+		p.cautions += 1
 		print("--------------------------------------------------")
 		print("MISMATCH 0x%x" % x.start)
 		print("MRM: ", self.mrm)
