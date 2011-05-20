@@ -144,22 +144,29 @@ class nova(object):
 			else:
 				x.a['oper'] = (o1, o2)
 			if cc == 1:
-				x.a['cond'] = (("NXT", adr + 2),)
+				x.a['flow'] = (("cond", "T", adr + 2),)
 			elif cc:
-				x.a['cond'] = ((o3, adr + 2), (o3n, adr + 1,))
+				x.a['flow'] = (
+				    ("cond", o3, adr + 2),
+				    ("cond", o3n, adr + 1,))
 		elif iw & 0xe000 == 0x0000:
 			s = ("JMP", "JSR", "ISZ", "DSZ")[(iw>>11)&3]
 			x.a['mne'] = s
 			i=self.adrmode(p, adr, iw)
 			x.a['oper'] = i[1]
-			if s == "JMP":
-				x.a['cond'] = (("T", i[0]),)
+			if iw == 0o002401:
+				x.a['flow'] = (("cond", "T", p.m.rd(adr + 1)),)
+			elif s == "JMP":
+				x.a['flow'] = (("cond", "T", i[0]),)
 			elif s == "JSR":
-				x.a['call'] = (("T", i[0]),)
+				x.a['flow'] = (("call", "T", i[0]),)
 			else:
-				x.a['cond'] = (("NZ", adr + 1), ("Z", adr + 2))
+				x.a['flow'] = (
+				    ("cond", "NZ", adr + 1),
+				    ("cond", "Z", adr + 2))
 				if i[0] != None:
 					x.a['EA'] = (i[0],)
+			
 		elif iw & 0xe000 == 0x6000:
 			s = ("NIO", "DIA", "DOA", "DIB",
 			     "DOB", "DIC", "DOC", "SKP")[(iw>>8)&7]
@@ -167,7 +174,9 @@ class nova(object):
 				s1 = ("BN", "BZ", "DN", "DZ")[(iw>>6)&3]
 				s += s1
 				s2 = ("BN", "BZ", "DN", "DZ")[((iw>>6)&3) ^ 1]
-				x.a['cond'] = ((s2, adr + 1), (s1, adr + 2))
+				x.a['flow'] = (
+				    ("cond", s2, adr + 1),
+				    ("cond", s1, adr + 2))
 			else:
 				s += ("", "S", "C", "P")[(iw>>6)&3]
 			x.a['mne'] = s
