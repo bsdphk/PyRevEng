@@ -171,6 +171,7 @@ class base_mem(object):
 
 	# Read a single location
 	def rd(self, adr):
+		assert type(adr) == int
 		self.chkadr(adr)
 		x = self.mem[adr - self.start]
 		if self.flags:
@@ -202,6 +203,7 @@ class base_mem(object):
 
 	# Read a single location
 	def rdqual(self, adr):
+		assert type(adr) == int
 		self.chkadr(adr)
 		x = self.mem[adr - self.start]
 		if self.flags:
