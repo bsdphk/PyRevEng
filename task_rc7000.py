@@ -10,6 +10,7 @@ import tree
 import pyreveng
 
 import cpu_domus
+import mem_domus
 import cpu_domus_int
 import file_domus
 
@@ -132,24 +133,28 @@ def paging(p, a, priv = None):
 		p.todo(w, p.cpu.disass)
 	
 
-class mem_domus(mem.base_mem):
-	def __init__(self, start = 0, end = 0x10000):
-		mem.base_mem.__init__(self, start, end, 16, 3, True)
-		self.qchar= ("0", " ", "'", '"', 'a', 'b', 'c', '*')
-		self.dpct = "%06o"
+if __name__ == "__main__" and False:
+	import os
 
-	def afmt(self, a):
-		if a < 0x1000:
-			return "%06o " % a
-		elif a < 0x8000:
-			return "%06o'" % a
-		else:
-			return "%06o*" % a
+	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
+	fl = os.listdir(dn)
+	for i in fl:
+		try:
+			df = file_domus.file_domus(dn + i)
+			if len(df.index) > 1:
+				print(len(df.index), i)
+		except:
+			pass
+  
+	exit (0)
 
-	def qfmt(self, q):
-		return self.qchar[q]
+
+
+
+
 
 if __name__ == "__main__":
+	obj = None
 
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
@@ -168,9 +173,17 @@ if __name__ == "__main__":
 	fn = dn + "__.PTP"
 	fn = dn + "__.ULIB"
 	fn = dn + "__.INT"
+	fn = dn + "__.DOMUS"
+	fn = dn + "__.MUSIL"
+	fn = dn + "__.NODCO"
+	fn = dn + "__.PRINT"
 	fn = dn + "__.CATLI"
+	obj = None
+	if False:
+		fn = dn + "__.CODEP"
+		obj = "P0260"
 
-	p = pyreveng.pyreveng(mem_domus())
+	p = pyreveng.pyreveng(mem_domus.mem_domus())
 	p.cpu = cpu_domus.domus()
 	p.t.recurse()
 
@@ -181,7 +194,7 @@ if __name__ == "__main__":
 		print("OBJS:", p.load_file.index)
 		p.load_file.load(p.m, "TESTM")
 	else:
-		p.load_file.load(p.m)
+		p.load_file.load(p.m, obj)
 	ld = p.load_file.rec_end
 	if ld == None:
 		pass
@@ -232,9 +245,14 @@ if __name__ == "__main__":
 	if fn == dn + "__.DKP":
 		p.todo(0o100000, p.cpu.disass)
 
-	if fn == dn + "__.CATLI":
+	if fn == dn + "__.PRINT":
 		dx = dict()
 		p.a['musil_code'] =  dx
+		dx[1] = ("GETPARAMS", "A", "A", "A", "A", "A", "N")
+
+	if fn == dn + "__.CATLI":
+		dx = dict()
+		p.a['musil_codex'] =  dx
 		dx[1] = ("GETPARAMS", "A", "A", "A", "A", "V", "N")
 		dx[2] = ("?", "A", "V", "A", "A", "N")
 		dx[3] = ("?", "A", "N")
@@ -243,6 +261,10 @@ if __name__ == "__main__":
 		dx[6] = ("?", "A", "A", "A", "N")
 		dx[7] = ("?", "A", "V", "A", "A", "N")
 		dx[8] = ("exit", "V",)
+
+	if fn == dn + "__.CODEP":
+		p.todo(0o10000, p.cpu.disass)
+		pass
 
 	if fn == dn + "__.PTP":
 		pass
