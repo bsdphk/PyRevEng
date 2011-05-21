@@ -8,8 +8,15 @@ import cpu_domus
 import file_domus
 
 def int_getparams(p, args):
-	print("GETPARMS", args)
-	a0 = args[0] >> 1
+	print("GETPARMS @%o" % args[0], args)
+
+	a0 = args[0]
+	cpu_domus.dot_txt(p, a0 + 0o527, a0 + 0o532)
+	cpu_domus.dot_txt(p, a0 + 0o533, a0 + 0o535)
+	cpu_domus.dot_txt(p, a0 + 0o536, a0 + 0o540)
+	cpu_domus.dot_txt(p, a0 + 0o552, None)
+
+	a0 = args[1] >> 1
 	a = a0
 	while True:
 		b = p.m.rd(a)
@@ -89,7 +96,7 @@ def ident_lib_module(p, adr):
 				return codeprocs[idx]
 			return None
 
-def int_opmess(p, args):
+def int_opmess(p, adr, args):
 	a = args[0]>>1
 	try:
 		b = p.m.rd(a)
@@ -97,7 +104,7 @@ def int_opmess(p, args):
 	except:
 		pass
 
-def int_outtext(p, args):
+def int_outtext(p, adr, args):
 	a = args[1]>>1
 	try:
 		b = p.m.rd(a)
@@ -105,6 +112,10 @@ def int_outtext(p, args):
 	except:
 		pass
 
+def int_link(p, adr, args):
+	print("LINK %o" % adr, "%o" % args[0])
+	x = p.t.add(args[0], adr + 2, "MUSIL_FUNC")
+	x.blockcmt += "\nMUSIL FUNCTION\n"
 
 intins = {
 
@@ -137,7 +148,7 @@ intins = {
 26:	( None, "LOAD_BYTE", "A", "N"),
 27:	( None, "LOAD_BYTEWORD", "A", "N"),
 28:	( None, "JUMP", "JUMP", "N"),
-29:	( None, "LINK",),
+29:	( int_link, "LINK", "LN"),
 30:	( None, "MOVEWORD", ">>2", "ADDR", "V", "N"),
 31:	( None, "MOVESTRING", "A", "A", "V", "N"),
 32:	( None, "??COMPAREWORD",),
@@ -148,7 +159,7 @@ intins = {
 37:	( int_opmess, "OPMESS", "A", "N"),
 38:	( None, "OPIN", "A", "N"),
 39:	( None, "OPWAIT", "ADDR", "N"),
-40:	( None, "CALL",),
+40:	( None, "CALL", "CL", "N"),
 41:	( None, "OPTEST",),
 42:	( None, "MOVE", "BITS", "A", "V", "A", "V", "V", "N"),
 43:	( None, "OPSTATUS",),
@@ -301,6 +312,15 @@ def disass(p, adr, priv = None):
 				args.append('R')
 				t = "V3: R"
 			arg >>= 2
+		elif i == "LN":
+			args.append(niw)
+			t = "%o" % niw
+			ea += 1
+		elif i == "CL":
+			args.append(niw)
+			t = "%o" % niw
+			ea += 1
+			p.todo(niw, p.cpu.disass)
 		elif i == "GC":
 			if not 'musil_code' in p.a:
 				p.a['musil_code'] = dict()
@@ -322,6 +342,7 @@ def disass(p, adr, priv = None):
 				t += ", " + y[arg][1]
 				l += y[arg][2:]
 				l = (y[arg][0],) + l[1:]
+				args.append(ta)
 			else:
 				print("INT adr %o CODE %d unknown" % (adr, arg))
 		elif i == "N":
@@ -337,7 +358,7 @@ def disass(p, adr, priv = None):
 	s += ")"
 	#print("INT adr %o iw %o op %d arg %d:" % (adr, iw, op, arg), l, s)
 	if l[0] != None:
-		l[0](p, args)
+		l[0](p, adr, args)
 	x = p.t.add(adr, ea, "domus_int")
 	x.render = s
 

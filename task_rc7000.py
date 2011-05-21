@@ -122,7 +122,6 @@ if __name__ == "__main__":
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 	fn = dn + "__.DOMAC"
 	fn = dn + "__.MUC"
-	fn = dn + "__.LIBE"
 	fn = dn + "__.TT009"
 	fn = dn + "__.CATIX"
 	fn = dn + "__.MUI"
@@ -137,14 +136,17 @@ if __name__ == "__main__":
 	fn = dn + "__.DOMUS"
 	fn = dn + "__.MUSIL"
 	fn = dn + "__.NODCO"
-	fn = dn + "__.PRINT"
-	fn = dn + "__.INT"
 	fn = dn + "__.SYSG"
 	fn = dn + "__.CATLI"
 	fn = dn + "__.NODCO"
 	fn = dn + "__.BASGE"
 	fn = dn + "__.GENOM"
 	fn = dn + "__.FCOPY"
+	fn = dn + "__.INT"
+	fn = dn + "__.PRINT"
+	fn = dn + "__.DKP"
+	fn = dn + "__.CATIX"
+	fn = dn + "__.LIBE"
 	obj = None
 	if False:
 		fn = dn + "__.CODEP"
@@ -184,13 +186,13 @@ if __name__ == "__main__":
 			i  = n + tbl_base
 			if n in cpu_domus_int.intins:
 				x = cpu_domus_int.intins[n]
-				y = word(p,i)
+				y = cpu_domus.word(p,i)
 				y.cmt.append(str(x))
 				a = p.m.rd(i)
-				if len(x) == 1:
-					p.setlabel(a, x[0] + " **********")
+				if len(x) == 2:
+					p.setlabel(a, x[1] + " **********")
 				else:
-					p.setlabel(a, x[0])
+					p.setlabel(a, x[1])
 			x = p.m.rd(i)
 			if x != 0:
 				p.todo(x, p.cpu.disass)
@@ -211,23 +213,6 @@ if __name__ == "__main__":
 
 	if fn == dn + "__.DKP":
 		p.todo(0o100000, p.cpu.disass)
-
-	if fn == dn + "__.PRINT":
-		dx = dict()
-		p.a['musil_code'] =  dx
-		dx[1] = ("GETPARAMS", "A", "A", "A", "A", "A", "N")
-
-	if fn == dn + "__.CATLI":
-		dx = dict()
-		p.a['musil_codex'] =  dx
-		dx[1] = ("GETPARAMS", "A", "A", "A", "A", "V", "N")
-		dx[2] = ("?", "A", "V", "A", "A", "N")
-		dx[3] = ("?", "A", "N")
-		dx[4] = ("?", "A", "N")
-		dx[5] = ("?", "A", "N")
-		dx[6] = ("?", "A", "A", "A", "N")
-		dx[7] = ("?", "A", "V", "A", "A", "N")
-		dx[8] = ("exit", "V",)
 
 	if fn == dn + "__.CODEP":
 		p.todo(0o10000, p.cpu.disass)
@@ -270,4 +255,4 @@ if __name__ == "__main__":
 					p.t.add(i, i + 1, "gap")
 	print("----------")
 	p.render("/tmp/_domus")
-	#p.t.recurse()
+	p.t.recurse()

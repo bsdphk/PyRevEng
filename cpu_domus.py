@@ -36,7 +36,6 @@ class dot_txt(tree.tree):
 			while True:
 				a = p.m.rd(end)
 				if a & 0xff == 0:
-					end += 1
 					break
 				if a >> 8 == 0:
 					break
@@ -485,8 +484,13 @@ class domus(cpu_nova.nova):
 			pass
 
 	def msgdesc(self, p, adr, priv = None):
+		if adr == 0:
+			return
 		if do_desc(p, adr, 10, "Message", MsgDesc):
-			x = p.m.rd(adr + 2)
+			try:
+				x = p.m.rd(adr + 2)
+			except:
+				return
 			if x != 0:
 				p.todo(p.m.rd(adr + 2), self.msgdesc)
 
