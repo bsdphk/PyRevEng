@@ -3,6 +3,70 @@
 
 from __future__ import print_function
 
+import mem_domus
+import file_domus
+
+dn = "/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
+
+libx= ( "CODEP", "CODEX", "ULIB", "FSLIB",)
+
+codeprocs = {
+"CODEP::P0084": ("FINIS", "V",),
+"CODEP::GETER": ("GETER", "A", "V", "A", "A", "N"),
+"CODEP::P0085": ("P0085", "A", "A", "A", "N"),
+"CODEP::P0086": ("P0086", "A", "V", "A", "N"),
+"CODEP::P0150": ("P0150", "A", "N"),
+"CODEP::P0159": ("P0150", "A", "A", "N"),
+"CODEP::P0260": ("GETPARAMS", "A", "A", "A", "A", "V", "N"),
+#CODEP::P0261": ("CONNECTFILE", ...RCSL-43-GL-10639
+#CODEP::P0262": ("SPLITSHARE", ...RCSL-43-GL-10639
+"CODEP::P0263": ("GETNAME", "A", "A", "A", "N"),
+#CODEP::P0264": ("GETERROR", ...RCSL-43-GL-10639
+"CODEP::PYY86":	("PYY86", "A", "V", "A", "A", "N"),
+"CODEP::P0XXX":	("P0XXX", "A", "N"),
+}
+
+def ident_lib_module(p, adr):
+	print("Try to identify CODE routine at %o" % adr)
+	for ll in libx:
+		df = file_domus.file_domus(dn + "__." + ll)
+		for i in df.index:
+			mx = mem_domus.mem_domus()
+			df.load(mx, i, silent=True)
+			oo = 0o10000
+			match = 0
+			skip = 0
+			target = df.max_nrel + 1 - oo
+			for ax in range(0, target):
+				try:
+					q = mx.rdqual(ax + oo)
+					dx = mx.rd(ax + oo)
+				except:
+					target -= 1
+					#print("REFRD %o" % ax)
+					continue
+				if q != 1:
+					#print("REFQ %o" % ax, q)
+					skip += 1
+					continue
+				try:
+					dy = p.m.rd(adr + ax)
+				except:
+					#print("CODRD %o" % ax)
+					continue
+				if dx == dy:
+					match += 1
+			if match + skip != target:
+				continue
+			print("Code Routine at %o matches %s::%s  (" % (adr, ll, i), match, skip, df.load_words, ")")
+			idx = ll + "::" + i
+			x = p.t.add(adr, adr + df.max_nrel - oo, "CodeProc")
+			x.blockcmt += "CODE PROCEDURE " + i + " FROM " + ll + "\n"
+			p.setlabel(adr, i)
+			if idx in codeprocs:
+				return codeprocs[idx]
+			return None
+
 intins = {
 
 0:	( "STOP", ),
@@ -190,19 +254,27 @@ def disass(p, adr, priv = None):
 				t = "V3: R"
 			arg >>= 2
 		elif i == "GC":
+			if not 'musil_code' in p.a:
+				p.a['musil_code'] = dict()
+			y = p.a['musil_code']
+
 			pd = p.a['procdesc']
 			ta = p.m.rd(pd - arg)
+
+
 			t = "[%d]=%o" % (-arg, ta)
 			t += ", %o" % p.m.rd(ea)
 			ea += 1
 			p.todo(ta, p.cpu.disass)
-			if 'musil_code' in p.a:
-				y = p.a['musil_code']
-				if arg in y:
-					t += ", " + y[arg][0]
-					l += y[arg][1:]
-				else:
-					print("INT adr %o CODE %d unknown" % (adr, arg))
+			if not arg in y:
+				xx = ident_lib_module(p, ta)
+				if xx != None:
+					y[arg] = xx
+			if arg in y:
+				t += ", " + y[arg][0]
+				l += y[arg][1:]
+			else:
+				print("INT adr %o CODE %d unknown" % (adr, arg))
 		elif i == "N":
 			p.todo(ea, disass)
 		else:
