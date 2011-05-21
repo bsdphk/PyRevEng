@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import cpu_nova
+import cpu_domus_int
 
 class domus(cpu_nova.nova):
 	def __init__(self):
@@ -112,6 +113,8 @@ class domus(cpu_nova.nova):
 		self.special[0o006222] = ( "WAITZONE",)
 		self.special[0o006224] = ( "MOVE",)
 		self.special[0o006225] = ( "INTERPRETE",)
+		self.special[0o006236] = ( "TAKEA",)
+		self.special[0o006237] = ( "TAKEV",)
 
 		self.special[0o006334] = ( "CDELAY",)
 		self.special[0o006335] = ( "WAITSE",)
@@ -199,6 +202,7 @@ class domus(cpu_nova.nova):
 		self.special[0o006177] = ( "DIVIDE",)
 
 	def disass(self, p, adr, priv = None):
+		assert type(adr) == int
 		try:
 			q = p.m.rdqual(adr)
 			if q != 1:
@@ -209,7 +213,16 @@ class domus(cpu_nova.nova):
 			iw = p.m.rd(adr)
 		except:
 			return
-		if iw not in self.special:
+		if iw == 0o006225:
+			x = p.t.add(adr, adr + 1, "ins")
+			x.a['mne'] = "INTERPRETE"
+			x.render = self.render
+			x.a['flow'] = (("cond", "F", None),)
+			p.ins(x, self.disass)
+			p.todo(adr + 1, cpu_domus_int.disass)
+			return
+		
+		elif iw not in self.special:
 			cpu_nova.nova.disass(self, p,adr,priv)
 			return
 		x = p.t.add(adr, adr + 1, "ins")

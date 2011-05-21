@@ -165,8 +165,12 @@ class dot_txt(tree.tree):
 def do_desc(p, a, l, n, desc):
 	if l == 0:
 		for i in desc:
+			try:
+				p.m.rd(a + l)
+			except:
+				break
 			l += i[0]
-	x = p.t.add(a, a + l, "descriptor")
+	x = p.t.add(a, a + l, n + "Descriptor")
 	x.blockcmt += n + " descriptor\n"
 	x.fill = False
 	i = 0
@@ -255,6 +259,9 @@ def progdesc(p, a, priv = None):
 	))
 
 def procdesc(p, a, priv = None):
+
+	p.a['procdesc'] = a
+
 	do_desc(p, a, p.m.rd(a + 3), "Process", (
 		( 1, "next"),
 		( 1, "prev"),
@@ -282,8 +289,53 @@ def procdesc(p, a, priv = None):
 		( 1, "conversion_table"),
 		( 1, "clear_interrupt"),
 	))
-	p.todo(p.m.rd(a + 19)/2, p.cpu.disass)
+	p.todo(p.m.rd(a + 19)>>1, p.cpu.disass)
+	try:
+		cli = p.m.rd(a + 26)
+		print("CLI %o" %cli)
+		if cli & 0o100000:
+			pass
+		elif cli != 0:
+			p.todo(cli, p.cpu.disass)
+	except:
+		pass
 	progdesc(p, p.m.rd(a + 10))
+
+def zonedesc(p, a, priv = None):
+	try:
+		x = p.t.find(a, "ZoneDescriptor")
+		if x != None:
+			print("ZONE AGAIN %o" % a)
+			return
+	except:
+		pass
+	do_desc(p, a, 26, "Zone", (
+		( 3, "name"),
+		( 1, "size"),
+		( 1, "zmode"),
+		( 1, "zkind"),
+		( 1, "zmask"),
+		( 1, "zgive"),
+		( 1, "zfile"),
+		( 1, "zbloc"),
+		( 1, "zconv"),
+		( 1, "zbuff"),
+		( 1, "zsize"),
+		( 1, "zform"),
+		( 1, "zleng"),
+		( 1, "zfirs"),
+		( 1, "ztop"),
+		( 1, "zused"),
+		( 1, "zshar"),
+		( 1, "zrem"),
+		( 1, "z0"),
+		( 1, "z1"),
+		( 1, "z2"),
+		( 1, "z3"),
+		( 1, "z4"),
+		( 1, "z5"),
+		( 1, "z"),
+	))
 
 class mem_domus(mem.base_mem):
 	def __init__(self, start = 0, end = 0x10000):
@@ -311,16 +363,16 @@ if __name__ == "__main__":
 	fn = dn + "__.LIBE"
 	fn = dn + "__.FSLIB"
 	fn = dn + "__.ULIB"
-	fn = dn + "__.DKP"
 	fn = dn + "__.TT009"
 	fn = dn + "__.CATIX"
-	fn = dn + "__.PTP"
 	fn = dn + "__.MUI"
-	fn = dn + "__.CATLI"
 	fn = dn + "__.INT"
 	fn = dn + "__.CAP2"
 	fn = dn + "__.MUM"
 	fn = dn + "__.DOMUS"
+	fn = dn + "__.PTP"
+	fn = dn + "__.DKP"
+	fn = dn + "__.CATLI"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()
@@ -333,7 +385,7 @@ if __name__ == "__main__":
 	if l < 0x8000:
 		p.todo(l, procdesc)
 
-	if True:
+	if fn == dn + "__.MUM":
 		# MUM
 		for i in range(0,256):
 			try:
@@ -343,7 +395,36 @@ if __name__ == "__main__":
 			except:
 				continue
 
-	if False:
+	if fn == dn + "__.DKP":
+		p.todo(0o100000, p.cpu.disass)
+
+	if fn == dn + "__.CATLI":
+		dx = dict()
+		p.a['musil_code'] =  dx
+		dx[1] = ("GETPARAMS", "A", "A", "A", "A", "V", "N")
+		dx[2] = ("?", "A", "V", "A", "A", "N")
+		dx[3] = ("?", "A", "N")
+		dx[4] = ("?", "A", "N")
+		dx[5] = ("?", "A", "N")
+		dx[6] = ("?", "A", "A", "A", "N")
+		dx[7] = ("?", "A", "V", "A", "A", "N")
+		dx[8] = ("exit", "V",)
+		p.todo(0o100215, p.cpu.disass)
+		p.todo(0o100313, p.cpu.disass)
+		p.todo(0o100344, p.cpu.disass)
+		p.todo(0o100375, p.cpu.disass)
+		p.todo(0o100706, p.cpu.disass)
+		#zonedesc(p,0o010467)
+		#zonedesc(p,0o010467)
+		#zonedesc(p,0o011130)
+		#zonedesc(p,0o011571)
+		#zonedesc(p,0o012232)
+		#zonedesc(p,0o012673)
+
+	if fn == dn + "__.PTP":
+		pass
+
+	if fn == dn + "__.DOMUS":
 		# DOMUS
 		p.todo(0x11f1, p.cpu.disass)
 		p.t.a['page_base'] = 0x137a

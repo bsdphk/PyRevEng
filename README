@@ -1,10 +1,13 @@
-This is the latest instantiation of a long series of programable reverse engineering/disassembly
-tools I have written.  Python seems to work so well for this kind of work that I am trying to
-write a general-purpose toolkit this time, which does not depend on a particular memory layout,
-CPU architecture or for that matter anything else.
+This is the latest instantiation of a long series of programable
+reverse engineering/disassembly tools I have written.  Python seems
+to work so well for this kind of work that I am trying to write a
+general-purpose toolkit this time, which does not depend on a
+particular memory layout, CPU architecture or for that matter
+anything else.
 
-For now, we are limited to 32 bits of memory width, but should pythons array type grow a 64
-bit subtype, we can go higher.
+For now, we are limited to 32 bits of memory width, but should
+pythons array type grow a 64 bit subtype, we can go higher.
 
-My two test-cases are the 6800 EPROM dump from an HP5370B Time Interval Counter and various
-program files from an RC7000/DOMUS system.
+My two test-cases are the 6800 EPROM dump from an HP5370B Time
+Interval Counter and various program files from an RC7000/DOMUS
+system.
