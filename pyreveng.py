@@ -44,12 +44,17 @@ class pyreveng(object):
 		self.cmt_start = 56
 		self.gaps = 0
 		self.indent = ""
+		self.cautions = 0
+
+		# Random attributes
+		self.a = dict()
 
 	###############################################################
 	# TODO list processing
 	#
 
 	def todo(self, adr, func, priv = None):
+		assert type(adr) == int
 		try:
 			self.m.chkadr(adr)
 		except:
@@ -156,11 +161,14 @@ class pyreveng(object):
 					j = None
 					break
 			if j != None:
-				x = self.t.add(i,j,"run")
-				x.blockcmt += "\n"
-				x.a['flow_in'] = self.__bbstart[i]
-				x.a['flow'] = fo
-				self.__bbx[i] = x
+				try:
+					x = self.t.add(i,j,"run")
+					x.blockcmt += "\n"
+					x.a['flow_in'] = self.__bbstart[i]
+					x.a['flow'] = fo
+					self.__bbx[i] = x
+				except:
+					print("Fail to add run %x,%x" % (i,j))
 
 	# Eliminate trampolines, such as calls to absolute unconditional
 	# jumps in order to extend reach of addressing modes.
@@ -489,6 +497,11 @@ class pyreveng(object):
 		else:
 			fo = open(fname, "w")
 
+
+		if self.cautions > 0:
+			fo.write("; XXX %d CAUTIONS in this file\n"
+			    % self.cautions)
+
 		if start == None:
 			start = self.m.start
 
@@ -516,6 +529,11 @@ class pyreveng(object):
 		self.__render(self.t, 0, fo)
 
 		print("%d locations xxx'ed" % self.gaps)
+
+		if self.cautions > 0:
+			fo.write("; XXX %d CAUTIONS in this file\n"
+			    % self.cautions)
+		fo.close()
 
 	###############################################################
 	# A general purpose hexdumping routine
