@@ -4,27 +4,48 @@
 from __future__ import print_function
 
 import mem_domus
+import cpu_domus
 import file_domus
+
+def int_getparams(p, args):
+	print("GETPARMS", args)
+	a0 = args[0] >> 1
+	a = a0
+	while True:
+		b = p.m.rd(a)
+		if b >> 8 == 0xff:
+			break;
+		print("%04x" % p.m.rd(a))
+		cpu_domus.dot_txt(p, a, a + 3)
+		a += 3
+
 
 dn = "/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 
 libx= ( "CODEP", "CODEX", "ULIB", "FSLIB",)
 
 codeprocs = {
-"CODEP::P0084": ("FINIS", "V",),
-"CODEP::GETER": ("GETER", "A", "V", "A", "A", "N"),
-"CODEP::P0085": ("P0085", "A", "A", "A", "N"),
-"CODEP::P0086": ("P0086", "A", "V", "A", "N"),
-"CODEP::P0150": ("P0150", "A", "N"),
-"CODEP::P0154": ("P0154", "A", "A", "N"),
-"CODEP::P0159": ("P0150", "A", "A", "N"),
-"CODEP::P0260": ("GETPARAMS", "A", "A", "A", "A", "V", "N"),
-#CODEP::P0261": ("CONNECTFILE", ...RCSL-43-GL-10639
-#CODEP::P0262": ("SPLITSHARE", ...RCSL-43-GL-10639
-"CODEP::P0263": ("GETNAME", "A", "A", "A", "N"),
-#CODEP::P0264": ("GETERROR", ...RCSL-43-GL-10639
-"CODEP::PYY86":	("PYY86", "A", "V", "A", "A", "N"),
-"CODEP::P0XXX":	("P0XXX", "A", "N"),
+"CODEP::P0007": (None, "P0007", "A", "A", "N"),
+"CODEP::P0130": (None, "P0130", "A", "V", "V", "V", "V", "N"),
+"CODEP::P0039": (None, "P0039", "A", "A", "A", "N"),
+"CODEP::P0040": (None, "P0040", "A", "V", "N"),
+"CODEP::P0023": (None, "P0023", "V", "N"),
+"CODEP::LOAD": (None, "LOAD", "A", "V", "N"),
+"CODEP::STORE": (None, "STORE", "A", "V", "N"),
+"CODEP::P0084": (None, "FINIS", "V",),
+"CODEP::GETER": (None, "GETER", "A", "V", "A", "A", "N"),
+"CODEP::P0085": (None, "P0085", "A", "A", "A", "N"),
+"CODEP::P0086": (None, "P0086", "A", "V", "A", "N"),
+"CODEP::P0150": (None, "P0150", "A", "N"),
+"CODEP::P0154": (None, "P0154", "A", "A", "N"),
+"CODEP::P0159": (None, "P0150", "A", "A", "N"),
+"CODEP::P0260": (int_getparams, "GETPARAMS", "A", "A", "A", "A", "V", "N"),
+#CODEP::P0261": (None, "CONNECTFILE", ...RCSL-43-GL-10639
+#CODEP::P0262": (None, "SPLITSHARE", ...RCSL-43-GL-10639
+"CODEP::P0263": (None, "GETNAME", "A", "A", "A", "N"),
+#CODEP::P0264": (None, "GETERROR", ...RCSL-43-GL-10639
+"CODEP::PYY86":	(None, "PYY86", "A", "V", "A", "A", "N"),
+"CODEP::P0XXX":	(None, "P0XXX", "A", "N"),
 }
 
 def ident_lib_module(p, adr):
@@ -68,97 +89,114 @@ def ident_lib_module(p, adr):
 				return codeprocs[idx]
 			return None
 
+def int_opmess(p, args):
+	a = args[0]>>1
+	try:
+		b = p.m.rd(a)
+		cpu_domus.dot_txt(p, a, None)
+	except:
+		pass
+
+def int_outtext(p, args):
+	a = args[1]>>1
+	try:
+		b = p.m.rd(a)
+		cpu_domus.dot_txt(p, a, None)
+	except:
+		pass
+
+
 intins = {
 
-0:	( "STOP", ),
-1:	( "ANDD", "ARG", "N"),
-2:	( "LOADD", "ARG", "N"),
-3:	( "+D", "ARG", "N"),
-4:	( "-D", "ARG", "N"),
-5:	( "SHIFTD", "ARG", "N"),
-6:	( "EXTRACTC", "ARG", "N"),
-7:	( "*D", "ARG", "N"),
-8:	( "/D",),
-9:	( "ANDC", "CONST", "N"),
-10:	( "LOADC", "CONST", "N"),
-11:	( "+C", "CONST", "N"),
-12:	( "-C", "CONST", "N"),
-13:	( "SHIFTC", "CONST", "N"),
-14:	( "EXTRACTC", ),
-15:	( "*C", "CONST", "N"),
-16:	( "/C", "CONST", "N"),
-17:	( "AND", "ADDR", "N"),
-18:	( "LOAD", "ADDR", "N"),
-19:	( "+", "ADDR", "N"),
-20:	( "-", "ADDR", "N"),
-21:	( "SHIFT", "ADDR", "N"),
-22:	( "EXTRACT",),
-23:	( "*", "ADDR", "N"),
-24:	( "/", "ADDR", "N"),
-25:	( "LOAD_NEGATIVE", ),
-26:	( "LOAD_BYTE", "A", "N"),
-27:	( "LOAD_BYTEWORD", "A", "N"),
-28:	( "JUMP", "JUMP", "N"),
-29:	( "LINK",),
-30:	( "MOVEWORD", ">>2", "ADDR", "V", "N"),
-31:	( "MOVESTRING", "A", "A", "V", "N"),
-32:	( "??COMPAREWORD",),
-33:	( "COMPARESTRING", "A", "A", "V", "N"),
-34:	( "STORE_REGSITER", "ADDR", "N"),
-35:	( "TRANSLATE", "A", "A", "A", "N"),
-36:	( "CONVERT", "A", "A", "A", "V", "N"),
-37:	( "OPMESS", "A", "N"),
-38:	( "OPIN", "A", "N"),
-39:	( "OPWAIT", "ADDR", "N"),
-40:	( "CALL",),
-41:	( "OPTEST",),
-42:	( "MOVE", "BITS", "A", "V", "A", "V", "V", "N"),
-43:	( "OPSTATUS",),
-44:	( "BINDEC", "V", "A", "N"),
-45:	( "DECBIN", "A", "ADDR", "N"),
-46:	( "CHAR", "V", "A", "V", "N"),
-47:	( "GOTO", ),
-48:	( "GO_CODE", "GC" ),
+0:	( None, "STOP", ),
+1:	( None, "ANDD", "ARG", "N"),
+2:	( None, "LOADD", "ARG", "N"),
+3:	( None, "+D", "ARG", "N"),
+4:	( None, "-D", "ARG", "N"),
+5:	( None, "SHIFTD", "ARG", "N"),
+6:	( None, "EXTRACTC", "ARG", "N"),
+7:	( None, "*D", "ARG", "N"),
+8:	( None, "/D", "ARG", "N"),
+9:	( None, "ANDC", "CONST", "N"),
+10:	( None, "LOADC", "CONST", "N"),
+11:	( None, "+C", "CONST", "N"),
+12:	( None, "-C", "CONST", "N"),
+13:	( None, "SHIFTC", "CONST", "N"),
+14:	( None, "EXTRACTC", ),
+15:	( None, "*C", "CONST", "N"),
+16:	( None, "/C", "CONST", "N"),
+17:	( None, "AND", "ADDR", "N"),
+18:	( None, "LOAD", "ADDR", "N"),
+19:	( None, "+", "ADDR", "N"),
+20:	( None, "-", "ADDR", "N"),
+21:	( None, "SHIFT", "ADDR", "N"),
+22:	( None, "EXTRACT",),
+23:	( None, "*", "ADDR", "N"),
+24:	( None, "/", "ADDR", "N"),
+25:	( None, "LOAD_NEGATIVE", "V", "N"),
+26:	( None, "LOAD_BYTE", "A", "N"),
+27:	( None, "LOAD_BYTEWORD", "A", "N"),
+28:	( None, "JUMP", "JUMP", "N"),
+29:	( None, "LINK",),
+30:	( None, "MOVEWORD", ">>2", "ADDR", "V", "N"),
+31:	( None, "MOVESTRING", "A", "A", "V", "N"),
+32:	( None, "??COMPAREWORD",),
+33:	( None, "COMPARESTRING", "A", "A", "V", "N"),
+34:	( None, "STORE_REGSITER", "ADDR", "N"),
+35:	( None, "TRANSLATE", "A", "A", "A", "N"),
+36:	( None, "CONVERT", "A", "A", "A", "V", "N"),
+37:	( int_opmess, "OPMESS", "A", "N"),
+38:	( None, "OPIN", "A", "N"),
+39:	( None, "OPWAIT", "ADDR", "N"),
+40:	( None, "CALL",),
+41:	( None, "OPTEST",),
+42:	( None, "MOVE", "BITS", "A", "V", "A", "V", "V", "N"),
+43:	( None, "OPSTATUS",),
+44:	( None, "BINDEC", "V", "A", "N"),
+45:	( None, "DECBIN", "A", "ADDR", "N"),
+46:	( None, "CHAR", "V", "A", "V", "N"),
+47:	( None, "GOTO", ),
+48:	( None, "GO_CODE", "GC" ),
 
-49:	( "OP49", "V", "N"),
-50:	( "OP50", ),
-51:	( "OP51", "I", ),
-52:	( "OP52", ),
-53:	( "OP53", ),
-54:	( "OP54", ),
-55:	( "OP55", "I", "N"),
-56:	( "OP56", "A", "V", "N"),
-57:	( "OP57", "A", "V", "N"),
+49:	( None, "OP49", "V", "N"),
+50:	( None, "OP50", "A", "N"),
+51:	( None, "OP51", "I", ),
+52:	( None, "OP52", ),
+53:	( None, "OP53", ),
+54:	( None, "OP54", ),
+55:	( None, "OP55", "I", "N"),
+56:	( None, "OP56", "A", "V", "N"),
+57:	( None, "OP57", "A", "V", "N"),
 
-128:	( "GETREC", "ZONE", "ADDR", "N"),
-129:	( "PUTREC", ">>2", "ADDR", "V", "N"),
-130:	( "WAITTRANSFER", "ZONE", "N"),
-131:	( "REPEATSHARE", "ZONE", "N"),
-132:	( "TRANSFER", "ZONE", ),
-133:	( "INBLOCK", "ZONE", "N"),
-134:	( "OUTBLOCK", "ZONE"),
-135:	( "FREESHARE", "ZONE", "ADDR", "N"),
-136:	( "INCHAR", "ZONE", ),
-137:	( "OUTSPACE", "ZONE", ),
-138:	( "OUTCHAR", ">>2", "ADDR", "V", "N"),
-139:	( "OUTNL", ),
-140:	( "OUTEND", ),
-141:	( "OUTTEXT",	"ZONE", "V", "N"),
-142:	( "OUTOCTAL",),
-143:	( "SETPOS",	"ZONE", "V", "V", "N"),
-144:	( "CLOSE",	"ZONE", "V", "N"),
-145:	( "OPEN",	"ZONE", "V", "N"),
-146:	( "WAITZONE",	">>2", "ADDR", "N"),
+128:	( None, "GETREC", "ZONE", "ADDR", "N"),
+129:	( None, "PUTREC", ">>2", "ADDR", "V", "N"),
+130:	( None, "WAITTRANSFER", "ZONE", "N"),
+131:	( None, "REPEATSHARE", "ZONE", "N"),
+132:	( None, "TRANSFER", "ZONE", "V", "V", "N"),
+133:	( None, "INBLOCK", "ZONE", "N"),
+134:	( None, "OUTBLOCK", "ZONE"),
+135:	( None, "FREESHARE", "ZONE", "ADDR", "N"),
+136:	( None, "INCHAR", "ZONE", ),
+137:	( None, "OUTSPACE", "ZONE", ),
+138:	( None, "OUTCHAR", ">>2", "ADDR", "V", "N"),
+139:	( None, "OUTNL", ),
+140:	( None, "OUTEND", ),
+141:	( int_outtext, "OUTTEXT",	"ZONE", "A", "N"),
+142:	( None, "OUTOCTAL",),
+143:	( None, "SETPOS",	"ZONE", "V", "V", "N"),
+144:	( None, "CLOSE",	"ZONE", "V", "N"),
+145:	( None, "OPEN",	"ZONE", "V", "N"),
+146:	( None, "WAITZONE",	">>2", "ADDR", "N"),
 
-218:	( "NEWCAT",	">>2", "A", "V", "N"),
-219:	( "FREECAT",	">>2", "A", "N"),
+218:	( None, "NEWCAT",	">>2", "A", "V", "N"),
+219:	( None, "FREECAT",	">>2", "A", "N"),
 
-230:	( "CREATEENTRY", "ZONE", "V", "V", "N"),
-231:	( "LOOKUPENTRY", ">>2", "ADDR", "A", "N"),
-232:	( "CHANGEENTRY", ),
-233:	( "REMOVEENTRY", ">>2", "ADDR", "N"),
-234:	( "INITCATALOG", "ZONE", "V", "V", "N"),
-235:	( "SETENTRY", ),
+230:	( None, "CREATEENTRY", "ZONE", "V", "V", "N"),
+231:	( None, "LOOKUPENTRY", "ZONE", "A", "N"),
+232:	( None, "CHANGEENTRY", "ZONE", "A", "N"),
+233:	( None, "REMOVEENTRY", "ZONE", "N"),
+234:	( None, "INITCATALOG", "ZONE", "V", "V", "N"),
+235:	( None, "SETENTRY", "ZONE", "A", "N"),
 }
 
 def disass(p, adr, priv = None):
@@ -185,54 +223,59 @@ def disass(p, adr, priv = None):
 		return
 	l = intins[op]
 	#print("INT adr %o iw %o op %d arg %d:" % (adr, iw, op, arg), l)
-	s = l[0] + "("
+	s = l[1] + "("
 	x = ""
-	j = 1
+	j = 2
+	args = list()
 	while j < len(l):
 		i = l[j]
 		j += 1
 		t = None
+		niw = p.m.rd(ea)
 		if i == ">>2":
 			arg >>= 2
 		elif i == "BITS":
-			arg = p.m.rd(ea)
+			arg = niw
 			ea += 1
 		elif i == "I":
-			tgt = p.m.rd(ea)
-			t = ">%o" % tgt
+			args.append(niw)
+			t = ">%o" % niw
 			ea += 1
-			p.todo(tgt, p.cpu.disass)
+			p.todo(niw, p.cpu.disass)
 		elif i == "ARG":
+			args.append(arg)
 			t = "%o" % arg
 		elif i == "JUMP":
-			tgt = p.m.rd(ea)
-			t = "CC=%o, %o" % (arg, tgt)
-			p.todo(tgt, disass)
+			args.append(niw)
+			t = "CC=%o, %o" % (arg, niw)
+			p.todo(niw, disass)
 			ea += 1
 		elif i == "CONST":
-			t = "%o" % p.m.rd(ea)
+			args.append(niw)
+			t = "%o" % niw
 			ea += 1
 		elif i == "ZONE":
-			t = "zone=%o" % p.m.rd(ea)
-			za = p.m.rd(ea)
-			p.todo(za, p.cpu.zonedesc)
-			za = p.m.rd(za + 3)
+			args.append(niw)
+			t = "zone=%o" % niw
+			p.todo(niw, p.cpu.zonedesc)
+			za = p.m.rd(niw + 3)
 			p.todo(za, p.cpu.disass)
 			arg >>= 2
 			ea += 1
 		elif i == "ADDR":
-			t = "%o" % p.m.rd(ea)
+			args.append(niw)
+			t = "%o" % niw
 			ea += 1
 		elif i == "A":
 			tq = p.m.rdqual(ea)
-			tgt = p.m.rd(ea)
 			ea += 1
 			if tq == 3:
-				ax = "%o'*2" % (tgt >> 1)
-				if tgt & 1:
+				ax = "%o'*2" % (niw >> 1)
+				if niw & 1:
 					ax += "+1"
 			else:
-				ax = "%o" % tgt + p.m.qfmt(tq)
+				ax = "%o" % niw + p.m.qfmt(tq)
+			args.append(niw)
 			if arg & 3 == 0:
 				t = "A0: int=" + ax
 			elif arg & 3 == 1:
@@ -244,14 +287,18 @@ def disass(p, adr, priv = None):
 			arg >>= 2
 		elif i == "V":
 			if arg & 3 == 0:
-				t = "V0: %o" % p.m.rd(ea)
+				args.append(niw)
+				t = "V0: %o" % niw
 				ea += 1
 			elif arg & 3 == 1:
+				args.append('R')
 				t = "V1: R"
 			elif arg & 3 == 2:
-				t = "V2: (%o)" % p.m.rd(ea)
+				args.append(niw)
+				t = "V2: (%o)" % niw
 				ea += 1
 			else:
+				args.append('R')
 				t = "V3: R"
 			arg >>= 2
 		elif i == "GC":
@@ -272,8 +319,9 @@ def disass(p, adr, priv = None):
 				if xx != None:
 					y[arg] = xx
 			if arg in y:
-				t += ", " + y[arg][0]
-				l += y[arg][1:]
+				t += ", " + y[arg][1]
+				l += y[arg][2:]
+				l = (y[arg][0],) + l[1:]
 			else:
 				print("INT adr %o CODE %d unknown" % (adr, arg))
 		elif i == "N":
@@ -288,6 +336,8 @@ def disass(p, adr, priv = None):
 			x = ", "
 	s += ")"
 	#print("INT adr %o iw %o op %d arg %d:" % (adr, iw, op, arg), l, s)
+	if l[0] != None:
+		l[0](p, args)
 	x = p.t.add(adr, ea, "domus_int")
 	x.render = s
 

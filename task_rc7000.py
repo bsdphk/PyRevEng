@@ -22,44 +22,6 @@ class DomusError(Exception):
         def __str__(self):
                 return repr(self.value)
 
-class word(tree.tree):
-	def __init__(self, p, adr, fmt = "%d"):
-		tree.tree.__init__(self, adr, adr + 1, "word")
-		p.t.add(adr, adr + 1, "word", True, self)
-		self.fmt = fmt
-		self.render = self.rfunc
-
-	def rfunc(self, p, t, lvl):
-		try:
-			x = p.m.rd(t.start)
-		except:
-			return ()
-		q = p.m.rdqual(t.start)
-		if q == 3:
-			return ((".word\t" + p.m.afmt(x/2) + "*2"),)
-		elif q == 2:
-			return ((".word\t" + p.m.afmt(x)),)
-		else:
-			return ((".word\t" + self.fmt) % x, )
-
-class dot_txt(tree.tree):
-	def __init__(self, p, start, end):
-		tree.tree.__init__(self, start, end, "dot_txt")
-		p.t.add(start, end, "dot_txt", True, self)
-		self.render = self.rfunc
-
-	def rfunc(self, p, t, lvl):
-		s = ".TXT\t'"
-		for i in range(t.start, t.end):
-			q = p.m.rdqual(i)
-			if q != 1:
-				raise DomusError(t.start, ".TXT is relocated")
-			x = p.m.rd(i)
-			s += mem.ascii(x >> 8)
-			s += mem.ascii(x)
-		s += "'"
-		return (s,)
-
 def do_desc(p, a, l, n, desc):
 	if l == 0:
 		for i in desc:
@@ -172,12 +134,17 @@ if __name__ == "__main__":
 	fn = dn + "__.FSLIB"
 	fn = dn + "__.PTP"
 	fn = dn + "__.ULIB"
-	fn = dn + "__.INT"
 	fn = dn + "__.DOMUS"
 	fn = dn + "__.MUSIL"
 	fn = dn + "__.NODCO"
 	fn = dn + "__.PRINT"
+	fn = dn + "__.INT"
+	fn = dn + "__.SYSG"
 	fn = dn + "__.CATLI"
+	fn = dn + "__.NODCO"
+	fn = dn + "__.BASGE"
+	fn = dn + "__.GENOM"
+	fn = dn + "__.FCOPY"
 	obj = None
 	if False:
 		fn = dn + "__.CODEP"

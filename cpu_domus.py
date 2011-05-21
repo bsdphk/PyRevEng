@@ -31,6 +31,16 @@ class word(tree.tree):
 
 class dot_txt(tree.tree):
 	def __init__(self, p, start, end):
+		if end == None:
+			end = start
+			while True:
+				a = p.m.rd(end)
+				if a & 0xff == 0:
+					end += 1
+					break
+				if a >> 8 == 0:
+					break
+				end += 1
 		tree.tree.__init__(self, start, end, "dot_txt")
 		p.t.add(start, end, "dot_txt", True, self)
 		self.render = self.rfunc
