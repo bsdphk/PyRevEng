@@ -10,6 +10,7 @@ import tree
 import pyreveng
 
 import cpu_domus
+import file_domus
 
 class DomusError(Exception):
         def __init__(self, adr, reason):
@@ -18,111 +19,6 @@ class DomusError(Exception):
                 self.value = ("0x%x:" % adr + str(self.reason),)
         def __str__(self):
                 return repr(self.value)
-
-def radix40(y):
-	s = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.?"
-	v1 = y[0]
-	v2 = y[1]
-	l3 = v1 % 40
-	l2 = int(v1 / 40) % 40
-	l1 = int(v1 / (40*40)) % 40
-	l5 = int(v2 / 32) % 40
-	l4 = int(v2 / (40 * 32)) % 40
-	#print(len(s), l1, l2, l3, l4, l5, s[l1], s[l2], s[l3], s[l4], s[l5])
-	return ((s[l1] + s[l2] + s[l3] + s[l4] + s[l5]).strip(), v2 & 0x1f)
-
-def domus_load(p, fn, off=0x1000, offhi=0x8000, member=None):
-	dotend = None
-	skip = False
-
-	f = open(fn, "rb")
-	b = f.read()
-	f.close()
-	mf = array.array("H", b)
-
-	if member != None:
-		skip = True
-
-	a = 0
-	while a < len(mf):
-		t = mf[a]
-		if t == 0:
-			a += 1
-			continue
-		if t >= 0x10:
-			print("Illegal record type %d at 0x%x" % (t, a))
-			return None
-		l = mf[a + 1]
-		b = 0
-		s = ""
-		y = list()
-		r = ""
-		c = 0
-		for i in range(l, 65536 + 6):
-			x = mf[a + b]
-			c += x
-			if b == 0:
-				s += "%d" % x
-			elif b == 1:
-				s += " %3d" % (x - 65536)
-			elif b < 5:
-				r += "%05o" % (x / 2)
-				s += " %06o" % (x/2)
-				if x & 1:
-					s += '*'
-			else:
-				s += " %04x" % x
-			if b > 5:
-				y.append(x)
-			b += 1
-		c &= 0xffff
-		assert c == 0
-		if not skip:
-			print(s)
-
-		for j in range(0,len(y)):
-			q = int(r[j])
-			if q == 0:
-				pass
-			elif q == 1:
-				pass
-			elif q == 2:
-				y[j] += off
-			elif q == 3:
-				y[j] += off * 2
-			elif q == 7:
-				y[j] += offhi
-			else:
-				print("RELOC %s ???" % r[j])
-
-		if t == 9:
-			if not skip:
-				print ("  .HIMEM", y)
-		elif t == 7:
-			x = radix40(y)
-			if x[0] == member:
-				skip = False
-			if not skip:
-				print ("  .TITL %s" % x[0])
-		elif t == 6:
-			if not skip:
-				print ("  .END 0x%0x" % y[0])
-				dotend = y[0]
-			if member != None and not skip:
-				break
-		elif t == 2:
-			ax = y[0]
-			y = y[1:]
-			for j in range(0,len(y)):
-				p.m.setflags(ax + j, None, p.m.can_read|p.m.can_write,p.m.invalid)
-				p.m.wr(ax + j, y[j] & 0xffff)
-				p.m.wrqual(ax + j, int(r[j + 1]))
-		else:
-			print(r)
-			print(y)
-			break
-		a += b
-	return dotend
 
 class word(tree.tree):
 	def __init__(self, p, adr, fmt = "%d"):
@@ -361,18 +257,19 @@ if __name__ == "__main__":
 	fn = dn + "__.DOMAC"
 	fn = dn + "__.MUC"
 	fn = dn + "__.LIBE"
-	fn = dn + "__.FSLIB"
-	fn = dn + "__.ULIB"
 	fn = dn + "__.TT009"
 	fn = dn + "__.CATIX"
 	fn = dn + "__.MUI"
 	fn = dn + "__.INT"
 	fn = dn + "__.CAP2"
-	fn = dn + "__.MUM"
 	fn = dn + "__.DOMUS"
-	fn = dn + "__.PTP"
 	fn = dn + "__.DKP"
+	fn = dn + "__.ULIB"
+	fn = dn + "__.FSLIB"
+	fn = dn + "__.PTP"
+	fn = dn + "__.ULIB"
 	fn = dn + "__.CATLI"
+	fn = dn + "__.INT"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()
@@ -380,10 +277,33 @@ if __name__ == "__main__":
 
 	p.cpu.iodev[9] = "TTYOUT"
 
-	#domus_load(m, fn, member="P0155")
-	l = domus_load(p, fn)
-	if l < 0x8000:
-		p.todo(l, procdesc)
+	p.load_file = file_domus.file_domus(fn)
+	if False:
+		print("OBJS:", p.load_file.index)
+		p.load_file.load(p.m, "TESTM")
+	else:
+		p.load_file.load(p.m)
+	ld = p.load_file.rec_end
+	if ld == None:
+		pass
+	elif ld == 0x8000:
+		pass
+	else:
+		p.todo(p.load_file.rec_end, procdesc)
+
+	if fn == dn + "__.INT":
+		for i in range(0,256):
+			try:
+				q = p.m.rdqual(i)
+				if q > 0:
+					p.todo(p.m.rd(i), p.cpu.disass)
+			except:
+				pass
+		for i in range(0o100015, 0o100107):
+			x = p.m.rd(i)
+			if x != 0:
+				p.todo(x, p.cpu.disass)
+		
 
 	if fn == dn + "__.MUM":
 		# MUM
