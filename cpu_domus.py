@@ -5,6 +5,199 @@ from __future__ import print_function
 
 import cpu_nova
 import cpu_domus_int
+import tree
+import mem
+
+
+class word(tree.tree):
+	def __init__(self, p, adr, fmt = "%d"):
+		tree.tree.__init__(self, adr, adr + 1, "word")
+		p.t.add(adr, adr + 1, "word", True, self)
+		self.fmt = fmt
+		self.render = self.rfunc
+
+	def rfunc(self, p, t, lvl):
+		try:
+			x = p.m.rd(t.start)
+		except:
+			return ()
+		q = p.m.rdqual(t.start)
+		if q == 3:
+			return ((".word\t" + p.m.afmt(x/2) + "*2"),)
+		elif q == 2:
+			return ((".word\t" + p.m.afmt(x)),)
+		else:
+			return ((".word\t" + self.fmt) % x, )
+
+class dot_txt(tree.tree):
+	def __init__(self, p, start, end):
+		tree.tree.__init__(self, start, end, "dot_txt")
+		p.t.add(start, end, "dot_txt", True, self)
+		self.render = self.rfunc
+
+	def rfunc(self, p, t, lvl):
+		s = ".TXT\t'"
+		for i in range(t.start, t.end):
+			q = p.m.rdqual(i)
+			if q != 1:
+				raise DomusError(t.start, ".TXT is relocated")
+			x = p.m.rd(i)
+			s += mem.ascii(x >> 8)
+			s += mem.ascii(x)
+		s += "'"
+		return (s,)
+
+
+def do_desc(p, a, l, n, desc):
+	dtype = n + "Descriptor"
+	try:
+		x = p.t.find(a, dtype)
+		if x != None:
+			return False
+	except:
+		pass
+
+	if l == 0:
+		for i in desc:
+			try:
+				p.m.rd(a + l)
+			except:
+				break
+			l += i[0]
+	x = p.t.add(a, a + l, dtype)
+	x.blockcmt += n + " descriptor\n"
+	x.fill = False
+	i = 0
+	for j in desc:
+		if j[1] == "name":
+			x = dot_txt(p, a+i, a + i + j[0])
+		else:
+			x = word(p, a + i)
+		x.cmt.append("+%d " % i + j[1])
+		i += j[0]
+		if i >= l:
+			break
+	while i < l:
+		x = word(p, a + i)
+		x.cmt.append("+%d" % i)
+		i += 1
+	return True
+
+PageDesc = (
+	( 1, "page size"),
+	( 1, "page mask"),
+	( 1, "blocking factor"),
+	( 1, "page table"),
+	( 1, "pagemap"),
+	( 1, "statproc"),
+	( 1, "first frame"),
+	( 1, "top of frames"),
+	( 1, "victim"),
+	( 1, "pages read"),
+	( 1, "pages written"),
+	( 1, "pages in"),
+	( 1, "pages out"),
+	( 1, "adr input mess"),
+	( 1, "input message[0]"),
+	( 1, "input message[1]"),
+	( 1, "input message[2]"),
+	( 1, "input message[3]"),
+	( 1, "adr output mess"),
+	( 1, "output message[0]"),
+	( 1, "output message[1]"),
+	( 1, "output message[2]"),
+	( 1, "output message[3]"),
+	( 1, "pager flag"),
+	( 1, "working locations"),
+)
+
+MsgDesc = (
+	( 1, "next"),
+	( 1, "prev"),
+	( 1, "chain"),
+	( 1, "size"),
+	( 1, "sende"),
+	( 1, "recei"),
+	( 1, "mess0"),
+	( 1, "mess1"),
+	( 1, "mess2"),
+	( 1, "mess3"),
+)
+
+ProgDesc = (
+	( 1, "spec"),
+	( 1, "start"),
+	( 1, "chain"),
+	( 1, "size"),
+	( 3, "name"),
+)
+
+ProcDesc = (
+	( 1, "next"),
+	( 1, "prev"),
+	( 1, "chain"),
+	( 1, "size"),
+	( 3, "name"),
+	( 1, "first_event"),
+	( 1, "last_event"),
+	( 1, "buffer"),
+	( 1, "program"),
+	( 1, "state"),
+	( 1, "timer_count"),
+	( 1, "priority"),
+	( 1, "break_address"),
+	( 1, "ac0"),
+	( 1, "ac1"),
+	( 1, "ac2"),
+	( 1, "ac3"),
+	( 1, "psw"),
+	( 1, "save"),
+	( 1, "buf"),
+	( 1, "address"),
+	( 1, "count"),
+	( 1, "reserver"),
+	( 1, "conversion_table"),
+	( 1, "clear_interrupt"),
+)
+
+ZoneDesc = (
+	( 3, "name"),
+	( 1, "size"),
+	( 1, "zmode"),
+	( 1, "zkind"),
+	( 1, "zmask"),
+	( 1, "zgive"),
+	( 1, "zfile"),
+	( 1, "zbloc"),
+	( 1, "zconv"),
+	( 1, "zbuff"),
+	( 1, "zsize"),
+	( 1, "zform"),
+	( 1, "zleng"),
+	( 1, "zfirs"),
+	( 1, "ztop"),
+	( 1, "zused"),
+	( 1, "zshar"),
+	( 1, "zrem"),
+	( 1, "z0"),
+	( 1, "z1"),
+	( 1, "z2"),
+	( 1, "z3"),
+	( 1, "z4"),
+	( 1, "z5"),
+	( 1, "z"),
+)
+
+ShareDesc = (
+	( 1, "soper" ),
+	( 1, "scount" ),
+	( 1, "saddr", ),
+	( 1, "sspec", ),
+	( 1, "snext", ),
+	( 1, "sstat", ),
+	( 1, "sfirs", ),
+	( 1, "ssize", ),
+)
 
 class domus(cpu_nova.nova):
 	def __init__(self):
@@ -113,6 +306,7 @@ class domus(cpu_nova.nova):
 		self.special[0o006222] = ( "WAITZONE",)
 		self.special[0o006224] = ( "MOVE",)
 		self.special[0o006225] = ( "INTERPRETE",)
+		self.special[0o002235] = ( "NEXT_INTER",)
 		self.special[0o006236] = ( "TAKEA",)
 		self.special[0o006237] = ( "TAKEV",)
 
@@ -245,3 +439,47 @@ class domus(cpu_nova.nova):
 
 		p.ins(x, self.disass)
 
+	def zonedesc(self, p, adr, priv = None):
+		do_desc(p, adr, 0, "Zone", ZoneDesc)
+		x = p.m.rd(adr + 17)
+		if x != 0:
+			p.todo(x, self.sharedesc)
+
+	def sharedesc(self, p, adr, priv = None):
+		do_desc(p, adr, 8, "Share", ShareDesc)
+
+	def progdesc(self, p, adr, priv = None):
+		p.a['progdesc'] = adr
+		do_desc(p, adr, 0, "Program", ProgDesc)
+
+	def procdesc(self, p, adr, priv = None):
+		p.a['procdesc'] = adr
+		do_desc(p, adr, p.m.rd(adr + 3), "Process", ProcDesc)
+
+		p.cpu.msgdesc(p, p.m.rd(adr + 9))
+
+		p.cpu.progdesc(p, p.m.rd(adr + 10))
+
+		# Try the PSW
+		p.todo(p.m.rd(adr + 19)>>1, p.cpu.disass)
+
+		# Try the CLEAR_INTERRUPT
+		try:
+			cli = p.m.rd(a + 26)
+			print("CLI %o" %cli)
+			if cli & 0o100000:
+				pass
+			elif cli != 0:
+				p.todo(cli, p.cpu.disass)
+		except:
+			pass
+
+	def msgdesc(self, p, adr, priv = None):
+		if do_desc(p, adr, 10, "Message", MsgDesc):
+			x = p.m.rd(adr + 2)
+			if x != 0:
+				p.todo(p.m.rd(adr + 2), self.msgdesc)
+
+	def pagedesc(self, p, adr, priv = None):
+		p.a['pagedesc'] = adr
+		do_desc(p, adr, 0, "Paging", PageDesc)

@@ -10,6 +10,7 @@ import tree
 import pyreveng
 
 import cpu_domus
+import cpu_domus_int
 import file_domus
 
 class DomusError(Exception):
@@ -131,108 +132,6 @@ def paging(p, a, priv = None):
 		p.todo(w, p.cpu.disass)
 	
 
-def msgdesc(p, a, priv = None):
-	do_desc(p, a, 0, "Message", (
-		( 1, "next"),
-		( 1, "prev"),
-		( 1, "chain"),
-		( 1, "size"),
-		( 1, "sende"),
-		( 1, "recei"),
-		( 1, "mess0"),
-		( 1, "mess1"),
-		( 1, "mess2"),
-		( 1, "mess3"),
-	))
-
-def progdesc(p, a, priv = None):
-	do_desc(p, a, 0, "Program", (
-		( 1, "spec"),
-		( 1, "start"),
-		( 1, "chain"),
-		( 1, "size"),
-		( 3, "name"),
-	))
-
-def procdesc(p, a, priv = None):
-
-	p.a['procdesc'] = a
-
-	do_desc(p, a, p.m.rd(a + 3), "Process", (
-		( 1, "next"),
-		( 1, "prev"),
-		( 1, "chain"),
-		( 1, "size"),
-		( 3, "name"),
-		( 1, "first_event"),
-		( 1, "last_event"),
-		( 1, "buffer"),
-		( 1, "program"),
-		( 1, "state"),
-		( 1, "timer_count"),
-		( 1, "priority"),
-		( 1, "break_address"),
-		( 1, "ac0"),
-		( 1, "ac1"),
-		( 1, "ac2"),
-		( 1, "ac3"),
-		( 1, "psw"),
-		( 1, "save"),
-		( 1, "buf"),
-		( 1, "address"),
-		( 1, "count"),
-		( 1, "reserver"),
-		( 1, "conversion_table"),
-		( 1, "clear_interrupt"),
-	))
-	p.todo(p.m.rd(a + 19)>>1, p.cpu.disass)
-	try:
-		cli = p.m.rd(a + 26)
-		print("CLI %o" %cli)
-		if cli & 0o100000:
-			pass
-		elif cli != 0:
-			p.todo(cli, p.cpu.disass)
-	except:
-		pass
-	progdesc(p, p.m.rd(a + 10))
-
-def zonedesc(p, a, priv = None):
-	try:
-		x = p.t.find(a, "ZoneDescriptor")
-		if x != None:
-			print("ZONE AGAIN %o" % a)
-			return
-	except:
-		pass
-	do_desc(p, a, 26, "Zone", (
-		( 3, "name"),
-		( 1, "size"),
-		( 1, "zmode"),
-		( 1, "zkind"),
-		( 1, "zmask"),
-		( 1, "zgive"),
-		( 1, "zfile"),
-		( 1, "zbloc"),
-		( 1, "zconv"),
-		( 1, "zbuff"),
-		( 1, "zsize"),
-		( 1, "zform"),
-		( 1, "zleng"),
-		( 1, "zfirs"),
-		( 1, "ztop"),
-		( 1, "zused"),
-		( 1, "zshar"),
-		( 1, "zrem"),
-		( 1, "z0"),
-		( 1, "z1"),
-		( 1, "z2"),
-		( 1, "z3"),
-		( 1, "z4"),
-		( 1, "z5"),
-		( 1, "z"),
-	))
-
 class mem_domus(mem.base_mem):
 	def __init__(self, start = 0, end = 0x10000):
 		mem.base_mem.__init__(self, start, end, 16, 3, True)
@@ -268,8 +167,8 @@ if __name__ == "__main__":
 	fn = dn + "__.FSLIB"
 	fn = dn + "__.PTP"
 	fn = dn + "__.ULIB"
-	fn = dn + "__.CATLI"
 	fn = dn + "__.INT"
+	fn = dn + "__.CATLI"
 
 	p = pyreveng.pyreveng(mem_domus())
 	p.cpu = cpu_domus.domus()
@@ -289,9 +188,10 @@ if __name__ == "__main__":
 	elif ld == 0x8000:
 		pass
 	else:
-		p.todo(p.load_file.rec_end, procdesc)
+		p.todo(p.load_file.rec_end, p.cpu.procdesc)
 
 	if fn == dn + "__.INT":
+
 		for i in range(0,256):
 			try:
 				q = p.m.rdqual(i)
@@ -299,10 +199,24 @@ if __name__ == "__main__":
 					p.todo(p.m.rd(i), p.cpu.disass)
 			except:
 				pass
-		for i in range(0o100015, 0o100107):
+		tbl_base = 0o100015
+		def xx(n):
+			i  = n + tbl_base
+			if n in cpu_domus_int.intins:
+				x = cpu_domus_int.intins[n]
+				y = word(p,i)
+				y.cmt.append(str(x))
+				a = p.m.rd(i)
+				if len(x) == 1:
+					p.setlabel(a, x[0] + " **********")
+				else:
+					p.setlabel(a, x[0])
 			x = p.m.rd(i)
 			if x != 0:
 				p.todo(x, p.cpu.disass)
+
+		for i in cpu_domus_int.intins:
+			xx(i)
 		
 
 	if fn == dn + "__.MUM":
@@ -329,17 +243,6 @@ if __name__ == "__main__":
 		dx[6] = ("?", "A", "A", "A", "N")
 		dx[7] = ("?", "A", "V", "A", "A", "N")
 		dx[8] = ("exit", "V",)
-		p.todo(0o100215, p.cpu.disass)
-		p.todo(0o100313, p.cpu.disass)
-		p.todo(0o100344, p.cpu.disass)
-		p.todo(0o100375, p.cpu.disass)
-		p.todo(0o100706, p.cpu.disass)
-		#zonedesc(p,0o010467)
-		#zonedesc(p,0o010467)
-		#zonedesc(p,0o011130)
-		#zonedesc(p,0o011571)
-		#zonedesc(p,0o012232)
-		#zonedesc(p,0o012673)
 
 	if fn == dn + "__.PTP":
 		pass
