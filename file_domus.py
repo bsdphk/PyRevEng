@@ -28,7 +28,6 @@ def radix40(y):
 class file_domus(object):
 	def __init__(self, filename):
 		# Read the entire file
-		print(filename)
 		f = open(filename, "rb")
 		self.d = array.array("H", f.read())
 		self.filename = filename
@@ -43,13 +42,12 @@ class file_domus(object):
 		titl = None
 		while a < len(self.d):
 			rec_typ = self.d[a]
-			if rec_typ == 25:
+			if rec_typ > 9:
 				break
 			if rec_typ == 0:
 				a += 1
 				a0 = a
 				continue
-			assert rec_typ < 10
 			a += 1
 
 			rec_len = self.d[a] - 65536
@@ -68,7 +66,7 @@ class file_domus(object):
 				a0 = a
 		return l
 
-	def load(self, mem, obj=None, off = 0x1000, offhi=0x8000):
+	def load(self, mem, obj=None, off = 0x1000, offhi=0x8000, silent=False):
 		if obj == None:
 			if len(self.index) != 1:
 				raise DomusFileError(
@@ -78,10 +76,14 @@ class file_domus(object):
 		if obj not in self.index:
 			raise DomusFileError(
 			    "Object not found in file:" + obj)
-		print("LOAD ", obj)
+		if not silent:
+			print("LOAD ", obj)
 		self.rec_end = None
 		self.rec_titl = None
 		self.rec_size = None
+		self.load_words = 0
+		self.max_nrel = 0
+		self.max_zrel = 0
 		a,ae = self.index[obj]
 		while a < ae:
 			rec_typ = self.d[a]
@@ -122,6 +124,11 @@ class file_domus(object):
 			if rec_typ == 2:
 				ax = y[0]
 				for i in range(1, len(y)):
+					if ax < offhi and ax > self.max_nrel:
+						self.max_nrel = ax
+					if ax >= offhi and ax > self.max_zrel:
+						self.max_zrel = ax
+					self.load_words += 1
 					mem.setflags(ax, None,
 					    mem.can_read | mem.can_write,
 					    mem.invalid)
@@ -129,18 +136,21 @@ class file_domus(object):
 					mem.wrqual(ax, z[i])
 					ax += 1
 			elif rec_typ == 6:
-				print("\t.END %04x" % y[0])
+				if not silent:
+					print("\t.END %04x" % y[0])
 				self.rec_end = y[0]
 			elif rec_typ == 7:
 				self.rec_titl = radix40(y)
-				print("\t.TITL\t%s" % self.rec_titl[0])
+				if not silent:
+					print("\t.TITL\t%s" % self.rec_titl[0])
 			elif rec_typ == 9:
 				self.rec_size = y
 			else:
 				raise DomusFileError(
 				    "Load Unknown Record %d" % rec_typ)
 
-			print(s)
+			if not silent:
+				print(s)
 			a += 6 - rec_len
 
 if __name__ == "__main__":
