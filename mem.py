@@ -109,7 +109,7 @@ class base_mem(object):
 			try:
 				x = self.rd(start)
 			except:
-				l.append(self.afmt(start) + "<undef>")
+				l.append(self.afmt(start) + " --")
 				start += 1
 				continue
 			s = self.afmt(start) + " " + self.dfmt(x)

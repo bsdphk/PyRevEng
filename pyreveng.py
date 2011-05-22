@@ -438,6 +438,7 @@ class pyreveng(object):
 			self.__render_gaps(a, t.end, fo, lvl)
 			if 'indent' in t.a:
 				self.indent = oindent
+			fo.write("\n")
 			return
 
 		if t.start in self.__label:
@@ -480,7 +481,9 @@ class pyreveng(object):
 			if i >= len(b):
 				r += self.col1s
 			else:
-				r += b[i]
+				r += self.__pad_to(b[i], self.col1w)
+			for sp in range(0,lvl - 1):
+				r += "|   "
 			if i < len(a):
 				r += a[i]
 			r = self.__pad_to(r, self.cmt_start)
@@ -488,6 +491,8 @@ class pyreveng(object):
 				r += "; " + c[i]
 			fo.write(r.rstrip() + "\n")
 			i += 1
+		if t.end > t.start + 1:
+			fo.write("\n")
 		
 
 	def render(self, fname="-", start = None, end = None):

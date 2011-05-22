@@ -114,40 +114,12 @@ if __name__ == "__main__" and False:
 
 
 
+def dofile(filename, obj = None):
 
-if __name__ == "__main__":
-	obj = None
-
+	print("DOFILE", filename, obj);
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
-	fn = dn + "__.DOMAC"
-	fn = dn + "__.MUC"
-	fn = dn + "__.TT009"
-	fn = dn + "__.CATIX"
-	fn = dn + "__.MUI"
-	fn = dn + "__.INT"
-	fn = dn + "__.CAP2"
-	fn = dn + "__.DOMUS"
-	fn = dn + "__.DKP"
-	fn = dn + "__.ULIB"
-	fn = dn + "__.FSLIB"
-	fn = dn + "__.PTP"
-	fn = dn + "__.ULIB"
-	fn = dn + "__.DOMUS"
-	fn = dn + "__.MUSIL"
-	fn = dn + "__.NODCO"
-	fn = dn + "__.SYSG"
-	fn = dn + "__.CATLI"
-	fn = dn + "__.NODCO"
-	fn = dn + "__.BASGE"
-	fn = dn + "__.GENOM"
-	fn = dn + "__.FCOPY"
-	fn = dn + "__.INT"
-	fn = dn + "__.PRINT"
-	fn = dn + "__.DKP"
-	fn = dn + "__.CATIX"
-	fn = dn + "__.LIBE"
-	obj = None
+	fn = dn + filename
 	if False:
 		fn = dn + "__.CODEP"
 		obj = "P0260"
@@ -172,15 +144,16 @@ if __name__ == "__main__":
 	else:
 		p.todo(p.load_file.rec_end, p.cpu.procdesc)
 
-	if fn == dn + "__.INT":
+	for i in range(0,256):
+		try:
+			q = p.m.rdqual(i)
+			if q > 0:
+				p.todo(p.m.rd(i), p.cpu.disass)
+		except:
+			pass
 
-		for i in range(0,256):
-			try:
-				q = p.m.rdqual(i)
-				if q > 0:
-					p.todo(p.m.rd(i), p.cpu.disass)
-			except:
-				pass
+	if filename == "__.INT":
+
 		tbl_base = 0o100015
 		def xx(n):
 			i  = n + tbl_base
@@ -218,8 +191,8 @@ if __name__ == "__main__":
 		p.todo(0o10000, p.cpu.disass)
 		pass
 
-	if fn == dn + "__.PTP":
-		pass
+	if fn == dn + "__.CDFP1":
+		p.todo(0o10000, p.cpu.disass)
 
 	if fn == dn + "__.DOMUS":
 		# DOMUS
@@ -254,5 +227,19 @@ if __name__ == "__main__":
 				else:
 					p.t.add(i, i + 1, "gap")
 	print("----------")
-	p.render("/tmp/_domus")
-	p.t.recurse()
+	p.render("/tmp/" + filename)
+	#p.t.recurse()
+
+if __name__ == "__main__":
+	if False:
+		import os 
+
+		dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
+		fl = os.listdir(dn)
+		for i in fl:
+			try:
+				dofile(i)
+			except:
+				pass
+	else:
+		dofile("__.CDUMP")

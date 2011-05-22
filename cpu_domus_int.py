@@ -7,7 +7,7 @@ import mem_domus
 import cpu_domus
 import file_domus
 
-def int_getparams(p, args):
+def int_getparams(p, adr, args):
 	print("GETPARMS @%o" % args[0], args)
 
 	a0 = args[0]
@@ -26,33 +26,75 @@ def int_getparams(p, args):
 		cpu_domus.dot_txt(p, a, a + 3)
 		a += 3
 
+def int_p0090(p, adr, args):
+	a0 = args[0]
+	print("P0090(%o)" % a0)
+	p.todo(a0 + 4, p.cpu.disass)
+
 
 dn = "/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 
 libx= ( "CODEP", "CODEX", "ULIB", "FSLIB",)
 
 codeprocs = {
+"FSLIB::RANDM":	(None,	"RANDM", "A", "N"),
+"FSLIB::CHECK":	(None,	"CHECK", "A", "A", "A", "A", "A", "N"),
+"CODEP::ADMME":	(None,	"ADMME", "A", "A", "V", "N"),
+"CODEP::BUFFE":	(None,	"BUFFE", "A", "V", "A", "A", "V", "N"),
+"CODEP::CHANG":	(None,	"CHANG", "A", "A", "N"),
+"CODEP::FILL":	(None,	"FILL", "V", "A", "V", "V", "N"),
+"CODEP::GETER": (None, "GETER", "A", "V", "A", "A", "N"),
+"CODEP::LOAD": (None, "LOAD", "A", "V", "N"),
+"CODEP::OPERA":	(None,	"OPERA", "A", "N"),
 "CODEP::P0007": (None, "P0007", "A", "A", "N"),
-"CODEP::P0130": (None, "P0130", "A", "V", "V", "V", "V", "N"),
+"CODEP::P0023": (None, "P0023", "V", "N"),
 "CODEP::P0039": (None, "P0039", "A", "A", "A", "N"),
 "CODEP::P0040": (None, "P0040", "A", "V", "N"),
-"CODEP::P0023": (None, "P0023", "V", "N"),
-"CODEP::LOAD": (None, "LOAD", "A", "V", "N"),
-"CODEP::STORE": (None, "STORE", "A", "V", "N"),
+"CODEP::P0054":	(None,	"P0054", "A", "V", "N"),
+"CODEP::P0076":	(None,	"P0076", "A", "A", "N"),
 "CODEP::P0084": (None, "FINIS", "V",),
-"CODEP::GETER": (None, "GETER", "A", "V", "A", "A", "N"),
 "CODEP::P0085": (None, "P0085", "A", "A", "A", "N"),
 "CODEP::P0086": (None, "P0086", "A", "V", "A", "N"),
+"CODEP::P0087":	(None,	"P0087", "V", "A", "N"),
+"CODEP::P0088": (None, "P0088", "A", "A", "V", "V", "V", "N"),
+"CODEP::P0089":	(None,	"P0089", "A", "V", "V", "V", "N"),
+"CODEP::P0090": (int_p0090, "P0090", "N" ),
+"CODEP::P0091": (None, "P0091", "A", "A", "V", "N"),
+"CODEP::P0092":	(None,	"P0092", "V", "V", "A", "A", "N"),
+"CODEP::P0093":	(None,	"P0093", "V", "A", "N"),
+"CODEP::P0095":	(None,	"P0095", "A", "V", "A", "N"),
+"CODEP::P0098":	(None,	"P0098", "A", "N"),
+"CODEP::P0121":	(None,	"P0121", "V", "V", "V", "N"),
+"CODEP::P0122":	(None,	"P0122", "A", "V", "V", "N"),
+"CODEP::P0123":	(None,	"P0123", "A", "A", "V", "N"),
+"CODEP::P0124":	(None,	"P0124", "V", "A", "V", "N"),
+"CODEP::P0127":	(None,	"P0127", "A", "N"),
+"CODEP::P0128":	(None,	"P0128", "A", "N"),
+"CODEP::P0130": (None, "P0130", "A", "V", "V", "V", "V", "N"),
+"CODEP::P0132": (None, "P0132", "A", "A", "N"),
 "CODEP::P0150": (None, "P0150", "A", "N"),
 "CODEP::P0154": (None, "P0154", "A", "A", "N"),
 "CODEP::P0159": (None, "P0150", "A", "A", "N"),
+"CODEP::P0160": (None, "P0160", "A", "V", "V", "V", "N"),
+"CODEP::P0161": (None, "P0161", "V", "A", "V", "V", "N"),
+"CODEP::P0167": (None, "P0167", "A", "A", "A", "N"),
+"CODEP::P0168": (None, "P0168", "A", "A", "A", "N"),
+"CODEP::P0169": (None, "P0169", "A", "A", "A", "N"),
+"CODEP::P0170": (None, "P0170", "A", "A", "A", "A", "N"),
+"CODEP::P0230": (None, "P0230", "A", "V", "N"),
+"CODEP::P0237": (None, "P0237", "V", "N"),
+"CODEP::P0238": (None, "P0237", "V", "N"),
+"CODEP::P0239": (None, "P0239", "A", "A", "V", "V", "N"),
 "CODEP::P0260": (int_getparams, "GETPARAMS", "A", "A", "A", "A", "V", "N"),
+"CODEP::P0263": (None, "GETNAME", "A", "A", "A", "N"),
+"CODEP::P0XXX":	(None, "P0XXX", "A", "N"),
+"CODEP::PYY86":	(None, "PYY86", "A", "V", "A", "A", "N"),
+"CODEP::RANDO":	(None,	"RANDO", "A", "V", "N"),
+"CODEP::SPRIO":	(None,	"SPRIO", "A", "A", "V", "N"),
+"CODEP::STORE": (None, "STORE", "A", "V", "N"),
 #CODEP::P0261": (None, "CONNECTFILE", ...RCSL-43-GL-10639
 #CODEP::P0262": (None, "SPLITSHARE", ...RCSL-43-GL-10639
-"CODEP::P0263": (None, "GETNAME", "A", "A", "A", "N"),
 #CODEP::P0264": (None, "GETERROR", ...RCSL-43-GL-10639
-"CODEP::PYY86":	(None, "PYY86", "A", "V", "A", "A", "N"),
-"CODEP::P0XXX":	(None, "P0XXX", "A", "N"),
 }
 
 def ident_lib_module(p, adr):
@@ -89,10 +131,11 @@ def ident_lib_module(p, adr):
 				continue
 			print("Code Routine at %o matches %s::%s  (" % (adr, ll, i), match, skip, df.load_words, ")")
 			idx = ll + "::" + i
-			x = p.t.add(adr, adr + df.max_nrel - oo, "CodeProc")
+			x = p.t.add(adr, adr + 1 + df.max_nrel - oo, "CodeProc")
 			x.blockcmt += "CODE PROCEDURE " + i + " FROM " + ll + "\n"
 			p.setlabel(adr, i)
 			if idx in codeprocs:
+				x.blockcmt += str(codeprocs[idx]) + "\n"
 				return codeprocs[idx]
 			return None
 
@@ -120,30 +163,34 @@ def int_link(p, adr, args):
 intins = {
 
 0:	( None, "STOP", ),
+
 1:	( None, "ANDD", "ARG", "N"),
 2:	( None, "LOADD", "ARG", "N"),
 3:	( None, "+D", "ARG", "N"),
 4:	( None, "-D", "ARG", "N"),
 5:	( None, "SHIFTD", "ARG", "N"),
-6:	( None, "EXTRACTC", "ARG", "N"),
+6:	( None, "EXTRACTD", "ARG", "N"),
 7:	( None, "*D", "ARG", "N"),
 8:	( None, "/D", "ARG", "N"),
+
 9:	( None, "ANDC", "CONST", "N"),
 10:	( None, "LOADC", "CONST", "N"),
 11:	( None, "+C", "CONST", "N"),
 12:	( None, "-C", "CONST", "N"),
 13:	( None, "SHIFTC", "CONST", "N"),
-14:	( None, "EXTRACTC", ),
+14:	( None, "EXTRACTC", "CONST", "N"),
 15:	( None, "*C", "CONST", "N"),
 16:	( None, "/C", "CONST", "N"),
+
 17:	( None, "AND", "ADDR", "N"),
 18:	( None, "LOAD", "ADDR", "N"),
 19:	( None, "+", "ADDR", "N"),
 20:	( None, "-", "ADDR", "N"),
 21:	( None, "SHIFT", "ADDR", "N"),
-22:	( None, "EXTRACT",),
+22:	( None, "EXTRACT", "ADDR", "N"),
 23:	( None, "*", "ADDR", "N"),
 24:	( None, "/", "ADDR", "N"),
+
 25:	( None, "LOAD_NEGATIVE", "V", "N"),
 26:	( None, "LOAD_BYTE", "A", "N"),
 27:	( None, "LOAD_BYTEWORD", "A", "N"),
@@ -160,7 +207,7 @@ intins = {
 38:	( None, "OPIN", "A", "N"),
 39:	( None, "OPWAIT", "ADDR", "N"),
 40:	( None, "CALL", "CL", "N"),
-41:	( None, "OPTEST",),
+41:	( None, "OPTEST", "N"),
 42:	( None, "MOVE", "BITS", "A", "V", "A", "V", "V", "N"),
 43:	( None, "OPSTATUS",),
 44:	( None, "BINDEC", "V", "A", "N"),
@@ -185,19 +232,19 @@ intins = {
 131:	( None, "REPEATSHARE", "ZONE", "N"),
 132:	( None, "TRANSFER", "ZONE", "V", "V", "N"),
 133:	( None, "INBLOCK", "ZONE", "N"),
-134:	( None, "OUTBLOCK", "ZONE"),
+134:	( None, "OUTBLOCK", "ZONE", "N"),
 135:	( None, "FREESHARE", "ZONE", "ADDR", "N"),
-136:	( None, "INCHAR", "ZONE", ),
-137:	( None, "OUTSPACE", "ZONE", ),
+136:	( None, "INCHAR", "ZONE", "N"),
+137:	( None, "OUTSPACE", "ZONE", "N"),
 138:	( None, "OUTCHAR", ">>2", "ADDR", "V", "N"),
-139:	( None, "OUTNL", ),
-140:	( None, "OUTEND", ),
+139:	( None, "OUTNL", "N"),
+140:	( None, "OUTEND", "V", "N"),
 141:	( int_outtext, "OUTTEXT",	"ZONE", "A", "N"),
 142:	( None, "OUTOCTAL",),
 143:	( None, "SETPOS",	"ZONE", "V", "V", "N"),
 144:	( None, "CLOSE",	"ZONE", "V", "N"),
 145:	( None, "OPEN",	"ZONE", "V", "N"),
-146:	( None, "WAITZONE",	">>2", "ADDR", "N"),
+146:	( None, "WAITZONE",	"ZONE", "N"),
 
 218:	( None, "NEWCAT",	">>2", "A", "V", "N"),
 219:	( None, "FREECAT",	">>2", "A", "N"),
@@ -329,22 +376,23 @@ def disass(p, adr, priv = None):
 			pd = p.a['procdesc']
 			ta = p.m.rd(pd - arg)
 
-
-			t = "[%d]=%o" % (-arg, ta)
-			t += ", %o" % p.m.rd(ea)
+			func=arg
+			t = "[%d]=%o" % (-func, ta)
+			arg = niw
 			ea += 1
+			t += ", %o" % arg
 			p.todo(ta, p.cpu.disass)
-			if not arg in y:
+			if not func in y:
 				xx = ident_lib_module(p, ta)
 				if xx != None:
-					y[arg] = xx
-			if arg in y:
-				t += ", " + y[arg][1]
-				l += y[arg][2:]
-				l = (y[arg][0],) + l[1:]
+					y[func] = xx
+			if func in y:
+				t += ", " + y[func][1]
+				l += y[func][2:]
+				l = (y[func][0],) + l[1:]
 				args.append(ta)
 			else:
-				print("INT adr %o CODE %d unknown" % (adr, arg))
+				print("CODE %d at %o unknown args" % (func, ta))
 		elif i == "N":
 			p.todo(ea, disass)
 		else:
