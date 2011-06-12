@@ -3,9 +3,73 @@
 
 from __future__ import print_function
 
-import mem_domus
 import cpu_domus
-import file_domus
+import mem
+import domus_libs
+
+
+dl = domus_libs.domus_libs()
+
+def xxxstr(x):
+	if x >= 32 and x < 127:
+		return mem.ascii(x)
+	return "<%d>" % x
+
+def musil_str(p, a, l):
+	s = ""
+	while True:
+		b = p.m.rd(a)
+
+		x = b >> 8
+		if l == 0 and x == 0:
+			break
+		s += xxxstr(x)
+		if l == 1:
+			break
+		if l > 0:
+			l -= 1
+
+		x = b & 0xff
+		if l == 0 and x == 0:
+			break
+		s += xxxstr(x)
+		if l == 1:
+			break
+		if l > 0:
+			l -= 1
+		a += 1 
+	return s
+		
+
+def int_getparams_desc(p, t, lvl):
+	l = list()
+	for a in range(t.start, t.end, 3):
+		b = p.m.rd(a)
+		if b >> 8 == 0xff:
+			s = ".TXT\t'<255>'"
+		else:
+			s = ".TXT\t'" + musil_str(p, a, 6) + "'"
+			b = p.m.rd(a + 2) & 0xff
+			if b < 128:
+				s = "%-21s\t\t!Text (STRING(%d))!" % (s, b)
+			elif b == 129:
+				s = "%-21s\t\t!Bool (STRING(1))!" % s
+			elif b == 130:
+				s = "%-21s\t\t!Integer (INTEGER)!" % s
+			elif b == 134:
+				s = "%-21s\t\t!Name (STRING(6))!" % s
+			elif b == 140:
+				s = "%-21s\t\t!Filename (STRING 12))!" % s
+			
+		l.append(s.expandtabs())
+		l.append("")
+		l.append("")
+	return l
+
+def int_getparams_init(p, t, lvl):
+	l = list()
+	l.append(musil_str(p, t.start, t.a['lax']))
+	return l
 
 def int_getparams(p, adr, args):
 	print("GETPARMS @%o" % args[0], args)
@@ -17,14 +81,39 @@ def int_getparams(p, adr, args):
 	cpu_domus.dot_txt(p, a0 + 0o552, None)
 
 	a0 = args[1] >> 1
+	p.setlabel(a0, "ARGDESC")
 	a = a0
+	la = list()
+	lax = 0
 	while True:
 		b = p.m.rd(a)
 		if b >> 8 == 0xff:
 			break;
-		print("%04x" % p.m.rd(a))
-		cpu_domus.dot_txt(p, a, a + 3)
+		b = p.m.rd(a + 2) & 0xff
+		if b < 128:
+			ll = b
+		elif b == 129:
+			ll = 1
+		elif b == 130:
+			ll = 2
+		elif b == 134:
+			ll = 6
+		elif b == 140:
+			ll = 12
+		lax += ll
+		la.append((musil_str(p, a, 0), b, ll))
 		a += 3
+	print(lax, la)
+
+	x = p.t.add(a0, a + 1, "MUSIL_GETPARAM_ARGS")
+	x.render = int_getparams_desc
+
+	a0 = args[2] >> 1
+	p.setlabel(a0, "ARGINIT")
+	x = p.t.add(a0, a0 + ((lax+1)>>1), "MUSIL_GETPARAM_INIT")
+	x.render = int_getparams_init
+	x.a['lax'] = lax
+	x.a['args'] = la
 
 def int_p0090(p, adr, args):
 	a0 = args[0]
@@ -43,7 +132,7 @@ codeprocs = {
 "CODEP::BUFFE":	(None,	"BUFFE", "A", "V", "A", "A", "V", "N"),
 "CODEP::CHANG":	(None,	"CHANG", "A", "A", "N"),
 "CODEP::FILL":	(None,	"FILL", "V", "A", "V", "V", "N"),
-"CODEP::GETER": (None, "GETER", "A", "V", "A", "A", "N"),
+"CODEP::GETER": (None, "GETERROR", "A", "V", "A", "N"),
 "CODEP::LOAD": (None, "LOAD", "A", "V", "N"),
 "CODEP::OPERA":	(None,	"OPERA", "A", "N"),
 "CODEP::P0007": (None, "P0007", "A", "A", "N"),
@@ -53,8 +142,8 @@ codeprocs = {
 "CODEP::P0054":	(None,	"P0054", "A", "V", "N"),
 "CODEP::P0076":	(None,	"P0076", "A", "A", "N"),
 "CODEP::P0084": (None, "FINIS", "V",),
-"CODEP::P0085": (None, "P0085", "A", "A", "A", "N"),
-"CODEP::P0086": (None, "P0086", "A", "V", "A", "N"),
+"CODEP::P0085": (None, "GETPARAMS", "A", "A", "A", "N"),
+"CODEP::P0086": (None, "CONNECTFILE", "A", "V", "A", "N"),
 "CODEP::P0087":	(None,	"P0087", "V", "A", "N"),
 "CODEP::P0088": (None, "P0088", "A", "A", "V", "V", "V", "N"),
 "CODEP::P0089":	(None,	"P0089", "A", "V", "V", "V", "N"),
@@ -72,9 +161,10 @@ codeprocs = {
 "CODEP::P0128":	(None,	"P0128", "A", "N"),
 "CODEP::P0130": (None, "P0130", "A", "V", "V", "V", "V", "N"),
 "CODEP::P0132": (None, "P0132", "A", "A", "N"),
-"CODEP::P0150": (None, "P0150", "A", "N"),
+"CODEP::P0149": (None, "GETTIME", "A", "N"),
+"CODEP::P0150": (None, "GETDATE", "A", "N"),
 "CODEP::P0154": (None, "P0154", "A", "A", "N"),
-"CODEP::P0159": (None, "P0150", "A", "A", "N"),
+"CODEP::P0159": (None, "TAKEADDRESS", "A", "A", "N"),
 "CODEP::P0160": (None, "P0160", "A", "V", "V", "V", "N"),
 "CODEP::P0161": (None, "P0161", "V", "A", "V", "V", "N"),
 "CODEP::P0167": (None, "P0167", "A", "A", "A", "N"),
@@ -86,9 +176,9 @@ codeprocs = {
 "CODEP::P0238": (None, "P0237", "V", "N"),
 "CODEP::P0239": (None, "P0239", "A", "A", "V", "V", "N"),
 "CODEP::P0260": (int_getparams, "GETPARAMS", "A", "A", "A", "A", "V", "N"),
+"CODEP::P0261":	(None, "CONNECTFILE", "A", "V", "A", "A", "N"),
+"CODEP::P0262":	(None, "SPLITSHARE", "A", "N"),
 "CODEP::P0263": (None, "GETNAME", "A", "A", "A", "N"),
-"CODEP::P0XXX":	(None, "P0XXX", "A", "N"),
-"CODEP::PYY86":	(None, "PYY86", "A", "V", "A", "A", "N"),
 "CODEP::RANDO":	(None,	"RANDO", "A", "V", "N"),
 "CODEP::SPRIO":	(None,	"SPRIO", "A", "A", "V", "N"),
 "CODEP::STORE": (None, "STORE", "A", "V", "N"),
@@ -97,47 +187,23 @@ codeprocs = {
 #CODEP::P0264": (None, "GETERROR", ...RCSL-43-GL-10639
 }
 
-def ident_lib_module(p, adr):
-	print("Try to identify CODE routine at %o" % adr)
-	for ll in libx:
-		df = file_domus.file_domus(dn + "__." + ll)
-		for i in df.index:
-			mx = mem_domus.mem_domus()
-			df.load(mx, i, silent=True)
-			oo = 0o10000
-			match = 0
-			skip = 0
-			target = df.max_nrel + 1 - oo
-			for ax in range(0, target):
-				try:
-					q = mx.rdqual(ax + oo)
-					dx = mx.rd(ax + oo)
-				except:
-					target -= 1
-					#print("REFRD %o" % ax)
-					continue
-				if q != 1:
-					#print("REFQ %o" % ax, q)
-					skip += 1
-					continue
-				try:
-					dy = p.m.rd(adr + ax)
-				except:
-					#print("CODRD %o" % ax)
-					continue
-				if dx == dy:
-					match += 1
-			if match + skip != target:
-				continue
-			print("Code Routine at %o matches %s::%s  (" % (adr, ll, i), match, skip, df.load_words, ")")
-			idx = ll + "::" + i
-			x = p.t.add(adr, adr + 1 + df.max_nrel - oo, "CodeProc")
-			x.blockcmt += "CODE PROCEDURE " + i + " FROM " + ll + "\n"
-			p.setlabel(adr, i)
-			if idx in codeprocs:
-				x.blockcmt += str(codeprocs[idx]) + "\n"
-				return codeprocs[idx]
-			return None
+def ident_code_proc(p, adr):
+	mx = dl.match(p.m, adr)
+	if mx == None:
+		return None
+	for i in mx[2]:
+		if not i in codeprocs:
+			continue
+		print("Code proc at %o match %s" % (adr, i))
+		x = p.t.add(mx[0], mx[1] + 1, "CodeProc")
+		x.blockcmt += "CODE PROCEDURE " + i + "\n"
+		x.blockcmt += str(codeprocs[i]) + "\n"
+		if False:
+			x.render = "[supressed]"
+			x.descend = None
+		return codeprocs[i]
+	print("Code proc at %o not found:" % adr, mx)
+	return None
 
 def int_opmess(p, adr, args):
 	a = args[0]>>1
@@ -218,11 +284,11 @@ intins = {
 
 49:	( None, "OP49", "V", "N"),
 50:	( None, "OP50", "A", "N"),
-51:	( None, "OP51", "I", ),
+51:	( None, "RETURN", "I", ),
 52:	( None, "OP52", ),
 53:	( None, "OP53", ),
 54:	( None, "OP54", ),
-55:	( None, "OP55", "I", "N"),
+55:	( None, "CALL", "I", "N"),
 56:	( None, "OP56", "A", "V", "N"),
 57:	( None, "OP57", "A", "V", "N"),
 
@@ -383,7 +449,7 @@ def disass(p, adr, priv = None):
 			t += ", %o" % arg
 			p.todo(ta, p.cpu.disass)
 			if not func in y:
-				xx = ident_lib_module(p, ta)
+				xx = ident_code_proc(p, ta)
 				if xx != None:
 					y[func] = xx
 			if func in y:

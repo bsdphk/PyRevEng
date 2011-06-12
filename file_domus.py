@@ -82,8 +82,10 @@ class file_domus(object):
 		self.rec_titl = None
 		self.rec_size = None
 		self.load_words = 0
-		self.max_nrel = 0
-		self.max_zrel = 0
+		self.min_nrel = off
+		self.max_nrel = off - 1
+		self.min_zrel = offhi
+		self.max_zrel = offhi - 1
 		a,ae = self.index[obj]
 		while a < ae:
 			rec_typ = self.d[a]

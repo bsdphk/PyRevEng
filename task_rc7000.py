@@ -137,7 +137,9 @@ def dofile(filename, obj = None):
 	else:
 		p.load_file.load(p.m, obj)
 	ld = p.load_file.rec_end
-	if ld == None:
+	if obj != None:
+		pass
+	elif ld == None:
 		pass
 	elif ld == 0x8000:
 		pass
@@ -227,7 +229,10 @@ def dofile(filename, obj = None):
 				else:
 					p.t.add(i, i + 1, "gap")
 	print("----------")
-	p.render("/tmp/" + filename)
+	if obj != None:
+		p.render("/tmp/" + filename + "_" + obj)
+	else:
+		p.render("/tmp/" + filename)
 	#p.t.recurse()
 
 if __name__ == "__main__":
@@ -242,4 +247,6 @@ if __name__ == "__main__":
 			except:
 				pass
 	else:
-		dofile("__.CDUMP")
+		#dofile("__.CODEP", "P0261")
+		#dofile("__.PRINT")
+		dofile("__.CATLI")

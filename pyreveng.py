@@ -192,6 +192,8 @@ class pyreveng(object):
 
 		try:
 			dst = self.t.find(fl[0][2], "run")
+			if dst == None:
+				return
 		except:
 			return
 
