@@ -314,17 +314,107 @@ class domus(cpu_nova.nova):
 		self.special[0o006200] = ( "GETREC",)
 		self.special[0o006201] = ( "PUTREC",)
 		self.special[0o006202] = ( "WAITTRANSFER",)
-		self.special[0o006204] = ( "TRANSFER",)
-		self.special[0o006205] = ( "INBLOCK",)
-		self.special[0o006206] = ( "OUTBLOCK",)
-		self.special[0o006207] = ( "INCHAR",)
+		self.special[0o006204] = (
+			"TRANSFER",
+			(
+				"     Call    Return",
+				"AC0  oper    destroyed",
+				"AC1  len     destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006205] = (
+			"INBLOCK",
+			(
+				"     Call    Return",
+				"AC0  -       destroyed",
+				"AC1  -       destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006206] = (
+			"OUTBLOCK",
+			(
+				"     Call    Return",
+				"AC0  -       destroyed",
+				"AC1  -       destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006207] = (
+			"INCHAR",
+			(
+				"     Call    Return",
+				"AC0  -       destroyed",
+				"AC1  -       char",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
 		self.special[0o006210] = ( "FREESHARE",)
-		self.special[0o006211] = ( "OUTSPACE",)
-		self.special[0o006212] = ( "OUTCHAR",)
-		self.special[0o006213] = ( "OUTNL",)
-		self.special[0o006214] = ( "OUTEND",)
-		self.special[0o006215] = ( "OUTTEXT",)
-		self.special[0o006216] = ( "OUTOCTAL",)
+		self.special[0o006211] = (
+			"OUTSPACE",
+			(
+				"     Call    Return",
+				"AC0  -       unchanged",
+				"AC1  -       destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006212] = (
+			"OUTCHAR",
+			(
+				"     Call    Return",
+				"AC0  -       unchanged",
+				"AC1  char    destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006213] = (
+			"OUTNL",
+			(
+				"     Call    Return",
+				"AC0  -       destroyed",
+				"AC1  char    destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006214] = (
+			"OUTEND",
+			(
+				"     Call    Return",
+				"AC0  -       destroyed",
+				"AC1  char    destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006215] = (
+			"OUTTEXT",
+			(
+				"     Call    Return",
+				"AC0  byteadr destroyed",
+				"AC1  -       destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
+		self.special[0o006216] = (
+			"OUTOCTAL",
+			(
+				"     Call    Return",
+				"AC0  value   destroyed",
+				"AC1  -       destroyed",
+				"AC2  zone    zone",
+				"AC3  link    destroyed",
+			)
+		)
 		self.special[0o006217] = ( "SETPOSITION",)
 		self.special[0o006220] = ( "CLOSE",)
 		self.special[0o006221] = ( "OPEN",)

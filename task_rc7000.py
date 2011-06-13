@@ -146,10 +146,25 @@ def dofile(filename, obj = None):
 	for i in range(0,256):
 		try:
 			q = p.m.rdqual(i)
-			if q > 0:
-				p.todo(p.m.rd(i), p.cpu.disass)
+			d = p.m.rd(i)
 		except:
-			pass
+			continue
+		if q > 0:
+			p.todo(d, p.cpu.disass)
+		j = 0o006200 | i
+		if j in p.cpu.special:
+			p.setlabel(d, p.cpu.special[j][0])
+			x = p.t.add(i, i + 1, "PZ_CALL")
+			x.render = ".WORD   %o%s" % (d, p.m.qfmt(q))
+			x.blockcmt += "\n"
+			x.cmt.append(p.cpu.special[j][0])
+			if len(p.cpu.special[j]) > 1:
+				for k in p.cpu.special[j][1]:
+					x.cmt.append(k)
+
+	if filename == "__.MUC":
+		p.todo(0o100017, p.cpu.disass)
+		p.todo(0o100034, p.cpu.disass)
 
 	if filename == "__.INT":
 
@@ -171,17 +186,6 @@ def dofile(filename, obj = None):
 
 		for i in cpu_domus_int.intins:
 			xx(i)
-		
-
-	if fn == dn + "__.MUM":
-		# MUM
-		for i in range(0,256):
-			try:
-				q = p.m.rdqual(i)
-				if q != 1:
-					p.todo(p.m.rd(i), p.cpu.disass)
-			except:
-				continue
 
 	if fn == dn + "__.DKP":
 		p.todo(0o100000, p.cpu.disass)
@@ -297,5 +301,6 @@ if __name__ == "__main__":
 				pass
 	else:
 		#dofile("__.CODEP", "P0261")
-		dofile("__.MUSIL")
-		#dofile("__.CATLI")
+		#dofile("__.MUSIL")
+		#dofile("__.MUB")
+		dofile("__.MUP")
