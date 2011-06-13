@@ -51,8 +51,16 @@ class dot_txt(tree.tree):
 			if q != 1:
 				raise DomusError(t.start, ".TXT is relocated")
 			x = p.m.rd(i)
-			s += mem.ascii(x >> 8)
-			s += mem.ascii(x)
+			y = x >> 8
+			if y < 32 or y > 126:
+				s += "<%d>" % y
+			else:
+				s += mem.ascii(y)
+			y = x & 0xff
+			if y < 32 or y > 126:
+				s += "<%d>" % y
+			else:
+				s += mem.ascii(y)
 		s += "'"
 		return (s,)
 
@@ -275,7 +283,16 @@ class domus(cpu_nova.nova):
 			)
 		)
 		self.special[0o006007] = ( "SENDANSWER",)
-		self.special[0o006010] = ( "SEARCHITEM",)
+		self.special[0o006010] = (
+			 "SEARCHITEM",
+			(
+				"     Call    Return",
+				"AC0  -       unchanged",
+				"AC1  head    head",
+				"AC2  name    item",
+				"AC3  link    cur",
+			)
+		)
 		self.special[0o006011] = ( "CLEANPROCESS",)
 		self.special[0o006012] = ( "BREAKPROCESS",)
 		self.special[0o006013] = ( "STOPPROCESS",)

@@ -124,6 +124,14 @@ class base_mem(object):
 			start += 1
 		return l
 
+	# Default content formatter
+	def col2(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			l.append(".XXX")
+			start += 1
+		return l
+
 	# Check if an address is inside this piece of memory
 	def chkadr(self, start, end=None):
 		if start < self.start:

@@ -355,8 +355,10 @@ class pyreveng(object):
 		return r
 
 	def __render_xxx(self, start, end, fo, lvl):
-		for i in self.m.col1(self, start, end, lvl):
-			fo.write(i + ".XXX\n")
+		c1 = self.m.col1(self, start, end, lvl)
+		c2 = self.m.col2(self, start, end, lvl)
+		for i in range(0, len(c1)):
+			fo.write(c1[i] + c2[i] + "\n")
 		self.gaps += end - start
 
 	# 'xxx' render readable locations in this gap

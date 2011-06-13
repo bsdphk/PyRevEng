@@ -21,3 +21,46 @@ class mem_domus(mem.base_mem):
 
 	def qfmt(self, q):
 		return self.qchar[q]
+
+	# adr/data/ascii column formatter
+	# returns a list of lines, all the same width
+	def col1(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			try:
+				x = self.rd(start)
+				q = self.rdqual(start)
+			except:
+				l.append(self.afmt(start) + " --")
+				start += 1
+				continue
+			s = self.afmt(start) + " " + self.dfmt(x)
+			if self.qualifiers > 0:
+				s += self.qfmt(q)
+			s += "  |"
+			for b in range(24,-1,-8):
+				if self.bits > b:
+					if q == 1:
+						s += mem.ascii(x >> b)
+					else:
+						s += " "
+			s += "|\t"
+			l.append(s)
+			start += 1
+		return l
+
+	# Default content formatter
+	def col2(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			q = p.m.rdqual(start)
+			d = p.m.rd(start)
+			s = ".XXX"
+			if q == 3:
+				s += "\t%o'*2" % (d >> 1)
+				if d & 1:
+					s += "+1"
+			l.append(s)
+			start += 1
+		return l
+

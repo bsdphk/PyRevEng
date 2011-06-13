@@ -120,9 +120,6 @@ def dofile(filename, obj = None):
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 	fn = dn + filename
-	if False:
-		fn = dn + "__.CODEP"
-		obj = "P0260"
 
 	p = pyreveng.pyreveng(mem_domus.mem_domus())
 	p.cpu = cpu_domus.domus()
@@ -215,6 +212,57 @@ def dofile(filename, obj = None):
 			p.todo(da, p.cpu.disass)
 			print("CMD: %x -> %x" % (aa,da))
 
+	if fn == dn + "__.MUSIL":
+		#p.todo(0o20550, p.cpu.disass)
+		#p.todo(0o14341, p.cpu.disass)
+		p.cpu.zonedesc(p, 0o11634)
+		x = p.t.add(0o012461, 0o012474, "Func")
+		x = p.t.add(0o012474, 0o012477, "Func")
+		x = p.t.add(0o012477, 0o012512, "Func")
+		x = p.t.add(0o013272, 0o013303, "Func")
+
+		cpu_domus.dot_txt(p, 0o012517, None)
+
+		def do_list(p,a, nw):
+			while True:
+				x = p.t.add(a - 4, a + nw, "XXXTBL")
+				cpu_domus.dot_txt(p, a - 4, a)
+				for i in range(0,nw):
+					cpu_domus.word(p, a + i, "%o")
+				n = p.m.rd(a)
+				if n == 0:
+					break
+				a = n
+
+		do_list(p, 0o016451, 2)
+		do_list(p, 0o026100, 4)
+		do_list(p, 0o026270, 4)
+
+		for a in range(0o015673, 0o015706):
+			p.todo(p.m.rd(a), p.cpu.disass)
+			
+
+		a = 0o12526
+		while True:
+			x = p.t.add(a, a + 5, "XXXTBL")
+			cpu_domus.dot_txt(p, a + 2, a + 5)
+			p.todo(p.m.rd(a + 1), p.cpu.disass)
+			cpu_domus.word(p, a, "%o")
+			cpu_domus.word(p, a + 1, "%o")
+			n = p.m.rd(a)
+			if n == 0:
+				break;
+			a = n + 2
+
+		# calls to 20574'
+		p.todo(0o20716, p.cpu.disass)
+		p.todo(0o14600, p.cpu.disass)
+
+		p.todo(0o17343, p.cpu.disass)
+
+		p.todo(0o17341, p.cpu.disass)
+		p.todo(0o015271, p.cpu.disass)
+
 	p.run()
 
 	if False:
@@ -236,6 +284,7 @@ def dofile(filename, obj = None):
 	#p.t.recurse()
 
 if __name__ == "__main__":
+
 	if False:
 		import os 
 
@@ -248,5 +297,5 @@ if __name__ == "__main__":
 				pass
 	else:
 		#dofile("__.CODEP", "P0261")
-		#dofile("__.PRINT")
-		dofile("__.CATLI")
+		dofile("__.MUSIL")
+		#dofile("__.CATLI")
