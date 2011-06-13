@@ -139,7 +139,7 @@ class file_domus(object):
 					ax += 1
 			elif rec_typ == 6:
 				if not silent:
-					print("\t.END %04x" % y[0])
+					print("\t.END %o" % y[0])
 				self.rec_end = y[0]
 			elif rec_typ == 7:
 				self.rec_titl = radix40(y)

@@ -126,18 +126,22 @@ dn = "/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 libx= ( "CODEP", "CODEX", "ULIB", "FSLIB",)
 
 codeprocs = {
-"FSLIB::RANDM":	(None,	"RANDM", "A", "N"),
-"FSLIB::CHECK":	(None,	"CHECK", "A", "A", "A", "A", "A", "N"),
+"CODEP::AANSW":	(None,	"AANSW", "V", "A", "N"),
 "CODEP::ADMME":	(None,	"ADMME", "A", "A", "V", "N"),
 "CODEP::BUFFE":	(None,	"BUFFE", "A", "V", "A", "A", "V", "N"),
+"CODEP::CASE":	(None,	"CASE", "V", "V", "V", "N"),
 "CODEP::CHANG":	(None,	"CHANG", "A", "A", "N"),
+"CODEP::DELAY":	(None,	"DELAY", "V", "N"),
 "CODEP::FILL":	(None,	"FILL", "V", "A", "V", "V", "N"),
+"CODEP::FINDP":	(None,	"FINDP", "A", "A", "N"),
 "CODEP::GETER": (None, "GETERROR", "A", "V", "A", "N"),
 "CODEP::LOAD": (None, "LOAD", "A", "V", "N"),
 "CODEP::OPERA":	(None,	"OPERA", "A", "N"),
+"CODEP::P0003": (None, "P0003", "A", "N"),
 "CODEP::P0007": (None, "P0007", "A", "A", "N"),
 "CODEP::P0023": (None, "P0023", "V", "N"),
 "CODEP::P0039": (None, "P0039", "A", "A", "A", "N"),
+"CODEP::P0048": (None, "P0048", "N"),
 "CODEP::P0040": (None, "P0040", "A", "V", "N"),
 "CODEP::P0054":	(None,	"P0054", "A", "V", "N"),
 "CODEP::P0076":	(None,	"P0076", "A", "A", "N"),
@@ -153,6 +157,7 @@ codeprocs = {
 "CODEP::P0093":	(None,	"P0093", "V", "A", "N"),
 "CODEP::P0095":	(None,	"P0095", "A", "V", "A", "N"),
 "CODEP::P0098":	(None,	"P0098", "A", "N"),
+"CODEP::P0117":	(None,	"P0117", "A", "A", "A", "N"),
 "CODEP::P0121":	(None,	"P0121", "V", "V", "V", "N"),
 "CODEP::P0122":	(None,	"P0122", "A", "V", "V", "N"),
 "CODEP::P0123":	(None,	"P0123", "A", "A", "V", "N"),
@@ -161,16 +166,23 @@ codeprocs = {
 "CODEP::P0128":	(None,	"P0128", "A", "N"),
 "CODEP::P0130": (None, "P0130", "A", "V", "V", "V", "V", "N"),
 "CODEP::P0132": (None, "P0132", "A", "A", "N"),
+"CODEP::P0144": (None, "P0144", "V", "A", "A", "V", "N"),
+"CODEP::P0145": (None, "P0145", "A", "V", "V", "A", "N"),
 "CODEP::P0149": (None, "GETTIME", "A", "N"),
 "CODEP::P0150": (None, "GETDATE", "A", "N"),
 "CODEP::P0154": (None, "P0154", "A", "A", "N"),
+"CODEP::P0155": (None, "P0155", "A", "V", "V", "V", "N"),
+"CODEP::P0156": (None, "P0156", "A", "A", "A", "N"),
 "CODEP::P0159": (None, "TAKEADDRESS", "A", "A", "N"),
 "CODEP::P0160": (None, "P0160", "A", "V", "V", "V", "N"),
 "CODEP::P0161": (None, "P0161", "V", "A", "V", "V", "N"),
+"CODEP::P0162": (None, "P0162", "V", "V", "A", "N"),
+"CODEP::P0164": (None, "P0164", "A", "A", "A", "N"),
 "CODEP::P0167": (None, "P0167", "A", "A", "A", "N"),
 "CODEP::P0168": (None, "P0168", "A", "A", "A", "N"),
 "CODEP::P0169": (None, "P0169", "A", "A", "A", "N"),
 "CODEP::P0170": (None, "P0170", "A", "A", "A", "A", "N"),
+"CODEP::P0229": (None, "P0229", "V", "V", "N"),
 "CODEP::P0230": (None, "P0230", "A", "V", "N"),
 "CODEP::P0237": (None, "P0237", "V", "N"),
 "CODEP::P0238": (None, "P0237", "V", "N"),
@@ -179,9 +191,28 @@ codeprocs = {
 "CODEP::P0261":	(None, "CONNECTFILE", "A", "V", "A", "A", "N"),
 "CODEP::P0262":	(None, "SPLITSHARE", "A", "N"),
 "CODEP::P0263": (None, "GETNAME", "A", "A", "A", "N"),
+"CODEP::P0272": (None, "P0272", "A", "N"),
 "CODEP::RANDO":	(None,	"RANDO", "A", "V", "N"),
 "CODEP::SPRIO":	(None,	"SPRIO", "A", "A", "V", "N"),
 "CODEP::STORE": (None, "STORE", "A", "V", "N"),
+"CODEP::SW":    (None, "SW", "V", "A", "N"),
+"CODEP::TAKEA": (None, "TAKEA", "A", "A", "N"),
+"CODEP::TESTM": (None, "TESTM", "V", "A", "N"),
+"CODEX::APPEN": (None, "APPEN", "A", "A", "A", "A", "A", "N"),
+"CODEX::SCANC": (None, "SCANC", "A", "A", "V", "V", "V", "N"),
+"CODEX::SEARC": (None, "SEARC", "A", "A", "A", "A", "A", "N"),
+"CODEX::SENDM": (None, "SENDM", "A", "A", "A", "N"),
+"CODEX::SLIDE": (None, "SLIDE", "A", "V", "V", "V", "N"),
+"CODEX::P0013": (None, "P0013", "A", "A", "N"),
+"FSLIB::CHECK":	(None,	"CHECK", "A", "A", "A", "A", "A", "N"),
+"FSLIB::MCORE":	(None,	"MCORE", "V", "A", "N"),
+"FSLIB::P0023":	(None,	"P0023", "V", "N"),
+"FSLIB::RANDM":	(None,	"RANDM", "A", "N"),
+"FSLIB::SINTR":	(None,	"SINTR", "V", "V", "V", "N"),
+"FSLIB::WAITT":	(None,	"WAITT", "A", "V", "A", "N"),
+"FSLIB::FS002":	(None,	"FS002", "V", "A", "V", "A", "N"),
+"FSLIB::FS003":	(None,	"FS003", "V", "N"),
+"FSLIB::FS004":	(None,	"FS004", "V", "V", "A", "N"),
 #CODEP::P0261": (None, "CONNECTFILE", ...RCSL-43-GL-10639
 #CODEP::P0262": (None, "SPLITSHARE", ...RCSL-43-GL-10639
 #CODEP::P0264": (None, "GETERROR", ...RCSL-43-GL-10639
@@ -222,7 +253,7 @@ def int_outtext(p, adr, args):
 		pass
 
 def int_link(p, adr, args):
-	print("LINK %o" % adr, "%o" % args[0])
+	# print("LINK %o" % adr, "%o" % args[0])
 	x = p.t.add(args[0], adr + 2, "MUSIL_FUNC")
 	x.blockcmt += "\nMUSIL FUNCTION\n"
 

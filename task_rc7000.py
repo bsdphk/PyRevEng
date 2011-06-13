@@ -22,98 +22,6 @@ class DomusError(Exception):
         def __str__(self):
                 return repr(self.value)
 
-def do_desc(p, a, l, n, desc):
-	if l == 0:
-		for i in desc:
-			try:
-				p.m.rd(a + l)
-			except:
-				break
-			l += i[0]
-	x = p.t.add(a, a + l, n + "Descriptor")
-	x.blockcmt += n + " descriptor\n"
-	x.fill = False
-	i = 0
-	for j in desc:
-		if j[1] == "name":
-			x = dot_txt(p, a+i, a + i + j[0])
-		else:
-			x = word(p, a + i)
-		x.cmt.append("+%d " % i + j[1])
-		i += j[0]
-		if i >= l:
-			break
-	while i < l:
-		x = word(p, a + i)
-		x.cmt.append("+%d" % i)
-		i += 1
-
-def paging(p, a, priv = None):
-	do_desc(p, a, 0, "RCSL-43-RI-0142 Paging", (
-		( 1, "page size"),
-		( 1, "page mask"),
-		( 1, "blocking factor"),
-		( 1, "page table"),
-		( 1, "pagemap"),
-		( 1, "statproc"),
-		( 1, "first frame"),
-		( 1, "top of frames"),
-		( 1, "victim"),
-		( 1, "pages read"),
-		( 1, "pages written"),
-		( 1, "pages in"),
-		( 1, "pages out"),
-		( 1, "adr input mess"),
-		( 1, "input message[0]"),
-		( 1, "input message[1]"),
-		( 1, "input message[2]"),
-		( 1, "input message[3]"),
-		( 1, "adr output mess"),
-		( 1, "output message[0]"),
-		( 1, "output message[1]"),
-		( 1, "output message[2]"),
-		( 1, "output message[3]"),
-		( 1, "pager flag"),
-		( 1, "working locations"),
-	))
-
-	w = p.m.rd(a + 3)
-	do_desc(p, w, 0, "Page Table", (
-		( 1, "n_pages" ),
-		( p.m.rd(w), "pageentries"),
-	))
-
-	w = p.m.rd(a + 4)
-	do_desc(p, w, 0, "Page Map", (
-		( 1, "n_pages" ),
-		( p.m.rd(w), "pageentries"),
-	))
-
-	w = p.m.rd(a + 5)
-	if w != 0:
-		p.setlabel(w, "Paging_Statproc")
-		p.todo(w, p.cpu.disass)
-	
-
-if __name__ == "__main__" and False:
-	import os
-
-	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
-	fl = os.listdir(dn)
-	for i in fl:
-		try:
-			df = file_domus.file_domus(dn + i)
-			if len(df.index) > 1:
-				print(len(df.index), i)
-		except:
-			pass
-  
-	exit (0)
-
-
-
-
-
 def dofile(filename, obj = None):
 
 	print("DOFILE", filename, obj);
@@ -123,16 +31,11 @@ def dofile(filename, obj = None):
 
 	p = pyreveng.pyreveng(mem_domus.mem_domus())
 	p.cpu = cpu_domus.domus()
-	p.t.recurse()
 
 	p.cpu.iodev[9] = "TTYOUT"
 
 	p.load_file = file_domus.file_domus(fn)
-	if False:
-		print("OBJS:", p.load_file.index)
-		p.load_file.load(p.m, "TESTM")
-	else:
-		p.load_file.load(p.m, obj)
+	p.load_file.load(p.m, obj, silent=True)
 	ld = p.load_file.rec_end
 	if obj != None:
 		pass
@@ -201,16 +104,16 @@ def dofile(filename, obj = None):
 		# DOMUS
 		p.todo(0x11f1, p.cpu.disass)
 		p.t.a['page_base'] = 0x137a
-		paging(p, 0x1007)
+		p.cpu.pagedesc(p, 0x1007)
 		for pg in range(3,20):
 			aa = 0x137a + pg * 0x100
 			x = p.t.add(aa, aa + 1, "page %d" % pg)
 			x.a['cmt'] = "; PAGE %d" % pg
 		for c in range(0,19):
 			aa = 0x1d90 + 5 * c
-			word(p,aa)
-			dot_txt(p, aa + 1, aa + 4)
-			word(p,aa + 4)
+			cpu_domus.word(p, aa)
+			cpu_domus.dot_txt(p, aa + 1, aa + 4)
+			cpu_domus.word(p, aa + 4)
 			nw = p.m.rd(aa)
 			da = (nw & 0x7fff) + p.t.a['page_base']
 			p.todo(da, p.cpu.disass)
@@ -269,6 +172,49 @@ def dofile(filename, obj = None):
 
 	p.run()
 
+	if filename == "__.CATW":
+		# See RCSL 43-GL-7915 p35
+		pgd = p.a['progdesc']
+		print("CATW", pgd)
+		x = cpu_domus.word(p, pgd + 7)
+		x.cmt.append(" +7 First Area Process")
+		x = cpu_domus.word(p, pgd + 8)
+		x.cmt.append(" +8 Top Area Process")
+		x = cpu_domus.word(p, pgd + 9)
+		x.cmt.append(" +9 Head of Unit Chain")
+		x = cpu_domus.word(p, pgd + 10)
+		x.cmt.append(" +10 Chain of Head of Unit Chain")
+		a = pgd + 11
+		while True:
+			x = p.t.add(a, a + 20, "UnitDesc")
+
+			x = cpu_domus.word(p, a)
+			x.cmt.append(" +0 Driver name reference")
+
+			x = cpu_domus.word(p, a + 1)
+			x.cmt.append(" +1 Unit number")
+
+			x = cpu_domus.word(p, a + 2)
+			x.cmt.append(" +2 chain")
+
+			x = cpu_domus.word(p, a + 3)
+			x.cmt.append(" +3 size of unit desc")
+
+			x = cpu_domus.dot_txt(p, a + 4, a + 7)
+			x = cpu_domus.dot_txt(p, a + 7, a + 10)
+
+			x = cpu_domus.word(p, a + 10)
+			x.cmt.append(" +10 Kit displacement")
+			x = cpu_domus.word(p, a + 11)
+			x.cmt.append(" +11 Kit displacement")
+
+			n = p.m.rd(a + 2)
+			if n == 0:
+				break
+			a = n
+
+	p.run()
+
 	if False:
 		for g in p.t.gaps():
 			for i in range(g[0],g[1]):
@@ -303,4 +249,6 @@ if __name__ == "__main__":
 		#dofile("__.CODEP", "P0261")
 		#dofile("__.MUSIL")
 		#dofile("__.MUB")
-		dofile("__.MUP")
+		#dofile("__.CHECK")
+		dofile("__.CATW")
+		pass

@@ -25,13 +25,13 @@ class domus_libs(object):
 		if filenames == None:
 			filenames = list()
 			filenames.append("CODEP")
-			#filenames.append("__.CODEX")
-			#filenames.append("__.ULIB")
-			#filenames.append("__.FSLIB")
+			filenames.append("CODEX")
+			filenames.append("ULIB")
+			filenames.append("FSLIB")
 		self.t = dict()
-		for fn in filenames:
-			self.load(prefix, fn)
-		print(self.t)
+		self.filenames = filenames
+		self.prefix = prefix
+		self.loaded = False
 	
 
 	def load(self, prefix, filename):
@@ -53,6 +53,10 @@ class domus_libs(object):
 			t['Z'].append(filename + "::" + obj)
 
 	def match(self, tmem, tadr):
+		if not self.loaded:
+			for fn in self.filenames:
+				self.load(self.prefix, fn)
+			self.loaded = True
 		t = self.t
 		adr = tadr
 		while True:

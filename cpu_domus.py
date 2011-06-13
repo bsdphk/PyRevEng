@@ -565,6 +565,12 @@ class domus(cpu_nova.nova):
 		do_desc(p, adr, 8, "Share", ShareDesc)
 
 	def progdesc(self, p, adr, priv = None):
+		# 1B0 = has procdesc
+		# 1B1 = reentrant
+		# 1B5 = params
+		# 1B6 = paged
+		# 1B7 = reserve
+		# 1B15 = ??
 		p.a['progdesc'] = adr
 		do_desc(p, adr, 0, "Program", ProgDesc)
 
@@ -604,3 +610,22 @@ class domus(cpu_nova.nova):
 	def pagedesc(self, p, adr, priv = None):
 		p.a['pagedesc'] = adr
 		do_desc(p, adr, 0, "Paging", PageDesc)
+
+		w = p.m.rd(adr + 3)
+		i = p.m.rd(w)
+		do_desc(p, w, i + 1, "Page_Table", (
+			( 1, 		"n_pages" ),
+			( i,		"pageentries"),
+		))
+
+		w = p.m.rd(adr + 4)
+		i = p.m.rd(w)
+		do_desc(p, w, i + 1, "Page_Map", (
+			( 1,		"n_pages" ),
+			( i,		"pageentries"),
+		))
+
+		w = p.m.rd(adr + 5)
+		if w != 0:
+			p.setlabel(w, "Paging_Statproc")
+			p.todo(w, p.cpu.disass)
