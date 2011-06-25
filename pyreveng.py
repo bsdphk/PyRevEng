@@ -486,8 +486,8 @@ class pyreveng(object):
 				r += self.col1s
 			else:
 				r += self.__pad_to(b[i], self.col1w)
-			for sp in range(0,lvl - 1):
-				r += "|   "
+			#for sp in range(0,lvl - 1):
+			#	r += "|   "
 			if i < len(a):
 				r += a[i]
 			r = self.__pad_to(r, self.cmt_start)

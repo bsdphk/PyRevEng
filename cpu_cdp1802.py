@@ -135,6 +135,31 @@ inscode = (
 	"bldi",  "bori",  "bani",  "bxri",  "badi",  "bsdi",  "1shl",  "bsmi",
 )
 
+reset_state = {
+	"/I":	( 4, 0),
+	"/N":	( 4, 0),
+	"/Q":	( 1, 0),
+	"/P":	( 4, 0),
+	"/X":	( 4, 0),
+	"/IE":	( 1, 1),
+	"/R0":	(16, 0),
+	"/R1":	(16, None),
+	"/R2":	(16, None),
+	"/R3":	(16, None),
+	"/R4":	(16, None),
+	"/R5":	(16, None),
+	"/R6":	(16, None),
+	"/R7":	(16, None),
+	"/R8":	(16, None),
+	"/R9":	(16, None),
+	"/R10":	(16, None),
+	"/R11":	(16, None),
+	"/R12":	(16, None),
+	"/R13":	(16, None),
+	"/R14":	(16, None),
+	"/R15":	(16, None),
+}
+
 class cdp1802(object):
 	def __init__(self):
 		assert len(inscode) == 256
@@ -144,8 +169,7 @@ class cdp1802(object):
 		self.dummy = True
 
 	def vectors(self, p):
-		r = ("R0",)
-		p.todo(0, self.disass, r)
+		p.todo(0, self.disass)
 
 	def render(self, p, t, lvl):
 		s = t.a['mne']
@@ -153,105 +177,164 @@ class cdp1802(object):
 			s += "\t" + t.a['arg']
 		return (s,)
 
-	def ins(self, p, adr, length, state, mne, arg = None, flow = None):
-		print("%04x" % adr, mne, arg, flow)
+	def ins(self, p, adr, length, mne, arg = None, flow = None, model = None):
+		# print("%04x" % adr, mne, arg, flow)
 		x = p.t.add(adr, adr + length, "ins")
 		x.render = self.render
 		x.a['mne'] = mne
 		x.a['arg'] = arg
-		x.a['state'] = state
 		if flow != None:
 			x.a['flow'] = flow
+		if model != None:
+			x.a['model'] = model
+			x.cmt.append(str(model))
 		p.ins(x, self.disass)
 
-	def disass(self, p, adr, state):
+	def disass(self, p, adr, priv = None):
 
 		try:
 			iw = p.m.rd(adr)
 			nw = p.m.rd(adr + 1)
 		except:
-			print("NOMEM cdp1802.disass(0x%x, " % adr, state, ")")
+			print("NOMEM cdp1802.disass(0x%x, " % adr, ")")
 			return
 
 		n = iw & 0x0f
 		ic = inscode[iw]
-		#print("cdp1802.disass(0x%x, " % adr, state, ") = 0x%02x" % iw, ic)
+		#print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw, ic)
 
+		model = None
 		if iw == 0xd4:	
 			# XXX: hack
 			da = p.m.b16(adr + 1)
-			self.ins(p, adr, 3, state, "xcall", "0x%04x" % da,
+			self.ins(p, adr, 3, "xcall", "0x%04x" % da,
 			    (
 				("call", "T", da),
-			    )
+			    ), model = model
 			)
 		elif iw == 0xd5:	
 			# XXX: hack
-			self.ins(p, adr, 1, state, "xret", None,
+			self.ins(p, adr, 1, "xret", None,
 			    (
 				("ret", "T", None),
-			    )
+			    ), model = model
 			)
 			
 	
 		elif ic[0] == "1":
-			self.ins(p, adr, 1, state, ic[1:])
+			if iw == 0x71:
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#4")),
+				    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#4"), "#4")),
+				    ("INC", "/R(X)"),
+				    ("=", "/IE",("TRIM", "#0", "#1")),
+				    ("DISASS", "/R(P)"),
+				)
+				self.ins(p, adr, 1, ic[1:], flow = ( ), model = model)
+				return
+			if iw == 0x73:
+				model = (( "=", ("MEM", "/R(X)"), "/D"), ("DEC", "/R(X)"))
+			elif iw == 0x7e:
+				model = ( "=", "/DF|/D", "/D|/DF")
+			elif iw == 0xf7:
+				model = ( "=", "/DF|/D", ( "SUB", "/D", ("MEM", "/R(X)")))
+			elif iw == 0xfe:
+				model = ( "=", "/DF|/D", "/D|#0b0")
+			self.ins(p, adr, 1, ic[1:], model = model)
 		elif ic[0] == "A":
 			# short branch uncond
-			self.ins(p, adr, 2, state, ic[1:], "0x%02x" % nw,
+			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
 			    (
 				("cond", "T", adr & 0xff00 | nw, ),
-			    )
+			    ), model = model
 			)
 		elif ic[0] == "a":
 			# short branch
-			self.ins(p, adr, 2, state, ic[1:], "0x%02x" % nw,
+			da = adr & 0xff00 | nw
+			if iw == 0x3a:
+				model = ( "B", "#0x%x" % da, ("ISNZ", "/D"))
+			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
 			    (
 				("cond", "X", adr + 2),
-				("cond", "X", adr & 0xff00 | nw)
-			    )
+				("cond", "X", da)
+			    ), model = model
 			)
 		elif ic[0] == "C":
 			# long branch uncond
 			da = p.m.b16(adr + 1)
-			self.ins(p, adr, 3, state, ic[1:], "0x%04x" % da,
+			self.ins(p, adr, 3, ic[1:], "0x%04x" % da,
 			    (
 				("cond", "T", da),
-			    )
+			    ), model = model
 			)
 		elif ic[0] == "c":
 			# long branch
 			da = p.m.b16(adr + 1)
-			self.ins(p, adr, 3, state, ic[1:], "0x%04x" % da,
+			self.ins(p, adr, 3, ic[1:], "0x%04x" % da,
 			    (
 				("cond", "X", adr + 3),
 				("cond", "X", da),
-			    )
+			    ), model = model
 			)
 		elif ic[0] == "b":
-			self.ins(p, adr, 2, state, ic[1:], "0x%02x" % nw)
+			if iw == 0xf8:
+				model = ( "=", "/D", "#0x%02x" % nw)
+			elif iw == 0xf9:
+				model = ( "=", "/D", ("OR", "/D", "#0x%02x" % nw))
+			elif iw == 0xfa:
+				model = ( "=", "/D", ("AND", "/D", "#0x%02x" % nw))
+			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
+			    model = model)
 		elif ic[0] == "l":
 			# long skip
-			self.ins(p, adr, 1, state, ic[1:], None,
+			self.ins(p, adr, 1, ic[1:], None,
 			    (
 				("cond", "X", adr + 1),
 				("cond", "X", adr + 3),
-			    )
+			    ), model = model
 			)
 		elif ic[0] == "L":
 			# Uncondition long skip
-			self.ins(p, adr, 1, state, ic[1:], None,
+			self.ins(p, adr, 1, ic[1:], None,
 			    (
 				("cond", "T", adr + 3),
-			    )
+			    ), model = model
 			)
 		elif ic[0] == "p":
-			self.ins(p, adr, 1, state, ic[1:], "%d" % (n & 7))
+			if iw & 0xf0 == 0x60:
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("BUS", ("MEM", "/R(X)"), "#%d" % (n & 7)),
+				    ("INC", "/R(X)"),
+				    ("DISASS", "/R(P)"),
+				)
+			self.ins(p, adr, 1, ic[1:], "%d" % (n & 7), flow = (), model = model)
 		elif ic[0] == "r":
-			self.ins(p, adr, 1, state, ic[1:], "%d" % n)
+			if iw & 0xf0 == 0x10:
+				model = ( "DEC", "/R%d" % n)
+			elif iw & 0xf0 == 0x20:
+				model = ( "INC", "/R%d" % n)
+			elif iw & 0xf0 == 0x40:
+				model = (( "=", "/D", ("MEM", "/R%d" % n)), ("INC", "/R%d"))
+			elif iw & 0xf0 == 0x50:
+				model = ( "=", ("MEM", "/R%d" % n), "/D")
+			elif iw & 0xf0 == 0x80:
+				model = ( "=", "/D", "/R%d.0" % n)
+			elif iw & 0xf0 == 0x90:
+				model = ( "=", "/D", "/R%d.1" % n)
+			elif iw & 0xf0 == 0xa0:
+				model = ( "=", "/R%d.0" % n, "/D")
+			elif iw & 0xf0 == 0xb0:
+				model = ( "=", "/R%d.1" % n, "/D")
+			elif iw & 0xf0 == 0xd0:
+				model = ( "=", "/D", "#%d" % n)
+			elif iw & 0xf0 == 0xe0:
+				model = ( "=", "/X", "#%d" % n)
+			self.ins(p, adr, 1, ic[1:], "%d" % n, model = model)
 		elif ic[0] == "s":
 			# signed imm
-			self.ins(p, adr, 2, state, ic[1:], "%d" % p.m.s8(adr + 1))
+			self.ins(p, adr, 2, ic[1:], "%d" % p.m.s8(adr + 1))
 		elif True:
-			print("cdp1802.disass(0x%x, " % adr, state, ") = 0x%02x" % iw, ic)
+			print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw, ic)
 	
