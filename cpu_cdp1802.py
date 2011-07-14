@@ -136,29 +136,149 @@ inscode = (
 )
 
 reset_state = {
-	"/I":	( 4, 0),
-	"/N":	( 4, 0),
+	#"/I":	( 4, 0),
+	#"/N":	( 4, 0),
 	"/Q":	( 1, 0),
 	"/P":	( 4, 0),
+	"/D":	( 8, None),
 	"/X":	( 4, 0),
 	"/IE":	( 1, 1),
-	"/R0":	(16, 0),
-	"/R1":	(16, None),
-	"/R2":	(16, None),
-	"/R3":	(16, None),
-	"/R4":	(16, None),
-	"/R5":	(16, None),
-	"/R6":	(16, None),
-	"/R7":	(16, None),
-	"/R8":	(16, None),
-	"/R9":	(16, None),
-	"/R10":	(16, None),
-	"/R11":	(16, None),
-	"/R12":	(16, None),
-	"/R13":	(16, None),
-	"/R14":	(16, None),
-	"/R15":	(16, None),
+	"/R0.0":	(8, 0),
+	"/R1.0":	(8, None),
+	"/R2.0":	(8, None),
+	"/R3.0":	(8, None),
+	"/R4.0":	(8, None),
+	"/R5.0":	(8, None),
+	"/R6.0":	(8, None),
+	"/R7.0":	(8, None),
+	"/R8.0":	(8, None),
+	"/R9.0":	(8, None),
+	"/R10.0":	(8, None),
+	"/R11.0":	(8, None),
+	"/R12.0":	(8, None),
+	"/R13.0":	(8, None),
+	"/R14.0":	(8, None),
+	"/R15.0":	(8, None),
+	"/R0.1":	(8, 0),
+	"/R1.1":	(8, None),
+	"/R2.1":	(8, None),
+	"/R3.1":	(8, None),
+	"/R4.1":	(8, None),
+	"/R5.1":	(8, None),
+	"/R6.1":	(8, None),
+	"/R7.1":	(8, None),
+	"/R8.1":	(8, None),
+	"/R9.1":	(8, None),
+	"/R10.1":	(8, None),
+	"/R11.1":	(8, None),
+	"/R12.1":	(8, None),
+	"/R13.1":	(8, None),
+	"/R14.1":	(8, None),
+	"/R15.1":	(8, None),
 }
+
+import model
+import copy
+
+class model_cdp1802(model.model):
+	def __init__(self):
+		model.model.__init__(self);
+		self.verbs["MEM"] = (self.verb_mem, "adr")
+		self.verbs["DISASS"] = (self.verb_disass, "adr")
+		self.verbs["BUS"] = (self.verb_bus, "val", "adr")
+
+	def render_state(self, state):
+		if state == None:
+			return "<no_state>"
+		s = ""
+		for i in reset_state:
+			if i[1] == "R":
+				continue
+			if state[i][1] != None:
+				if state[i][0] == 8:
+					s += i + "=0x%02x " % state[i][1]
+				else:
+					s += i + "=0x%x " % state[i][1]
+		for i in range(0,16):
+			r = "/R%d" % i
+			r0 = state[r + ".0"]
+			r1 = state[r + ".1"]
+			if r0[1] == None and r1[1] == None:
+				continue
+			s += r + "="
+			if r1[1] == None:
+				s += "??"
+			else:
+				s += "%02x" % r1[1]
+			if r0[1] == None:
+				s += "??"
+			else:
+				s += "%02x" % r0[1]
+			s += " "
+		return s
+
+	def setreg(self, p, state, reg, val):
+		print("SETREG", reg, val)
+		assert(type(reg) == str)
+		if reg == "/R(P)":
+			rx = state["/P"]
+			if rx[1] == None:
+				return (16, None)
+			return self.setreg(p, state, "/R%d" % rx[1], val)
+		elif reg == "/R(X)":
+			rx = state["/X"]
+			if rx[1] == None:
+				return (16, None)
+			return self.setreg(p, state, "/R%d" % rx[1], val)
+		elif reg + ".0" in state:
+			assert(val[0] == 16)
+			state[reg + ".0"] = (8, val[1] & 0xff)
+			state[reg + ".1"] = (8, val[1] >> 8)
+		else:
+			model.model.setreg(self, p, state, reg, val)
+		
+
+	def getreg(self, p, state, reg):
+		assert(type(reg) == str)
+		if reg == "/R(P)":
+			rx = state["/P"]
+			if rx[1] == None:
+				return (16, None)
+			return self.getreg(p, state, "/R%d" % rx[1])
+		elif reg == "/R(X)":
+			rx = state["/X"]
+			if rx[1] == None:
+				return (16, None)
+			return self.getreg(p, state, "/R%d" % rx[1])
+		elif reg + ".0" in state:
+			r0 = state[reg + ".0"]
+			r1 = state[reg + ".1"]
+			if r0[1] == None or r1[1] == None:
+				return (16, None)
+			return (16, r1[1] << 8 | r0[1])
+		else:
+			return model.model.getreg(self, p, state, reg)
+
+	def verb_mem(self, p, state, expr):
+		print("MEM", expr)
+		v = self.eval(p, state, expr[1])
+		if len(expr) == 3:
+			return None
+		if v[1] == None:
+			return (8, None)
+		return (8, p.m.rd(v[1]))
+
+	def verb_disass(self, p, state, expr):
+		s2 = copy.deepcopy(state)
+		v = self.eval(p, state, expr[1])
+		if v[1] != None:
+			print("--> %x" % v[1], s2)
+			p.todo(v[1], p.cpu.disass, s2)
+
+	def verb_bus(self, p, state, expr):
+		return None
+		
+
 
 class cdp1802(object):
 	def __init__(self):
@@ -167,9 +287,10 @@ class cdp1802(object):
 			if inscode[i] == "-????":
 				print("Missing ins %02x" % i)
 		self.dummy = True
+		self.model = model_cdp1802()
 
 	def vectors(self, p):
-		p.todo(0, self.disass)
+		p.todo(0, self.disass, reset_state)
 
 	def render(self, p, t, lvl):
 		s = t.a['mne']
@@ -177,20 +298,26 @@ class cdp1802(object):
 			s += "\t" + t.a['arg']
 		return (s,)
 
-	def ins(self, p, adr, length, mne, arg = None, flow = None, model = None):
+	def ins(self, p, adr, length, mne, arg = None, flow = None, model = None, state = None):
 		# print("%04x" % adr, mne, arg, flow)
 		x = p.t.add(adr, adr + length, "ins")
 		x.render = self.render
 		x.a['mne'] = mne
 		x.a['arg'] = arg
-		if flow != None:
-			x.a['flow'] = flow
 		if model != None:
 			x.a['model'] = model
-			x.cmt.append(str(model))
+			#x.cmt.append(str(model))
+			x.cmt.append(self.model.render_state(state))
+			self.model.eval(p, state, model)
+			x.a['flow'] = ()
+		elif flow != None:
+			x.a['flow'] = flow
 		p.ins(x, self.disass)
 
 	def disass(self, p, adr, priv = None):
+		print("cdp1802.disass(0x%x, " % adr, priv, ")")
+		if p.t.find(adr, "ins") != None:
+			return
 
 		try:
 			iw = p.m.rd(adr)
@@ -201,7 +328,7 @@ class cdp1802(object):
 
 		n = iw & 0x0f
 		ic = inscode[iw]
-		#print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw, ic)
+		print("cdp1802.disass(0x%x, " % adr, priv, ") = 0x%02x" % iw, ic)
 
 		model = None
 		if iw == 0xd4:	
@@ -225,23 +352,22 @@ class cdp1802(object):
 			if iw == 0x71:
 				model = ("SEQ",
 				    ("INC", "/R(P)"),
-				    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#4")),
-				    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#4"), "#4")),
+				    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#0x4")),
+				    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#0x4"), "#0x4")),
 				    ("INC", "/R(X)"),
-				    ("=", "/IE",("TRIM", "#0", "#1")),
+				    ("=", "/IE", "#0b0"),
 				    ("DISASS", "/R(P)"),
 				)
-				self.ins(p, adr, 1, ic[1:], flow = ( ), model = model)
-				return
 			if iw == 0x73:
-				model = (( "=", ("MEM", "/R(X)"), "/D"), ("DEC", "/R(X)"))
+				model = ("SEQ", ( "MEM", "/R(X)", "/D"), ("DEC", "/R(X)"))
+				model = ("SEQ", ("INC", "/R(P)"), model, ("DISASS", "/R(P)"))
 			elif iw == 0x7e:
 				model = ( "=", "/DF|/D", "/D|/DF")
 			elif iw == 0xf7:
 				model = ( "=", "/DF|/D", ( "SUB", "/D", ("MEM", "/R(X)")))
 			elif iw == 0xfe:
 				model = ( "=", "/DF|/D", "/D|#0b0")
-			self.ins(p, adr, 1, ic[1:], model = model)
+			self.ins(p, adr, 1, ic[1:], model = model, state=priv)
 		elif ic[0] == "A":
 			# short branch uncond
 			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
@@ -252,8 +378,8 @@ class cdp1802(object):
 		elif ic[0] == "a":
 			# short branch
 			da = adr & 0xff00 | nw
-			if iw == 0x3a:
-				model = ( "B", "#0x%x" % da, ("ISNZ", "/D"))
+			#if iw == 0x3a:
+			#	model = ( "B", "#0x%x" % da, ("ISNZ", "/D"))
 			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
 			    (
 				("cond", "X", adr + 2),
@@ -284,8 +410,9 @@ class cdp1802(object):
 				model = ( "=", "/D", ("OR", "/D", "#0x%02x" % nw))
 			elif iw == 0xfa:
 				model = ( "=", "/D", ("AND", "/D", "#0x%02x" % nw))
+			model = ("SEQ", ("INC", "/R(P)", "#0x2"), model, ("DISASS", "/R(P)"))
 			self.ins(p, adr, 2, ic[1:], "0x%02x" % nw,
-			    model = model)
+			    model = model, state=priv)
 		elif ic[0] == "l":
 			# long skip
 			self.ins(p, adr, 1, ic[1:], None,
@@ -305,20 +432,20 @@ class cdp1802(object):
 			if iw & 0xf0 == 0x60:
 				model = ("SEQ",
 				    ("INC", "/R(P)"),
-				    ("BUS", ("MEM", "/R(X)"), "#%d" % (n & 7)),
+				    ("BUS", ("MEM", "/R(X)"), "#0x%x" % (n & 7)),
 				    ("INC", "/R(X)"),
 				    ("DISASS", "/R(P)"),
 				)
-			self.ins(p, adr, 1, ic[1:], "%d" % (n & 7), flow = (), model = model)
+			self.ins(p, adr, 1, ic[1:], "%d" % (n & 7), model = model, state=priv)
 		elif ic[0] == "r":
 			if iw & 0xf0 == 0x10:
-				model = ( "DEC", "/R%d" % n)
-			elif iw & 0xf0 == 0x20:
 				model = ( "INC", "/R%d" % n)
+			elif iw & 0xf0 == 0x20:
+				model = ( "DEC", "/R%d" % n)
 			elif iw & 0xf0 == 0x40:
 				model = (( "=", "/D", ("MEM", "/R%d" % n)), ("INC", "/R%d"))
 			elif iw & 0xf0 == 0x50:
-				model = ( "=", ("MEM", "/R%d" % n), "/D")
+				model = ("MEM", "/R%d" % n, "/D")
 			elif iw & 0xf0 == 0x80:
 				model = ( "=", "/D", "/R%d.0" % n)
 			elif iw & 0xf0 == 0x90:
@@ -328,10 +455,11 @@ class cdp1802(object):
 			elif iw & 0xf0 == 0xb0:
 				model = ( "=", "/R%d.1" % n, "/D")
 			elif iw & 0xf0 == 0xd0:
-				model = ( "=", "/D", "#%d" % n)
+				model = ( "=", "/D", "#0x%02x" % n)
 			elif iw & 0xf0 == 0xe0:
-				model = ( "=", "/X", "#%d" % n)
-			self.ins(p, adr, 1, ic[1:], "%d" % n, model = model)
+				model = ( "=", "/X", "#0x%x" % n)
+			model = ("SEQ", ("INC", "/R(P)"), model, ("DISASS", "/R(P)"))
+			self.ins(p, adr, 1, ic[1:], "%d" % n, model = model, state=priv)
 		elif ic[0] == "s":
 			# signed imm
 			self.ins(p, adr, 2, ic[1:], "%d" % p.m.s8(adr + 1))

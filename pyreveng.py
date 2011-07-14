@@ -330,8 +330,11 @@ class pyreveng(object):
 			if not 'flow' in x.a:
 				return a
 			y = x.a['flow']
+			if len(y) == 0:
+				return a
 			if len(y) > 1:
 				return a
+			print("Y", y)
 			if y[0][0] != "cond":
 				return a
 			if y[0][1] != "T":
