@@ -78,6 +78,8 @@ class mc6800(object):
 		return (s,)
 
 	def disass(self, p, adr, priv = None):
+		if p.t.find(adr, "ins") != None:
+			return
 		try:
 			iw = p.m.rd(adr)
 		except:

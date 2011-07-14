@@ -512,6 +512,8 @@ class domus(cpu_nova.nova):
 		self.special[0o006177] = ( "DIVIDE",)
 
 	def disass(self, p, adr, priv = None):
+		if p.t.find(adr, "ins") != None:
+			return
 		assert type(adr) == int
 		try:
 			q = p.m.rdqual(adr)

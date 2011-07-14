@@ -304,7 +304,7 @@ class cdp1802(object):
 		x.render = self.render
 		x.a['mne'] = mne
 		x.a['arg'] = arg
-		if model != None:
+		if model != None and state != None:
 			x.a['model'] = model
 			#x.cmt.append(str(model))
 			x.cmt.append(self.model.render_state(state))
