@@ -30,7 +30,6 @@ class pyreveng(object):
 
 		# @todo
 		self.__tlist = list()
-		self.__did = dict()
 
 		# @bb
 		self.__bbstart = dict()
@@ -67,9 +66,6 @@ class pyreveng(object):
 		while len(self.__tlist) > 0:
 			c = self.__tlist[0]
 			del self.__tlist[0]
-			if c in self.__did:
-				continue
-			self.__did[c] = True
 			#print(">>> 0x%x" % c[0])
 			if True:
 				c[1](self, c[0], c[2])
