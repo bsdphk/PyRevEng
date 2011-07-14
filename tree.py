@@ -100,9 +100,14 @@ class tree(object):
 		return None
 
 	def find(self, start, tag):
-		i = bisect.bisect_right(self.cend, start)
-		if i < 0 or i >= len(self.child):
+		if start < self.start or start >= self.end:
 			raise TreeError(self, "0x%x" % start, "Out of Bounds")
+		l = len(self.child)
+		i = bisect.bisect_right(self.cend, start)
+		if l == 0 or l == i:
+			return None
+		if i < 0 or i >= l:
+			raise TreeError(self, "0x%x" % start, "Out of Bounds (2)")
 		x = self.child[i]
 		if x.start == start and x.tag == tag:
 			return x
@@ -147,6 +152,13 @@ def sanity(self, priv=None, lvl=0):
 if __name__ == "__main__":
 
 	t = tree(0, 1000)
+	t.find(0, "foo")
+	t.find(999, "foo")
+	try:
+		t.find(1000, "foo")
+		assert(False)
+	except:
+		pass
 	t.add(100,200, "a")
 	t.add(100,200, "b")
 	t.add(100,200, "c", False)
