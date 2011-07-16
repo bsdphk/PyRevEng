@@ -104,6 +104,8 @@ class model(object):
 					if len(expr) < i + 1:
 						raise ModelError("Syntax: arg_count:" + str(expr))
 				retval = x[0](p, state, expr)
+		elif type(expr) == tuple and not expr[0] in self.verbs:
+			raise ModelError("Unknown verb" + str(expr[0]))
 		else:
 			raise ModelError("Unknown expression" + str(expr))
 

@@ -139,7 +139,6 @@ class model_cdp1802(model.model):
 	def __init__(self):
 		model.model.__init__(self);
 		self.verbs["MEM"] = (self.verb_mem, "adr")
-		self.verbs["DISASS"] = (self.verb_disass, "adr")
 		self.verbs["BUS"] = (self.verb_bus, "val", "adr")
 
 	def render_state(self, state):
@@ -228,13 +227,6 @@ class model_cdp1802(model.model):
 			return (8, None)
 		return (8, p.m.rd(v[1]))
 
-	def verb_disass(self, p, state, expr):
-		s2 = copy.deepcopy(state)
-		v = self.eval(p, state, expr[1])
-		if v[1] != None:
-			# print("--> %x" % v[1], s2)
-			p.todo(v[1], p.cpu.disass, s2)
-
 	def verb_bus(self, p, state, expr):
 		return None
 		
@@ -269,9 +261,12 @@ class cdp1802(object):
 			state['/R3.1'] = (8, adr >> 8)
 		if model != None:
 			x.a['model'] = model
-			#x.cmt.append(str(model))
+			x.cmt.append(str(model))
 			x.cmt.append(self.model.render_state(state))
 			self.model.eval(p, state, model)
+			v = self.model.getreg(p, state, "/R(P)")
+			if v[1] != None:
+				p.todo(v[1], p.cpu.disass, copy.deepcopy(state))
 		if flow != None:
 			x.a['flow'] = flow
 		p.ins(x, self.disass)
@@ -311,17 +306,13 @@ class cdp1802(object):
 
 		elif iw == 0x00:
 			# IDL -- Wait for IRQ/DMA -- 
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
-			)
+			model = ("INC", "/R(P)")
 			self.ins(p, adr, 1, "idl", model = model, state=priv)
 		elif ireg == 0x00:
 			# LDN -- Load via N -- D = M(R(N))
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("MEM", "/R%d" % nreg)),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "ldn", "%d" % nreg,
 			    model = model, state=priv)
@@ -330,7 +321,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("INC", "/R%d" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "inc", "%d" % nreg,
 			    model = model, state=priv)
@@ -339,7 +329,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("DEC", "/R%d" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "dec", "%d" % nreg,
 			    model = model, state=priv)
@@ -353,7 +342,6 @@ class cdp1802(object):
 				("INC", "/R(P)"),
 			        ("=", "/R(P)", "#0x%04x" % da),
 			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			s = "b"
 			if nreg >= 8:
@@ -372,7 +360,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/R(P)", "#0x%04x" % da),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "br", "0x%04x" % da,
 			    model = model, state=priv,
@@ -388,7 +375,6 @@ class cdp1802(object):
 			        ("=", "/R(P)", "#0x%04x" % da),
 			        ("INC", "/R(P)"),
 			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "bz", "0x%04x" % da,
 			    model = model, state=priv,
@@ -406,7 +392,6 @@ class cdp1802(object):
 			        ("=", "/R(P)", "#0x%04x" % da),
 			        ("INC", "/R(P)"),
 			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "bdf", "0x%04x" % da,
 			    model = model, state=priv,
@@ -424,7 +409,6 @@ class cdp1802(object):
 			        ("INC", "/R(P)"),
 			        ("=", "/R(P)", "#0x%04x" % da),
 			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "bnz", "0x%04x" % da,
 			    model = model, state=priv,
@@ -442,7 +426,6 @@ class cdp1802(object):
 			        ("INC", "/R(P)"),
 			        ("=", "/R(P)", "#0x%04x" % da),
 			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "bdnf", "0x%04x" % da,
 			    model = model, state=priv,
@@ -456,7 +439,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("MEM", "/R%d" % nreg)),
 			    ("INC", "/R%d" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "lda", "%d" % nreg,
 			    model = model, state=priv)
@@ -465,7 +447,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("MEM", "/R%d" % nreg, "/D"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "str", "%d" % nreg,
 			    model = model, state=priv)
@@ -474,7 +455,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("INC", "/X"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "irx", model = model, state=priv)
 		elif ireg == 0x60 and nreg < 8:
@@ -483,7 +463,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("BUS", "#0x%x" % nreg, ("MEM", "/R(X)")),
 			    ("INC", "/R(X)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "out", "%d" % nreg,
 			    flow=(), model = model, state=priv)
@@ -493,7 +472,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("MEM", "/R(X)", ("BUS", "#0x%x" % (nreg % 7))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "in", "%d" % (nreg & 7),
 			    model = model, state=priv)
@@ -505,7 +483,6 @@ class cdp1802(object):
 			    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#0x4"), "#0x4")),
 			    ("INC", "/R(X)"),
 			    ("=", "/IE", "#0b1"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "ret", model = model, state=priv)
 		elif iw == 0x71:
@@ -516,7 +493,6 @@ class cdp1802(object):
 			    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#0x4"), "#0x4")),
 			    ("INC", "/R(X)"),
 			    ("=", "/IE", "#0b0"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "dis",
 			    flow = (), model = model, state=priv)
@@ -526,7 +502,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("MEM", "/R(X)")),
 			    ("INC", "/R(X)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "ldxa", model = model, state=priv)
 		elif iw == 0x73:
@@ -535,7 +510,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("MEM", "/R(X)", "/D"),
 			    ("DEC", "/R(X)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "stxd", model = model, state=priv)
 		elif iw == 0x74:
@@ -544,7 +518,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
 				("+", "/D", ("MEM", "/R(X)", "/DF", "/DF"))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "adc", model = model, state=priv)
 		elif iw == 0x7c:
@@ -552,9 +525,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("+", "/D", ("MEM", "/R(P)"), "/DF", "/DF")),
+				("+", "/D", "#0x%02x" % nw, "/DF", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "adci", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -563,7 +535,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", (">>", "/D", "#0x0", "/DF", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "shrc", model = model, state=priv)
 		elif iw == 0x77:
@@ -572,7 +543,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
 				("-", "/D", ("MEM", "/R(X)"), "/DF", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "smb", model = model, state=priv)
 		elif iw == 0x7a:
@@ -580,7 +550,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/Q", "#0b0"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "req", model = model, state=priv)
 		elif iw == 0x7b:
@@ -588,7 +557,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/Q", "#0b1"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "seq", model = model, state=priv)
 		elif iw == 0x7d:
@@ -596,9 +564,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("-", ("MEM", "/R(P)"), "/D", "/DF", "/DF")),
+				("-", "#0x%02x" % nw, "/D", "/DF", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "sdbi", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -607,7 +574,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("<<", "/D", "#0x0", "/DF", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "shlc", model = model, state=priv)
 		elif iw == 0x7f:
@@ -615,9 +581,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("-", "/D", ("MEM", "/R(P)"), "/DF", "/DF")),
+				("-", "/D", "#0x%02x" % nw, "/DF", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "smbi", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -626,7 +591,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", "/R%d.0" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "glo", "%d" % nreg,
 			    model = model, state=priv)
@@ -635,7 +599,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", "/R%d.1" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "ghi", "%d" % nreg,
 			    model = model, state=priv)
@@ -644,7 +607,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/R%d.0" % nreg, "/D"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "plo", "%d" % nreg,
 			    model = model, state=priv)
@@ -653,17 +615,13 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/R%d.1" % nreg, "/D"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "phi", "%d" % nreg,
 			    model = model, state=priv)
 		elif iw == 0xc0:
 			# LBR -- Long Branch 
 			da = p.m.b16(adr + 1)
-			model = ("SEQ",
-			    ("=", "/R(P)", "#0x%04x" % da),
-			    ("DISASS", "/R(P)"),
-			)
+			model = ("=", "/R(P)", "#0x%04x" % da)
 			self.ins(p, adr, 3, "lbr", "0x%04x" % da,
 			    model = model, state=priv,
 			    flow = (
@@ -673,12 +631,10 @@ class cdp1802(object):
 		elif iw == 0xc2:
 			# LBZ -- Long Branch if not D
 			da = p.m.b16(adr + 1)
-			model = ("SEQ",
-			    ("ZERO?", "/D", 
+			model = (
+			    "ZERO?", "/D", 
 				("=", "/R(P)", "#0x%04x" % da),
 			        ("INC", "/R(P)", "#0x3"),
-			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 3, "lbdf", "0x%04x" % da,
 			    model = model, state=priv,
@@ -690,13 +646,11 @@ class cdp1802(object):
 		elif iw == 0xc3:
 			# LBDF -- Long Branch if DF 
 			da = p.m.b16(adr + 1)
-			model = ("SEQ",
-			    ("ZERO?", "/DF", 
+			model = (
+			    "ZERO?", "/DF", 
 			        ("INC", "/R(P)", "#0x3"),
 				("=", "/R(P)", "#0x%04x" % da),
-			    ),
-			    ("DISASS", "/R(P)"),
-			)
+		        )
 			self.ins(p, adr, 3, "lbdf", "0x%04x" % da,
 			    model = model, state=priv,
 			    flow = (
@@ -706,13 +660,11 @@ class cdp1802(object):
 			)
 		elif iw == 0xc6:
 			# LSNZ -- Long skip if D
-			model = ("SEQ",
-			    ("ZERO?", "/D", 
+			model = (
+			    "ZERO?", "/D", 
 			        ("INC", "/R(P)", "#0x3"),
 			        ("INC", "/R(P)", "#0x1"),
-			    ),
-			    ("DISASS", "/R(P)"),
-			)
+			    )
 			self.ins(p, adr, 1, "lsnz",
 			    model = model, state=priv,
 			    flow = (
@@ -722,10 +674,7 @@ class cdp1802(object):
 			)
 		elif iw == 0xc8:
 			# LSKP -- Long Skip -- R(P) += 2
-			model = ("SEQ",
-			    ("INC", "/R(P)", "#0x3"),
-			    ("DISASS", "/R(P)"),
-			)
+			model = ("INC", "/R(P)", "#0x3")
 			self.ins(p, adr, 1, "lskp", 
 			    model = model, state=priv,
 			    flow = (("cond", "T", adr + 3),)
@@ -733,12 +682,10 @@ class cdp1802(object):
 		elif iw == 0xca:
 			# LBNZ -- Long Branch if D
 			da = p.m.b16(adr + 1)
-			model = ("SEQ",
-			    ("ZERO?", "/D", 
+			model = (
+			    "ZERO?", "/D", 
 				("=", "/R(P)", "#0x%04x" % da),
 			        ("INC", "/R(P)", "#0x3"),
-			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 3, "lbnz", "0x%04x" % da,
 			    model = model, state=priv,
@@ -750,12 +697,10 @@ class cdp1802(object):
 		elif iw == 0xcb:
 			# LBDF -- Long Branch if not DF 
 			da = p.m.b16(adr + 1)
-			model = ("SEQ",
-			    ("ZERO?", "/DF", 
+			model = (
+			    "ZERO?", "/DF", 
 				("=", "/R(P)", "#0x%04x" % da),
 			        ("INC", "/R(P)", "#0x3"),
-			    ),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 3, "lbnf", "0x%04x" % da,
 			    model = model, state=priv,
@@ -769,7 +714,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/P", "#0x%x" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "sep", "%d" % nreg,
 			    model = model, state=priv)
@@ -778,7 +722,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/X", "#0x%x" % nreg),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "sex", "%d" % nreg,
 			    model = model, state=priv)
@@ -787,7 +730,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("MEM", "/R(X)")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "ldx", model = model, state=priv)
 		elif iw == 0xf1:
@@ -795,7 +737,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("OR", "/D", ("MEM", "/R(X)"))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "or", model = model, state=priv)
 		elif iw == 0xf2:
@@ -803,7 +744,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("AND", "/D", ("MEM", "/R(X)"))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "and", model = model, state=priv)
 		elif iw == 0xf3:
@@ -811,7 +751,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("XOR", "/D", ("MEM", "/R(X)"))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "xor", model = model, state=priv)
 		elif iw == 0xf4:
@@ -820,7 +759,6 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
 				("+", "/D", ("MEM", "/R(X)", "#0b0", "/DF"))),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "add", model = model, state=priv)
 		elif iw == 0xf6:
@@ -828,7 +766,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", (">>", "/D", "#0x0", "#0b0", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "shr", model = model, state=priv)
 		elif iw == 0xf7:
@@ -837,16 +774,14 @@ class cdp1802(object):
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
 				("-", "/D", ("MEM", "/R(X)"), "#0b0", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "sm", model = model, state=priv)
 		elif iw == 0xf8:
 			# LDI -- Load Immediate -- D = M(R(P)); R(P) += 1
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
-			    ("=", "/D", ("MEM", "/R(P)")),
+			    ("=", "/D", "#0x%02x" % nw),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "ldi", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -854,9 +789,8 @@ class cdp1802(object):
 			# ORI -- OR Immediate -- D |= M(R(P)); R(P) += 1
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
-			    ("=", "/D", ("OR", "/D", ("MEM", "/R(P)"))),
+			    ("=", "/D", ("OR", "/D", "#0x%02x" % nw)),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "ori", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -864,9 +798,8 @@ class cdp1802(object):
 			# ANI -- And Immediate -- D &= M(R(P)); R(P) += 1
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
-			    ("=", "/D", ("AND", "/D", ("MEM", "/R(P)"))),
+			    ("=", "/D", ("AND", "/D", "#0x%02x" % nw)),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "ani", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -874,9 +807,8 @@ class cdp1802(object):
 			# XRI -- Xor Immediate -- D ^= M(R(P)); R(P) += 1
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
-			    ("=", "/D", ("XOR", "/D", ("MEM", "/R(P)"))),
+			    ("=", "/D", ("XOR", "/D", "#0x%02x" % nw)),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "xri", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -885,9 +817,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("+", "/D", ("MEM", "/R(P)"), "#0b0", "/DF")),
+				("+", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "adi", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -896,9 +827,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("-", ("MEM", "/R(P)"), "/D", "#0b0", "/DF")),
+				("-", "#0x%02x" % nw, "/D", "#0b0", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "sdi", "0x%02x" % nw,
 			    model = model, state=priv)
@@ -907,7 +837,6 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D", ("<<", "/D", "#0x0", "#0b0", "/DF")),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 1, "shl", model = model, state=priv)
 		elif iw == 0xff:
@@ -915,9 +844,8 @@ class cdp1802(object):
 			model = ("SEQ",
 			    ("INC", "/R(P)"),
 			    ("=", "/D",
-				("-", "/D", ("MEM", "/R(P)"), "#0b0", "/DF")),
+				("-", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
 			    ("INC", "/R(P)"),
-			    ("DISASS", "/R(P)"),
 			)
 			self.ins(p, adr, 2, "smi", "0x%02x" % nw,
 			    model = model, state=priv)
