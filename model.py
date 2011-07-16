@@ -11,6 +11,8 @@
 #	"#0x..."	hex constant, number of nybbles given sets width
 #	"/..."		register
 
+import random
+
 class ModelError(Exception):
         def __init__(self, reason):
                 self.reason = reason
@@ -24,10 +26,18 @@ class model(object):
 		self.verbs = {
 		"SEQ":	(self.verb_seq, "expr", "..."),
 		">>":	(self.verb_right_shift, "val", "bits"),
+		"<<":	(self.verb_left_shift, "val", "bits" "[bi]" "[bo]"),
+		"+":	(self.verb_add, "val", "val" "[ci]" "[co]"),
+		"-":	(self.verb_sub, "val", "val" "[bi]" "[bo]"),
 		"=":	(self.verb_assign, "dest", "val"),
+		"AND":	(self.verb_and, "val1", "val2"),
+		"OR":	(self.verb_or, "val1", "val2"),
+		"RND":	(self.verb_rnd, None),
+		"XOR":	(self.verb_xor, "val1", "val2"),
 		"INC":	(self.verb_increment, "val", "[bits]"),
 		"DEC":	(self.verb_decrement, "val", "[bits]"),
 		"TRIM":	(self.verb_trim, "val", "bits"),
+		"ZERO?": (self.verb_zero, "val", "cond1", "cond2"),
 		}
 
 	def setreg(self, p, state, reg, val):
@@ -70,8 +80,8 @@ class model(object):
 		return (w,v)
 
 	def eval(self, p, state, expr):
-		print("Eval:", expr)
-		print("  State:", state)
+		#print("Eval:", expr)
+		#print("  State:", state)
 		if state == None:
 			return None
 
@@ -97,7 +107,7 @@ class model(object):
 		else:
 			raise ModelError("Unknown expression" + str(expr))
 
-		print("  Return(", expr, "):", retval)
+		#print("  Return(", expr, "):", retval)
 		return retval
 
 	def verb_seq(self, p, state, expr):
@@ -113,8 +123,22 @@ class model(object):
 		else:
 			v2 = (8, 1)
 		if v2[1] == None:
-			raise ModelError("Verb: << BITS unknown")
+			raise ModelError("Verb: >> BITS unknown")
 		return (v1[0], v1[1] >> v2[1])
+
+	def verb_left_shift(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		if v1[1] == None:
+			return v1
+
+		if len(expr) > 2:
+			v2 = self.eval(p, state, expr[2])
+		else:
+			v2 = (8, 1)
+		if v2[1] == None:
+			raise ModelError("Verb: << BITS unknown")
+
+		return (v1[0], v1[1] << v2[1])
 
 	def verb_assign(self, p, state, expr):
 		v2 = self.eval(p, state, expr[2])
@@ -146,10 +170,82 @@ class model(object):
 		self.setreg(p, state, expr[1], vn)
 		return vn
 
+	def verb_or(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		v2 = self.eval(p, state, expr[2])
+		assert v1[0] == v2[0]
+		if v1[1] == None or v2[1] == None:
+			return (v1[0], None)
+		return (v1[0], v1[1] | v2[1])
+
+	def verb_xor(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		v2 = self.eval(p, state, expr[2])
+		assert v1[0] == v2[0]
+		if v1[1] == None or v2[1] == None:
+			return (v1[0], None)
+		return (v1[0], v1[1] ^ v2[1])
+
+	def verb_and(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		v2 = self.eval(p, state, expr[2])
+		assert v1[0] == v2[0]
+		if v1[1] == None or v2[1] == None:
+			return (v1[0], None)
+		return (v1[0], v1[1] & v2[1])
+
+	def verb_add(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		v2 = self.eval(p, state, expr[2])
+		assert v1[0] == v2[0]
+		if v1[1] == None or v2[1] == None:
+			return (v1[0], None)
+		# XXX:
+		return (v1[0], None)
+	
+		if v1[1] != None and v2[1] != None:
+			vn = (v1[0], (v1[1] - v2[1]) & ((1 << v1[0]) - 1))
+		else:
+			vn = (v1[0], None)
+		self.setreg(p, state, expr[1], vn)
+		return vn
+
+	def verb_sub(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		v2 = self.eval(p, state, expr[2])
+		assert v1[0] == v2[0]
+		if v1[1] == None or v2[1] == None:
+			return (v1[0], None)
+		# XXX:
+		return (v1[0], None)
+	
+		if v1[1] != None and v2[1] != None:
+			vn = (v1[0], (v1[1] - v2[1]) & ((1 << v1[0]) - 1))
+		else:
+			vn = (v1[0], None)
+		self.setreg(p, state, expr[1], vn)
+		return vn
+
 	def verb_trim(self, p, state, expr):
 		v1 = self.eval(p, state, expr[1])
 		v2 = self.eval(p, state, expr[2])
 		return(v2[1], v1[1] & ((1 << v2[1]) - 1))
+
+	def verb_zero(self, p, state, expr):
+		v1 = self.eval(p, state, expr[1])
+		if v1[1] == 0:
+			self.eval(p, state, expr[2])
+		elif v1[1] != None:
+			self.eval(p, state, expr[3])
+		else:
+			# XXX: what ?
+			self.eval(p, state, expr[3])
+
+	def verb_rnd(self, p, state, expr):
+		if random.random() >= .5:
+			return (1, 1)
+		else:
+			return (1, 0)
 
 if __name__ == "__main__":
 
