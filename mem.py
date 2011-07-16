@@ -84,13 +84,13 @@ class base_mem(object):
 		elif w <= 32:
 			self.mem = array.array('L')
 		else:
-			raise MemError(w, "Too many bits wide")
+			raise MemError(w, "Too many bits (%d) wide" % w)
 		for a in range(self.start, self.end):
-			self.mem.append( self.invalid | self.undef)
+			self.mem.append(self.invalid | self.undef)
 
 	# Format a memory address as a hex string
-	# If you don't like hex, you can override .afmt or subclass
-	# and overload .adr()
+	# If you don't like hex, you can override .[adq]pct or subclass
+	# and overload .[adq]fmt()
 
 	def afmt(self, a):
 		return self.apct % a

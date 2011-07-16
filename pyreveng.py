@@ -159,7 +159,7 @@ class pyreveng(object):
 			if j != None:
 				try:
 					x = self.t.add(i,j,"run")
-					x.blockcmt += "\n"
+					#x.blockcmt += "\n"
 					x.a['flow_in'] = self.__bbstart[i]
 					x.a['flow'] = fo
 					self.__bbx[i] = x
@@ -427,7 +427,8 @@ class pyreveng(object):
 					s = "@?"
 				else:
 					s = "@" + self.m.afmt(i[2])
-				fo.write(self.col1c + "; COME_FROM " + s + ": %s %s\n" % (i[0], i[1]))
+				fo.write(self.col1c + "; COME_FROM " + s +
+				    ": %s %s\n" % (i[0], i[1]))
 
 		if t.descend == True and len(t.child) > 0:
 			if 'indent' in t.a:
@@ -441,7 +442,7 @@ class pyreveng(object):
 			self.__render_gaps(a, t.end, fo, lvl)
 			if 'indent' in t.a:
 				self.indent = oindent
-			fo.write("\n")
+			#fo.write("\n")
 			return
 
 		if t.start in self.__label:
@@ -494,8 +495,8 @@ class pyreveng(object):
 				r += "; " + c[i]
 			fo.write(r.rstrip() + "\n")
 			i += 1
-		if t.end > t.start + 1:
-			fo.write("\n")
+		#if t.end > t.start + 1:
+		#	fo.write("\n")
 		
 
 	def render(self, fname="-", start = None, end = None):
