@@ -248,8 +248,679 @@ class cdp1802(object):
 			s += "\t" + t.a['arg']
 		return (s,)
 
-	def ins(self, p, adr, length, mne, arg = None, flow = None, model = None, state = None):
-		# print("%04x" % adr, mne, arg, flow)
+	def disass(self, p, adr, priv = None):
+		#print("cdp1802.disass(0x%x, " % adr, priv, ")")
+		if p.t.find(adr, "ins") != None:
+			return
+
+		try:
+			iw = p.m.rd(adr)
+			nw = p.m.rd(adr + 1)
+		except:
+			print("NOMEM cdp1802.disass(0x%x, " % adr, ")")
+			return
+
+		#print("cdp1802.disass(0x%x, " % adr, "%02x" % iw, ")")
+		ireg = iw & 0xf0
+		nreg = iw & 0x0f
+
+		model = None
+		model = ("SEQ", ("INC", "/R(P)"))
+		flow = None
+		mne = None
+		arg = None
+		length = 1
+		state = priv
+
+		if iw == 0xd4:	
+			# XXX: hack
+			da = p.m.b16(adr + 1)
+			mne = "xcall"
+			arg = "0x%04x" % da
+			length = 3
+			flow = (("call", "T", da),)
+			model = None
+		elif iw == 0xd5:	
+			# XXX: hack
+			mne = "xret"
+			flow = (("ret", "T", None),)
+			model = None
+
+		#-----------------------------------------------
+		# NB: Same order as data sheet
+
+		#-----------------------------------------------
+		# MEMORY REFERENCE
+
+		elif ireg == 0x00 and nreg > 0:
+			# LDN r   Load D via N (for r = 1 to F)
+			mne = "ldn"
+			arg = "%d" % nreg
+			model += ( ("=", "/D", ("MEM", "/R%d" % nreg)), )
+		elif ireg == 0x40:
+			# LDA r   Load D and Advance
+			mne = "lda"
+			arg = "%d" % nreg
+			model += (
+			    ("=", "/D", ("MEM", "/R%d" % nreg)),
+			    ("INC", "/R%d" % nreg),
+			)
+		elif iw == 0xf0:
+			# LDX     Load D via R(X)
+			mne = "ldx"
+			model += ( ("=", "/D", ("MEM", "/R(X)")), )
+		elif iw == 0x72:
+			# LDXA    Load D via R(X) and Advance
+			mne = "ldxa"
+			model += (
+			    ("=", "/D", ("MEM", "/R(X)")),
+			    ("INC", "/R(X)"),
+			)
+		elif iw == 0xf8:
+			# LDI b   Load D Immediate
+			mne = "ldi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D", "#0x%02x" % nw),
+			    ("INC", "/R(P)"),
+			)
+		elif ireg == 0x50:
+			# STR r   Store D into memory
+			mne = "str"
+			arg = "%d" % nreg
+			model += ( ("MEM", "/R%d" % nreg, "/D"), )
+		elif iw == 0x73:
+			# STXD    Store D via R(X) and Decrement
+			mne = "stxd"
+			model += (
+			    ("MEM", "/R(X)", "/D"),
+			    ("DEC", "/R(X)"),
+			)
+
+		#-----------------------------------------------
+		# REGISTER OPERATIONS
+
+		elif ireg == 0x10:
+			# INC r   Increment Register
+			mne = "inc"
+			arg = "%d" % nreg
+			model += ( ("INC", "/R%d" % nreg), )
+		elif ireg == 0x20:
+			# DEC r   Decrement Register
+			mne = "dec"
+			arg = "%d" % nreg
+			model += ( ("DEC", "/R%d" % nreg), )
+		elif iw == 0x60:
+			# IRX     Increment R(X)
+			mne = "irx"
+			model += ( ("INC", "/X"), )
+		elif ireg == 0x80:
+			# GLO r   Get Low byte of Register
+			mne = "glo"
+			arg = "%d" % nreg
+			model += ( ("=", "/D", "/R%d.0" % nreg), )
+		elif ireg == 0xa0:
+			# PLO r   Put D in Low byte of register
+			mne = "plo"
+			arg = "%d" % nreg
+			model += ( ("=", "/R%d.0" % nreg, "/D"), )
+		elif ireg == 0x90:
+			# GHI r   Get High byte of Register
+			mne = "ghi"
+			arg = "%d" % nreg
+			model += ( ("=", "/D", "/R%d.1" % nreg), )
+		elif ireg == 0xb0:
+			# PHI r   Put D in High byte of register
+			mne = "phi"
+			arg = "%d" % nreg
+			model += ( ("=", "/R%d.1" % nreg, "/D"), )
+
+		#-----------------------------------------------
+		# LOGIC OPERATIONS
+
+		elif iw == 0xf1:
+			# OR      Logical OR
+			mne = "or"
+			model += (
+			    ("=", "/D", ("OR", "/D", ("MEM", "/R(X)"))),
+			)
+		elif iw == 0xf9:
+			# ORI b   OR Immediate
+			mne = "ori"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D", ("OR", "/D", "#0x%02x" % nw)),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0xf3:
+			# XOR     Exclusive OR
+			mne = "xor"
+			model += (
+			    ("=", "/D", ("XOR", "/D", ("MEM", "/R(X)"))),
+			)
+		elif iw == 0xfb:
+			# XRI b   Exclusive OR, Immediate
+			mne = "xri"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D", ("XOR", "/D", "#0x%02x" % nw)),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0xf2:
+			# AND     Logical AND
+			mne = "and"
+			model += (
+			    ("=", "/D", ("AND", "/D", ("MEM", "/R(X)"))),
+			)
+		elif iw == 0xfa:
+			# ANI b   AND Immediate
+			mne = "ani"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D", ("AND", "/D", "#0x%02x" % nw)),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0xf6:
+			# SHR     Shift D Right
+			mne = "shr"
+			model += (
+			    ("=", "/D", (">>", "/D", "#0x0", "#0b0", "/DF")),
+			)
+		elif iw == 0x76:
+			# SHRC    Shift D Right with Carry
+			mne = "shrc"
+			model += (
+			    ("=", "/D", (">>", "/D", "#0x0", "/DF", "/DF")),
+			)
+		elif iw == 0xfe:
+			# SHL     Shift D Left
+			mne = "shl"
+			model += (
+			    ("=", "/D", ("<<", "/D", "#0x0", "#0b0", "/DF")),
+			)
+		elif iw == 0x7e:
+			# SHLC    Shift D Left with Carry
+			mne = "shlc"
+			model += (
+			    ("=", "/D", ("<<", "/D", "#0x0", "/DF", "/DF")),
+			)
+
+		#-----------------------------------------------
+		# ARITHMETIC OPERATIONS
+
+		elif iw == 0xf4:
+			# ADD     Add
+			mne = "add"
+			model += (
+			    ("=", "/D",
+				("+", "/D", ("MEM", "/R(X)", "#0b0", "/DF"))),
+			)
+		elif iw == 0xfc:
+			# ADI b   Add Immediate
+			mne = "adi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("+", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0x74:
+			# ADC     Add with Carry
+			mne = "adc"
+			model += (
+			    ("=", "/D",
+				("+", "/D", ("MEM", "/R(X)", "/DF", "/DF"))),
+			)
+		elif iw == 0x7c:
+			# ADCI b  Add with Carry Immediate
+			mne = "adci"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("+", "/D", "#0x%02x" % nw, "/DF", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0xf5:
+			# SD      Subtract D from memory
+			mne = "sd"
+			model += (
+			    ("=", "/D",
+				("-", "/D", ("MEM", "/R(X)", "#0b0", "/DF"))),
+			)
+		elif iw == 0xfd:
+			# SDI b   Subtract D from memory Immediate byte
+			mne = "sdi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("-", "#0x%02x" % nw, "/D", "#0b0", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0x75:
+			# SDB     Subtract D from memory with Borrow
+			mne = "sdb"
+			model += (
+			    ("=", "/D",
+				("-", "/D", ("MEM", "/R(X)", "/DF", "/DF"))),
+			)
+		elif iw == 0x7d:
+			# SDBI b  Subtract D with Borrow, Immediate
+			mne = "sdbi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("-", "#0x%02x" % nw, "/D", "/DF", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0xf7:
+			# SM      Subtract Memory from D
+			mne = "sm"
+			model += (
+			    ("=", "/D",
+				("-", "/D", ("MEM", "/R(X)"), "#0b0", "/DF")),
+			)
+		elif iw == 0xff:
+			# SMI b   Subtract Memory from D, Immediate
+			mne = "smi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("-", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+		elif iw == 0x77:
+			# SMB     Subtract Memory from D with Borrow
+			mne = "smb"
+			model += (
+			    ("=", "/D",
+				("-", "/D", ("MEM", "/R(X)"), "/DF", "/DF")),
+			)
+		elif iw == 0x7f:
+			# SMBI b  Subtract Memory with Borrow, Immediate
+			mne = "smbi"
+			arg = "0x%02x" % nw
+			length = 2
+			model += (
+			    ("=", "/D",
+				("-", "/D", "#0x%02x" % nw, "/DF", "/DF")),
+			    ("INC", "/R(P)"),
+			)
+
+		#-----------------------------------------------
+		# BRANCH INSTRUCTIONS - SHORT BRANCH
+
+		elif ireg == 0x30:
+			mne = ( "br",  "bq",  "bz",  "bdf",
+				"b1",  "b2",  "b3",  "b4",
+				"skp", "bnq", "bnz", "bnf",
+				"bn1", "bn2", "bn3", "bn4") [nreg]
+			length = 2
+			da = (adr + 1 & 0xff00) | nw
+			arg = "0x%04x" % da
+			model += (
+			    ("ZERO?", ("RND",),
+				("INC", "/R(P)"),
+			        ("=", "/R(P)", "#0x%04x" % da),
+			    ),
+			)
+			if nreg == 0:
+				# BR a    Branch unconditionally
+				model = ("=", "/R(P)", "#0x%04x" % da)
+				flow = (("cond", "T", da ),)
+			elif nreg == 1:
+				# BQ a    Branch if Q is on
+				# XXX: Does Q read different from /Q ?
+				flow = (
+				    ("cond", "q", da ),
+				    ("cond", "nq", adr + 2),
+				)
+			elif nreg == 2:
+				# BZ a    Branch on Zero
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("ZERO?", "/D", 
+					("=", "/R(P)", "#0x%04x" % da),
+					("INC", "/R(P)"),
+				    ),
+				)
+				flow = (
+				    ("cond", "Z", da ),
+				    ("cond", "NZ", adr + 2),
+				)
+			elif nreg == 3:
+				# BDF a   Branch if DF is 1
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("ZERO?", "/DF", 
+					("INC", "/R(P)"),
+					("=", "/R(P)", "#0x%04x" % da),
+				    ),
+				)
+				flow = (
+				    ("cond", "DF", da ),
+				    ("cond", "NDF", adr + 2),
+				)
+			elif nreg >= 4 and nreg <= 7:
+				# B1 a    Branch on External Flag 1
+				# B2 a    Branch on External Flag 2
+				# B3 a    Branch on External Flag 3
+				# B4 a    Branch on External Flag 4
+				flow = (
+				    ("cond", "b%d" % (nreg - 3), da ),
+				    ("cond", "nb%d" % (nreg - 3), adr + 2),
+				)
+			elif nreg == 8:
+				# SKP     Skip one byte
+				model = ("INC", "/R(P)", "#0x02")
+				flow = (("cond", "T", adr + 2 ),)
+			elif nreg == 9:
+				# BNQ a   Branch if Q is off
+				flow = (
+				    ("cond", "nq", da ),
+				    ("cond", "q", adr + 2),
+				)
+			elif nreg == 0xa:
+				# BNZ a   Branch on Not Zero
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("ZERO?", "/D", 
+					("INC", "/R(P)"),
+					("=", "/R(P)", "#0x%04x" % da),
+				    ),
+				)
+				flow = (
+				    ("cond", "NZ", da ),
+				    ("cond", "Z", adr + 2),
+				)
+			elif nreg == 0xb:
+				# BNF a   Branch if DF is 0
+				model = ("SEQ",
+				    ("INC", "/R(P)"),
+				    ("ZERO?", "/DF", 
+					("=", "/R(P)", "#0x%04x" % da),
+					("INC", "/R(P)"),
+				    ),
+				)
+				flow = (
+				    ("cond", "NDF", da ),
+				    ("cond", "DF", adr + 2),
+				)
+			elif nreg >= 0xc and nreg <= 0xf:
+				# BN1 a   Branch on Not External Flag 1
+				# BN2 a   Branch on Not External Flag 2
+				# BN3 a   Branch on Not External Flag 3
+				# BN4 a   Branch on Not External Flag 4
+				flow = (
+				    ("cond", "nb%d" % (nreg - 11), da ),
+				    ("cond", "b%d" % (nreg - 11), adr + 2),
+				)
+
+		#-----------------------------------------------
+		# BRANCH INSTRUCTIONS - LONG BRANCH
+
+		elif (iw & 0xf4) == 0xc0:
+			da = p.m.b16(adr + 1)
+			arg = "0x%04x" % da
+			length = 3
+
+			if iw == 0xc0:
+				# LBR aa  Long Branch unconditionally
+				mne = "lbr"
+				model = ("=", "/R(P)", "#0x%04x" % da)
+				flow = ( ("cond", "T", da ), )
+			elif iw == 0xc1:
+				# LBQ aa  Long Branch if Q is on
+				mne = "lbq"
+				model = ("ZERO?", "/Q", 
+					("=", "/R(P)", "#0x%04x" % da),
+					("INC", "/R(P)", "#0x3"),
+				)
+				flow = (
+				    ("cond", "Q", da ),
+				    ("cond", "NQ", adr + 3),
+				)
+			elif iw == 0xc2:
+				# LBZ aa  Long Branch if Zero
+				mne = "lbz"
+				model = ("ZERO?", "/D", 
+					("=", "/R(P)", "#0x%04x" % da),
+					("INC", "/R(P)", "#0x3"),
+				)
+				flow = (
+				    ("cond", "Z", da ),
+				    ("cond", "NZ", adr + 3),
+				)
+			elif iw == 0xc3:
+				# LBDF aa Long Branch if DF is 1
+				mne = "lbdf"
+				model = ("ZERO?", "/DF", 
+					("INC", "/R(P)", "#0x3"),
+					("=", "/R(P)", "#0x%04x" % da),
+				)
+				flow = (
+				    ("cond", "DF", da ),
+				    ("cond", "NDF", adr + 3),
+				)
+			elif iw == 0xc8:
+				# LSKP    Long Skip
+				mne = "lskp"
+				length = 1
+				arg = None
+				model = ("INC", "/R(P)", "#0x3")
+				flow = ( ("cond", "T", adr + 3 ), )
+			elif iw == 0xc9:
+				# LBNQ aa Long Branch if Q is off
+				mne = "lbnq"
+				model = ("ZERO?", "/Q", 
+					("INC", "/R(P)", "#0x3"),
+					("=", "/R(P)", "#0x%04x" % da),
+				)
+				flow = (
+				    ("cond", "NQ", da ),
+				    ("cond", "Q", adr + 3),
+				)
+			elif iw == 0xca:
+				# LBNZ aa Long Branch if Not Zero
+				mne = "lbnz"
+				model = ("ZERO?", "/D", 
+					("INC", "/R(P)", "#0x3"),
+					("=", "/R(P)", "#0x%04x" % da),
+				)
+				flow = (
+				    ("cond", "NZ", da ),
+				    ("cond", "Z", adr + 3),
+				)
+			elif iw == 0xcb:
+				# LBNF aa Long Branch if DF is 0
+				mne = "lbnf"
+				model = ("ZERO?", "/DF", 
+					("=", "/R(P)", "#0x%04x" % da),
+					("INC", "/R(P)", "#0x3"),
+				)
+				flow = (
+				    ("cond", "NDF", da ),
+				    ("cond", "DF", adr + 3),
+				)
+		#-----------------------------------------------
+		# SKIP INSTRUCTIONS 
+
+		# 0x38 and 0xc8: see above
+		elif iw == 0xce:
+			# LSZ    Long Skip if Zero
+			mne = "lsz"
+			model = ("ZERO?", "/D", 
+			        ("INC", "/R(P)", "#0x3"),
+			        ("INC", "/R(P)", "#0x1"),
+			)
+			flow = (
+			    ("cond", "NZ", adr + 1 ),
+			    ("cond", "Z", adr + 3),
+			)
+		elif iw == 0xc6:
+			# LSNZ    Long Skip if Not Zero
+			mne = "lsnz"
+			model = ("ZERO?", "/D", 
+			        ("INC", "/R(P)", "#0x1"),
+			        ("INC", "/R(P)", "#0x3"),
+			)
+			flow = (
+			    ("cond", "Z", adr + 1 ),
+			    ("cond", "NZ", adr + 3),
+			)
+		elif iw == 0xcf:
+			# LSDF    Long Skip if DF is 1
+			mne = "lsdf"
+			model = ("ZERO?", "/D", 
+			        ("INC", "/R(P)", "#0x1"),
+			        ("INC", "/R(P)", "#0x3"),
+			)
+			flow = (
+			    ("cond", "NDF", adr + 1 ),
+			    ("cond", "DF", adr + 3),
+			)
+		elif iw == 0xc7:
+			# LSNF    Long Skip if DF is 0
+			mne = "lsnf"
+			model = ("ZERO?", "/DF", 
+			        ("INC", "/R(P)", "#0x3"),
+			        ("INC", "/R(P)", "#0x1"),
+			)
+			flow = (
+			    ("cond", "DF", adr + 1 ),
+			    ("cond", "NDF", adr + 3),
+			)
+
+		elif iw == 0xcd:
+			# LSQ     Long Skip if Q is on
+			mne = "lsq"
+			model = ("ZERO?", "/Q", 
+			        ("INC", "/R(P)", "#0x1"),
+			        ("INC", "/R(P)", "#0x3"),
+			)
+			flow = (
+			    ("cond", "NQ", adr + 1 ),
+			    ("cond", "Q", adr + 3),
+			)
+		elif iw == 0xc5:
+			# LSNQ    Long Skip if Q is off
+			mne = "lsnq"
+			model = ("ZERO?", "/Q", 
+			        ("INC", "/R(P)", "#0x3"),
+			        ("INC", "/R(P)", "#0x1"),
+			)
+			flow = (
+			    ("cond", "Q", adr + 1 ),
+			    ("cond", "NQ", adr + 3),
+			)
+		elif iw == 0xcc:
+			# LSIE    Long Skip if Interrupts Enabled
+			mne = "lsie"
+			model = ("ZERO?", "/IE", 
+			        ("INC", "/R(P)", "#0x1"),
+			        ("INC", "/R(P)", "#0x3"),
+			)
+			flow = (
+			    ("cond", "NIE", adr + 1 ),
+			    ("cond", "IE", adr + 3),
+			)
+
+		#-----------------------------------------------
+		# CONTROL INSTRUCTIONS 
+
+		elif iw == 0x00:
+			# IDL     Idle
+			mne = "idl"
+			model = ("INC", "/R(P)")
+		elif iw == 0xc4:
+			# NOP     No Operation
+			mne = "nop"
+			model = ("INC", "/R(P)")
+		elif ireg == 0xd0:
+			# SEP r   Set P
+			mne = "sep"
+			arg = "%d" % nreg
+			model += ( ("=", "/P", "#0x%x" % nreg), )
+			flow = ()
+		elif ireg == 0xe0:
+			# SEX r   Set X
+			mne = "sex"
+			arg = "%d" % nreg
+			model += ( ("=", "/X", "#0x%x" % nreg), )
+		elif iw == 0x7b:
+			# SEQ     Set Q
+			mne = "seq"
+			model += ( ("=", "/Q", "#0b1"), )
+		elif iw == 0x7a:
+			# REQ     Reset Q
+			mne = "req"
+			model += ( ("=", "/Q", "#0b0"), )
+		elif iw == 0x78:
+			# SAV     Save T
+			mne = "sav"
+			model += ( ("MEM", "/R(X)", "/T"), )
+		elif iw == 0x79:
+			# MARK    Save X and P in T
+			# XXX: untested
+			mne = "mark"
+			model += (
+			    ("=", "/T", ("OR", "/P", ("<<", "/T", "#0x04"))),
+			    ("MEM", "/R2", "/T")
+			    ("DEC", "/R2")
+		        )
+		elif iw == 0x70 or iw == 0x71:
+			# RET     Return
+			# DIS     Return and Disable Interrupts
+			if iw == 0x70:
+				mne = "ret"
+			else:
+				mne = "dis"
+			model += (
+			    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#0x4")),
+			    ("=", "/X", ("TRIM",
+				(">>", ("MEM", "/R(X)"), "#0x4"),
+				"#0x4")),
+			    ("INC", "/R(X)"),
+			    ("=", "/IE", "#0b%d" % (1^(iw & 1))),
+			)
+			flow = ()
+
+		#------------------------------------------
+		# INPUT - OUTPUT BYTE TRANSFER
+
+		elif ireg == 0x60 and nreg >= 1 and nreg <= 7:
+			# OUT p   Output from memory (for p = 1 to 7)
+			mne = "out"
+			arg = "%d" % nreg
+			model += (
+			    ("BUS", "#0x%x" % nreg, ("MEM", "/R(X)")),
+			    ("INC", "/R(X)"),
+			)
+			flow = ()
+		elif ireg == 0x60 and nreg >= 9 and nreg <= 0xf:
+			# INP p   Input to memory and D (for p = 9 to F)
+			mne = "in"
+			arg = "%d" % (nreg & 7)
+			model += (
+			    ("MEM", "/R(X)", ("BUS", "#0x%x" % (nreg & 7))),
+			)
+
+		#------------------------------------------
+		# Not matched:  bug ?
+
+		else:
+			print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw)
+			return
+
+		#print("%04x" % adr, "%02x" % iw, mne, arg, flow)
 		x = p.t.add(adr, adr + length, "ins")
 		x.render = self.render
 		x.a['mne'] = mne
@@ -266,589 +937,9 @@ class cdp1802(object):
 			self.model.eval(p, state, model)
 			v = self.model.getreg(p, state, "/R(P)")
 			if v[1] != None:
+				#print("--> Model %04x %04x" % (adr, v[1]))
 				p.todo(v[1], p.cpu.disass, copy.deepcopy(state))
 		if flow != None:
 			x.a['flow'] = flow
 		p.ins(x, self.disass)
-
-	def disass(self, p, adr, priv = None):
-		#print("cdp1802.disass(0x%x, " % adr, priv, ")")
-		if p.t.find(adr, "ins") != None:
-			return
-
-		try:
-			iw = p.m.rd(adr)
-			nw = p.m.rd(adr + 1)
-		except:
-			print("NOMEM cdp1802.disass(0x%x, " % adr, ")")
-			return
-
-		ireg = iw & 0xf0
-		nreg = iw & 0x0f
-
-		model = None
-
-		if iw == 0xd4:	
-			# XXX: hack
-			da = p.m.b16(adr + 1)
-			self.ins(p, adr, 3, "xcall", "0x%04x" % da,
-			    (
-				("call", "T", da),
-			    ), model = model
-			)
-		elif iw == 0xd5:	
-			# XXX: hack
-			self.ins(p, adr, 1, "xret", None,
-			    (
-				("ret", "T", None),
-			    ), model = model
-			)
-
-		elif iw == 0x00:
-			# IDL -- Wait for IRQ/DMA -- 
-			model = ("INC", "/R(P)")
-			self.ins(p, adr, 1, "idl", model = model, state=priv)
-		elif ireg == 0x00:
-			# LDN -- Load via N -- D = M(R(N))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("MEM", "/R%d" % nreg)),
-			)
-			self.ins(p, adr, 1, "ldn", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0x10:
-			# INC -- Increment -- R(N) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("INC", "/R%d" % nreg),
-			)
-			self.ins(p, adr, 1, "inc", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0x20:
-			# DEC -- Decrement -- R(N) -= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("DEC", "/R%d" % nreg),
-			)
-			self.ins(p, adr, 1, "dec", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0x30 and nreg & 4:
-			# B1-B4,BN1-BN4 -- Short Branch in inputs
-			da = adr + 1 & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("RND",
-				("INC", "/R(P)"),
-			        ("=", "/R(P)", "#0x%04x" % da),
-			    ),
-			)
-			s = "b"
-			if nreg >= 8:
-				s += "n"
-			s += "%d" % ((nreg & 3) + 1)
-			self.ins(p, adr, 2, s, "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", s, da ),
-				("cond", "n" + s, adr + 2),
-			    ))
-		elif iw == 0x30:
-			# BR -- Short Branch
-			da = (adr + 1) & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/R(P)", "#0x%04x" % da),
-			)
-			self.ins(p, adr, 2, "br", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = ( ("cond", "T", da ),)
-			    )
-		elif iw == 0x32:
-			# BZ -- Short Branch if not D
-			da = (adr + 1) & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("ZERO?", "/D", 
-			        ("=", "/R(P)", "#0x%04x" % da),
-			        ("INC", "/R(P)"),
-			    ),
-			)
-			self.ins(p, adr, 2, "bz", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "Z", da ),
-				("cond", "NZ", adr + 2),
-			    ))
-		elif iw == 0x33:
-			# BDF -- Short Branch if DF
-			da = (adr + 1) & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("ZERO?", "/DF", 
-			        ("=", "/R(P)", "#0x%04x" % da),
-			        ("INC", "/R(P)"),
-			    ),
-			)
-			self.ins(p, adr, 2, "bdf", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "DF", da ),
-				("cond", "NDF", adr + 2),
-			    ))
-		elif iw == 0x3a:
-			# BNZ -- Short Branch
-			da = (adr + 1) & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("ZERO?", "/D", 
-			        ("INC", "/R(P)"),
-			        ("=", "/R(P)", "#0x%04x" % da),
-			    ),
-			)
-			self.ins(p, adr, 2, "bnz", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "NZ", da ),
-				("cond", "Z", adr + 2),
-			    ))
-		elif iw == 0x3b:
-			# BDF -- Short Branch if not DF
-			da = (adr + 1) & 0xff00
-			da |= nw
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("ZERO?", "/DF", 
-			        ("INC", "/R(P)"),
-			        ("=", "/R(P)", "#0x%04x" % da),
-			    ),
-			)
-			self.ins(p, adr, 2, "bdnf", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "NDF", da ),
-				("cond", "DF", adr + 2),
-			    ))
-		elif ireg == 0x40:
-			# LDA -- Load Advance -- D = M(R(N)); R(N) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("MEM", "/R%d" % nreg)),
-			    ("INC", "/R%d" % nreg),
-			)
-			self.ins(p, adr, 1, "lda", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0x50:
-			# STR -- Store -- M(R(N)) = D
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("MEM", "/R%d" % nreg, "/D"),
-			)
-			self.ins(p, adr, 1, "str", "%d" % nreg,
-			    model = model, state=priv)
-		elif iw == 0x60:
-			# IRX -- Increment X
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("INC", "/X"),
-			)
-			self.ins(p, adr, 1, "irx", model = model, state=priv)
-		elif ireg == 0x60 and nreg < 8:
-			# OUT -- OUTPUT -- BUS = M(R(X)); R(X) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("BUS", "#0x%x" % nreg, ("MEM", "/R(X)")),
-			    ("INC", "/R(X)"),
-			)
-			self.ins(p, adr, 1, "out", "%d" % nreg,
-			    flow=(), model = model, state=priv)
-		elif ireg == 0x60 and nreg > 7:
-			# IN -- Input -- M(R(X)) = BUS
-			nreg &= 7
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("MEM", "/R(X)", ("BUS", "#0x%x" % (nreg % 7))),
-			)
-			self.ins(p, adr, 1, "in", "%d" % (nreg & 7),
-			    model = model, state=priv)
-		elif iw == 0x70:
-			# RET -- Disable interrupt -- X,P = M(R(X)); R(X)+=1, IE = 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#0x4")),
-			    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#0x4"), "#0x4")),
-			    ("INC", "/R(X)"),
-			    ("=", "/IE", "#0b1"),
-			)
-			self.ins(p, adr, 1, "ret", model = model, state=priv)
-		elif iw == 0x71:
-			# DIS -- Disable interrupt -- X,P = M(R(X)); R(X)+=1, IE = 0
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/P", ("TRIM", ("MEM", "/R(X)"), "#0x4")),
-			    ("=", "/X", ("TRIM", (">>", ("MEM", "/R(X)"), "#0x4"), "#0x4")),
-			    ("INC", "/R(X)"),
-			    ("=", "/IE", "#0b0"),
-			)
-			self.ins(p, adr, 1, "dis",
-			    flow = (), model = model, state=priv)
-		elif iw == 0x72:
-			# LDXA -- Load via X and increment -- D = M(R(X)); R(X) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("MEM", "/R(X)")),
-			    ("INC", "/R(X)"),
-			)
-			self.ins(p, adr, 1, "ldxa", model = model, state=priv)
-		elif iw == 0x73:
-			# STXD -- Store via X and decrement -- M(R(X)) = D; R(X) -= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("MEM", "/R(X)", "/D"),
-			    ("DEC", "/R(X)"),
-			)
-			self.ins(p, adr, 1, "stxd", model = model, state=priv)
-		elif iw == 0x74:
-			# ADC -- Add w/cy -- D,DF += M(R(X)) + DF
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("+", "/D", ("MEM", "/R(X)", "/DF", "/DF"))),
-			)
-			self.ins(p, adr, 1, "adc", model = model, state=priv)
-		elif iw == 0x7c:
-			# ADCI -- Add w/CY Immediate -- D,DF += M(R(P)) + DF; R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("+", "/D", "#0x%02x" % nw, "/DF", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "adci", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0x76:
-			# SHRC -- Shift Right w/cy -- DF,D,DF <<= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", (">>", "/D", "#0x0", "/DF", "/DF")),
-			)
-			self.ins(p, adr, 1, "shrc", model = model, state=priv)
-		elif iw == 0x77:
-			# SMB -- Subtract Memory w/borrow
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "/D", ("MEM", "/R(X)"), "/DF", "/DF")),
-			)
-			self.ins(p, adr, 1, "smb", model = model, state=priv)
-		elif iw == 0x7a:
-			# REQ -- Reset Q
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/Q", "#0b0"),
-			)
-			self.ins(p, adr, 1, "req", model = model, state=priv)
-		elif iw == 0x7b:
-			# SEQ -- Set Q
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/Q", "#0b1"),
-			)
-			self.ins(p, adr, 1, "seq", model = model, state=priv)
-		elif iw == 0x7d:
-			# SDBI -- Sub D w/b Immediate -- DF,D -= M(R(P)) + DF; R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "#0x%02x" % nw, "/D", "/DF", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "sdbi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0x7e:
-			# SHLC -- Shift Left w/cy -- DF,D,DF <<= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("<<", "/D", "#0x0", "/DF", "/DF")),
-			)
-			self.ins(p, adr, 1, "shlc", model = model, state=priv)
-		elif iw == 0x7f:
-			# SMBI -- Sub w/b Immediate -- DF,D -= M(R(P)) + DF; R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "/D", "#0x%02x" % nw, "/DF", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "smbi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif ireg == 0x80:
-			# GLO -- Get Low -- D = R(N).0
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", "/R%d.0" % nreg),
-			)
-			self.ins(p, adr, 1, "glo", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0x90:
-			# GHI -- Get High -- D = R(N).1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", "/R%d.1" % nreg),
-			)
-			self.ins(p, adr, 1, "ghi", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0xa0:
-			# PLO -- Put Low -- R(N).0 = D
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/R%d.0" % nreg, "/D"),
-			)
-			self.ins(p, adr, 1, "plo", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0xb0:
-			# PHI -- Put High -- R(N).1 = D
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/R%d.1" % nreg, "/D"),
-			)
-			self.ins(p, adr, 1, "phi", "%d" % nreg,
-			    model = model, state=priv)
-		elif iw == 0xc0:
-			# LBR -- Long Branch 
-			da = p.m.b16(adr + 1)
-			model = ("=", "/R(P)", "#0x%04x" % da)
-			self.ins(p, adr, 3, "lbr", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "T", da ),
-			    )
-			)
-		elif iw == 0xc2:
-			# LBZ -- Long Branch if not D
-			da = p.m.b16(adr + 1)
-			model = (
-			    "ZERO?", "/D", 
-				("=", "/R(P)", "#0x%04x" % da),
-			        ("INC", "/R(P)", "#0x3"),
-			)
-			self.ins(p, adr, 3, "lbdf", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "Z", da ),
-				("cond", "NZ", adr + 3),
-			    )
-			)
-		elif iw == 0xc3:
-			# LBDF -- Long Branch if DF 
-			da = p.m.b16(adr + 1)
-			model = (
-			    "ZERO?", "/DF", 
-			        ("INC", "/R(P)", "#0x3"),
-				("=", "/R(P)", "#0x%04x" % da),
-		        )
-			self.ins(p, adr, 3, "lbdf", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "DF", da ),
-				("cond", "NDF", adr + 3),
-			    )
-			)
-		elif iw == 0xc6:
-			# LSNZ -- Long skip if D
-			model = (
-			    "ZERO?", "/D", 
-			        ("INC", "/R(P)", "#0x3"),
-			        ("INC", "/R(P)", "#0x1"),
-			    )
-			self.ins(p, adr, 1, "lsnz",
-			    model = model, state=priv,
-			    flow = (
-				("cond", "Z", adr + 1 ),
-				("cond", "NZ", adr + 3),
-			    )
-			)
-		elif iw == 0xc8:
-			# LSKP -- Long Skip -- R(P) += 2
-			model = ("INC", "/R(P)", "#0x3")
-			self.ins(p, adr, 1, "lskp", 
-			    model = model, state=priv,
-			    flow = (("cond", "T", adr + 3),)
-			)
-		elif iw == 0xca:
-			# LBNZ -- Long Branch if D
-			da = p.m.b16(adr + 1)
-			model = (
-			    "ZERO?", "/D", 
-				("=", "/R(P)", "#0x%04x" % da),
-			        ("INC", "/R(P)", "#0x3"),
-			)
-			self.ins(p, adr, 3, "lbnz", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "NZ", da ),
-				("cond", "Z", adr + 3),
-			    )
-			)
-		elif iw == 0xcb:
-			# LBDF -- Long Branch if not DF 
-			da = p.m.b16(adr + 1)
-			model = (
-			    "ZERO?", "/DF", 
-				("=", "/R(P)", "#0x%04x" % da),
-			        ("INC", "/R(P)", "#0x3"),
-			)
-			self.ins(p, adr, 3, "lbnf", "0x%04x" % da,
-			    model = model, state=priv,
-			    flow = (
-				("cond", "NDF", da ),
-				("cond", "DF", adr + 3),
-			    )
-			)
-		elif ireg == 0xd0:
-			# SEP -- Set P -- P = N
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/P", "#0x%x" % nreg),
-			)
-			self.ins(p, adr, 1, "sep", "%d" % nreg,
-			    model = model, state=priv)
-		elif ireg == 0xe0:
-			# SEX -- Set X -- X = N
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/X", "#0x%x" % nreg),
-			)
-			self.ins(p, adr, 1, "sex", "%d" % nreg,
-			    model = model, state=priv)
-		elif iw == 0xf0:
-			# LDX -- Load by X -- D = M(R(X))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("MEM", "/R(X)")),
-			)
-			self.ins(p, adr, 1, "ldx", model = model, state=priv)
-		elif iw == 0xf1:
-			# OR -- OR -- D |= M(R(X))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("OR", "/D", ("MEM", "/R(X)"))),
-			)
-			self.ins(p, adr, 1, "or", model = model, state=priv)
-		elif iw == 0xf2:
-			# AND -- AND -- D &= M(R(X))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("AND", "/D", ("MEM", "/R(X)"))),
-			)
-			self.ins(p, adr, 1, "and", model = model, state=priv)
-		elif iw == 0xf3:
-			# XOR -- Exclusive Or -- D ^= M(R(X))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("XOR", "/D", ("MEM", "/R(X)"))),
-			)
-			self.ins(p, adr, 1, "xor", model = model, state=priv)
-		elif iw == 0xf4:
-			# ADD -- Add -- D,DF += M(R(X))
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("+", "/D", ("MEM", "/R(X)", "#0b0", "/DF"))),
-			)
-			self.ins(p, adr, 1, "add", model = model, state=priv)
-		elif iw == 0xf6:
-			# SHR -- Shift Right -- D <<= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", (">>", "/D", "#0x0", "#0b0", "/DF")),
-			)
-			self.ins(p, adr, 1, "shr", model = model, state=priv)
-		elif iw == 0xf7:
-			# SM -- Subtract Memory
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "/D", ("MEM", "/R(X)"), "#0b0", "/DF")),
-			)
-			self.ins(p, adr, 1, "sm", model = model, state=priv)
-		elif iw == 0xf8:
-			# LDI -- Load Immediate -- D = M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", "#0x%02x" % nw),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "ldi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xf9:
-			# ORI -- OR Immediate -- D |= M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("OR", "/D", "#0x%02x" % nw)),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "ori", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xfa:
-			# ANI -- And Immediate -- D &= M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("AND", "/D", "#0x%02x" % nw)),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "ani", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xfb:
-			# XRI -- Xor Immediate -- D ^= M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("XOR", "/D", "#0x%02x" % nw)),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "xri", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xfc:
-			# ADI -- Add Immediate -- D,DF += M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("+", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "adi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xfd:
-			# SDI -- Sub D Immediate -- DF,D -= M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "#0x%02x" % nw, "/D", "#0b0", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "sdi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif iw == 0xfe:
-			# SHL -- Shift Left -- D <<= 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D", ("<<", "/D", "#0x0", "#0b0", "/DF")),
-			)
-			self.ins(p, adr, 1, "shl", model = model, state=priv)
-		elif iw == 0xff:
-			# SMI -- Sub Immediate -- DF,D -= M(R(P)); R(P) += 1
-			model = ("SEQ",
-			    ("INC", "/R(P)"),
-			    ("=", "/D",
-				("-", "/D", "#0x%02x" % nw, "#0b0", "/DF")),
-			    ("INC", "/R(P)"),
-			)
-			self.ins(p, adr, 2, "smi", "0x%02x" % nw,
-			    model = model, state=priv)
-		elif True:
-			print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw)
-	
+		

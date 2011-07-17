@@ -24,7 +24,7 @@ class ModelError(Exception):
 class model(object):
 	def __init__(self):
 		self.verbs = {
-		"SEQ":	(self.verb_seq, "expr", "..."),
+		"SEQ":	(self.verb_seq, "..."),
 		">>":	(self.verb_right_shift, "val", "bits"),
 		"<<":	(self.verb_left_shift, "val", "bits" "[bi]" "[bo]"),
 		"+":	(self.verb_add, "val", "val" "[ci]" "[co]"),
@@ -200,33 +200,45 @@ class model(object):
 		v1 = self.eval(p, state, expr[1])
 		v2 = self.eval(p, state, expr[2])
 		assert v1[0] == v2[0]
-		if v1[1] == None or v2[1] == None:
-			return (v1[0], None)
-		# XXX:
-		return (v1[0], None)
-	
-		if v1[1] != None and v2[1] != None:
-			vn = (v1[0], (v1[1] - v2[1]) & ((1 << v1[0]) - 1))
+
+		if len(expr) > 3:
+			ci = self.eval(p, state, expr[3])
 		else:
-			vn = (v1[0], None)
-		self.setreg(p, state, expr[1], vn)
-		return vn
+			ci = (1,0)
+
+		if v1[1] == None or v2[1] == None or ci[1] == None:
+			if len(expr) > 4:
+				self.setreg(p, state, expr[4], (1, None))
+			return (v1[0], None)
+
+		s = v1[1] + v2[1] + ci[1]
+
+		if len(expr) > 4:
+			self.setreg(p, state, expr[4], (1, s >> v1[0]))
+
+		return (v1[0], s & ((1 << v1[0]) - 1))
 
 	def verb_sub(self, p, state, expr):
 		v1 = self.eval(p, state, expr[1])
 		v2 = self.eval(p, state, expr[2])
 		assert v1[0] == v2[0]
-		if v1[1] == None or v2[1] == None:
-			return (v1[0], None)
-		# XXX:
-		return (v1[0], None)
-	
-		if v1[1] != None and v2[1] != None:
-			vn = (v1[0], (v1[1] - v2[1]) & ((1 << v1[0]) - 1))
+
+		if len(expr) > 3:
+			bi = self.eval(p, state, expr[3])
 		else:
-			vn = (v1[0], None)
-		self.setreg(p, state, expr[1], vn)
-		return vn
+			bi = (1,0)
+
+		if v1[1] == None or v2[1] == None or bi[1] == None:
+			if len(expr) > 4:
+				self.setreg(p, state, expr[4], (1, None))
+			return (v1[0], None)
+
+		s = v1[1] - (v2[1] + bi)
+
+		if len(expr) > 4:
+			self.setreg(p, state, expr[4], (1, s >> v1[0]))
+
+		return (v1[0], s & ((1 << v1[0]) - 1))
 
 	def verb_trim(self, p, state, expr):
 		v1 = self.eval(p, state, expr[1])
@@ -244,6 +256,7 @@ class model(object):
 			self.eval(p, state, expr[3])
 
 	def verb_rnd(self, p, state, expr):
+		return (1, 1)
 		if random.random() >= .5:
 			return (1, 1)
 		else:
