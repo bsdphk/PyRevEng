@@ -393,6 +393,15 @@ class byte_mem(base_mem):
 			start += self.bcols
 		return l
 
+	# Default content formatter
+	def col2(self, p, start, end, lvl):
+		l = list()
+		while start < end:
+			l.append(".XXX")
+			start += self.bcols
+		return l
+
+
 if __name__ == "__main__":
 
 	m = byte_mem(0,0x500)

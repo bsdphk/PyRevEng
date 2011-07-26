@@ -101,7 +101,7 @@ class nova(object):
 				o4 = None
 		return (o4, (o0 + o1, o2))
 
-	def render(self, p, t, lvl):
+	def render(self, p, t):
 		s = t.a['mne'] + "\t"
 		if 'oper' in t.a:
 			d = ""

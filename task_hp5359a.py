@@ -394,7 +394,7 @@ class dot_float(tree.tree):
 		self.a['const'] = "FLOAT=" + self.nbr
 		p.setlabel(adr, self.a['const'])
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
 
@@ -435,6 +435,9 @@ for ax in (0x7307, 0x730b, 0x7b90, 0x7c94, 0x7c98):
 
 #######################################################################
 
-p.render("/tmp/_hp5359a")
+import render
+r = render.render(p)
+
+r.render("/tmp/_hp5359a")
 #p.t.recurse()
 exit(0)

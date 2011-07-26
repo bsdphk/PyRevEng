@@ -16,7 +16,7 @@ class word(tree.tree):
 		self.fmt = fmt
 		self.render = self.rfunc
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		try:
 			x = p.m.rd(t.start)
 		except:
@@ -44,7 +44,7 @@ class dot_txt(tree.tree):
 		p.t.add(start, end, "dot_txt", True, self)
 		self.render = self.rfunc
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".TXT\t'"
 		for i in range(t.start, t.end):
 			q = p.m.rdqual(i)

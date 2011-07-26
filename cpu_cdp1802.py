@@ -242,7 +242,7 @@ class cdp1802(object):
 			ss[i] = reset_state[i]
 		p.todo(0, self.disass, ss)
 
-	def render(self, p, t, lvl):
+	def render(self, p, t):
 		s = t.a['mne']
 		if t.a['arg'] != None:
 			s += "\t" + t.a['arg']

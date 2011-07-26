@@ -37,7 +37,7 @@ class pyreveng(object):
 		self.__bbx = dict()
 
 		# @label
-		self.__label = dict()
+		self.label = dict()
 
 		# @render
 		self.cmt_start = 56
@@ -307,7 +307,7 @@ class pyreveng(object):
 	###############################################################
 
 	def setlabel(self, a, lbl):
-		self.__label[a] = lbl
+		self.label[a] = lbl
 
 	###############################################################
 	# Resolve effective addresses that go through unconditional jumps
@@ -345,36 +345,6 @@ class pyreveng(object):
 	###############################################################
 	# Rendering
 	#
-	def __pad_to(self, r, w):
-		while len(r.expandtabs()) <= w - 8:
-			r += "\t"
-		while len(r.expandtabs()) < w:
-			r += " "
-		return r
-
-	def __render_xxx(self, start, end, fo, lvl):
-		c1 = self.m.col1(self, start, end, lvl)
-		c2 = self.m.col2(self, start, end, lvl)
-		for i in range(0, len(c1)):
-			fo.write(c1[i] + c2[i] + "\n")
-		self.gaps += end - start
-
-	# 'xxx' render readable locations in this gap
-	def __render_gaps(self, start, end, fo, lvl):
-		if start == end:
-			return
-		s = False
-		for j in range(start, end):
-			try:
-				x = self.m.rd(j)
-				if s == False:
-					s = j
-			except:
-				if s != False:
-					self.__render_xxx(s, j, fo, lvl)
-				s = False
-		if s != False:
-			self.__render_xxx(s, end, fo, lvl)
 
 	def __render_ea(self, adr, cond):
 		if cond != None:
@@ -386,8 +356,8 @@ class pyreveng(object):
 			t += "?"
 		else:
 			t += self.m.afmt(adr)
-			if adr in self.__label:
-				t += "/" + self.__label[adr]
+			if adr in self.label:
+				t += "/" + self.label[adr]
 		return t
 		
 	# Emit effective address comments
@@ -406,142 +376,6 @@ class pyreveng(object):
 				d = ", "
 		if s != "":
 			c.append(s)
-
-
-	# Render, recursively, one tree node
-	def __render(self, t, lvl, fo):
-
-		if t.blockcmt != "":
-			for i in t.blockcmt[:-1].split("\n"):
-				if i == "-":
-					# XXX: width should be self.param
-					fo.write(self.col1s + ";-----------------------------------------------------\n")
-				else:
-					fo.write(self.col1s + "; " + i + "\n")
-
-		if 'flow_in' in t.a:
-			# XXX: supress if internal to procedure ? (how) ?
-			for i in t.a['flow_in']:
-				if i[2] == None:
-					s = "@?"
-				else:
-					s = "@" + self.m.afmt(i[2])
-				fo.write(self.col1c + "; COME_FROM " + s +
-				    ": %s %s\n" % (i[0], i[1]))
-
-		if t.descend == True and len(t.child) > 0:
-			if 'indent' in t.a:
-				oindent = self.indent
-				self.indent = oindent + "\t"
-			a = t.start
-			for i in t.child:
-				self.__render_gaps(a, i.start, fo, lvl)
-				self.__render(i, lvl + 1, fo)
-				a = i.end
-			self.__render_gaps(a, t.end, fo, lvl)
-			if 'indent' in t.a:
-				self.indent = oindent
-			#fo.write("\n")
-			return
-
-		if t.start in self.__label:
-			fo.write(self.col1s + self.__label[t.start] + ":\n")
-
-		if t.render == None:
-			fo.write("%s" % self.m.afmt(t.start))
-			if t.end > t.start + 1:
-				fo.write("-%s" % self.m.afmt(t.end - 1))
-			fo.write(" %s " % t.tag)
-			for i in t.a:
-				fo.write(" %s = %s" % (i, str(t.a[i])))
-			fo.write("\n")
-			if self.m.tstflags(t.start, t.end, self.m.undef):
-				fo.write("<undef>\n")
-				return
-			for i in self.m.col1(self, t.start, t.end, lvl):
-				fo.write(i)
-				fo.write("\n")
-			return
-
-		if type(t.render) == str:
-			a = (t.render,)
-		else:
-			a = t.render(self, t, lvl)
-		b = self.m.col1(self, t.start, t.end, lvl)
-		c = t.cmt
-		self.__render_ea_cmt(t, c)
-
-		i = 0
-		w = len(b[0])
-		while True:
-			r = ""
-			if t.descend == None:
-				if i >= len(a) and i >= len(c):
-					break
-			else:
-				if i >= len(b) and i >= len(a) and i >= len(c):
-					break
-			if i >= len(b):
-				r += self.col1s
-			else:
-				r += self.__pad_to(b[i], self.col1w)
-			#for sp in range(0,lvl - 1):
-			#	r += "|   "
-			if i < len(a):
-				r += a[i]
-			r = self.__pad_to(r, self.cmt_start)
-			if i < len(c):
-				r += "; " + c[i]
-			fo.write(r.rstrip() + "\n")
-			i += 1
-		#if t.end > t.start + 1:
-		#	fo.write("\n")
-		
-
-	def render(self, fname="-", start = None, end = None):
-
-		if fname == "-":
-			fo = sys.stdout
-		else:
-			fo = open(fname, "w")
-
-
-		if self.cautions > 0:
-			fo.write("; XXX %d CAUTIONS in this file\n"
-			    % self.cautions)
-
-		if start == None:
-			start = self.m.start
-
-		if end == None:
-			end = self.m.end
-
-		# XXX: do something with start & end
-
-		# Calculate space string for non-col1 lines
-		# XXX: hackish:
-
-		xx = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-		for i in range (0,100):
-			a = int(random.random() * (end - start) + start)
-			try:
-				self.m.rd(a)
-				xx = self.m.col1(self, a, a + 1, 0)[0]
-			except:
-				continue
-			break
-		self.col1w = len(xx.expandtabs())
-		self.col1s = self.__pad_to("", self.col1w)
-		self.col1c = self.__pad_to("", self.cmt_start)
-
-		self.__render(self.t, 0, fo)
-
-		print("%d locations xxx'ed" % self.gaps)
-
-		if self.cautions > 0:
-			fo.write("; XXX %d CAUTIONS in this file\n"
-			    % self.cautions)
-		fo.close()
 
 	###############################################################
 	# A general purpose hexdumping routine

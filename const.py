@@ -13,7 +13,7 @@ class byte(tree.tree):
 		self.render = self.rfunc
 		self.fmt = fmt
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".BYTE\t"
 		d = ""
 		for i in range(t.start, t.end):
@@ -31,7 +31,7 @@ class w16(tree.tree):
 		self.render = self.rfunc
 		self.fmt = fmt
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".WORD\t"
 		d = ""
 		for i in range(t.start, t.end, 2):
@@ -49,7 +49,7 @@ class w32(tree.tree):
 		self.render = self.rfunc
 		self.fmt = fmt
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".LWORD\t"
 		d = ""
 		for i in range(t.start, t.end, 4):
@@ -67,7 +67,7 @@ class txtlen(tree.tree):
 		self.render = self.rfunc
 		self.txt = p.m.ascii(adr, len)
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".TXT\t'" + self.txt + "'"
 		return (s,)
 
@@ -108,6 +108,6 @@ class txt(tree.tree):
 		else:
 			self.txt = ""
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".TXT\t'" + self.txt + "'" + self.term
 		return (s,)

@@ -287,7 +287,7 @@ class dot_24bit(tree.tree):
 		self.render = self.rfunc
 		self.fmt = fmt
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".24bit\t"
 		d = ""
 		for i in range(t.start, t.end, 3):
@@ -307,7 +307,7 @@ class dot_code(tree.tree):
 		p.todo(t, p.cpu.disass)
 		self.a['EA'] = (t,)
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".CODE\t%04x" % p.m.b16(t.start)
 		return (s,)
 
@@ -319,7 +319,7 @@ class dot_ptr(tree.tree):
 		t = p.m.b16(adr)
 		self.a['EA'] = (t,)
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".PTR\t%04x" % p.m.b16(t.start)
 		return (s,)
 
@@ -331,7 +331,7 @@ class dot_float(tree.tree):
 		self.nbr = float_render(p, adr)
 		self.a['const'] = "FP=" + self.nbr
 
-	def rfunc(self, p, t, lvl):
+	def rfunc(self, p, t):
 		s = ".FLOAT\t%s" % self.nbr
 		return (s,)
 
@@ -715,6 +715,10 @@ def dottage(t):
 
 #xnmi.recurse()
 
-p.render("/tmp/_hp5370b")
+import render
+r = render.render(p)
+r.render("/tmp/_hp5370b")
+
+#p.render("/tmp/_hp5370b")
 
 #p.t.recurse()

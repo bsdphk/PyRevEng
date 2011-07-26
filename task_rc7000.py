@@ -16,6 +16,8 @@ import mem_domus
 import cpu_domus_int
 import file_domus
 
+import render
+
 
 class DomusError(Exception):
         def __init__(self, adr, reason):
@@ -216,16 +218,18 @@ def dofile(filename, obj = None):
 
 		p.run()
 
+		r = render.render(p)
+
 		if obj != None:
-			p.render("/tmp/" + filename + "_" + obj)
+			r.render("/tmp/" + filename + "_" + obj)
 		else:
-			p.render("/tmp/" + filename)
+			r.render("/tmp/" + filename)
 		print("----------")
 		sys.stdout.flush()
 
 if __name__ == "__main__":
 
-	if True:
+	if False:
 		import os 
 
 		dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
@@ -242,5 +246,6 @@ if __name__ == "__main__":
 		#dofile("__.MUB")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
-		dofile("__.FSLIB")
+		dofile("__.CATLI")
+		#dofile("__.FSLIB")
 		pass

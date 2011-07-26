@@ -41,7 +41,7 @@ def musil_str(p, a, l):
 	return s
 		
 
-def int_getparams_desc(p, t, lvl):
+def int_getparams_desc(p, t):
 	l = list()
 	for a in range(t.start, t.end, 3):
 		b = p.m.rd(a)
@@ -66,7 +66,7 @@ def int_getparams_desc(p, t, lvl):
 		l.append("")
 	return l
 
-def int_getparams_init(p, t, lvl):
+def int_getparams_init(p, t):
 	l = list()
 	l.append(musil_str(p, t.start, t.a['lax']))
 	return l

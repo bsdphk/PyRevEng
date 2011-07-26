@@ -41,6 +41,8 @@ import copy
 while p.run():
 	pass
 
-p.render("/tmp/_cdp1802.bin")
+import render
+r = render.render(p)
+r.render("/tmp/_cdp1802.bin")
 
 

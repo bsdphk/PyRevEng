@@ -67,7 +67,7 @@ class mc6800(object):
 		assert inscode[0xc0] == "2iSUBB"
 		assert len(inscode) == 256
 
-	def render(self, p, t, lvl):
+	def render(self, p, t):
 		s = t.a['mne']
 		s += "\t"
 		d = ""
@@ -157,7 +157,8 @@ class mc6800(object):
 			
 
 	def __vector(self, p, adr, nm):
-		const.w16(p, adr)
+		x = const.w16(p, adr)
+		x.cmt.append("Vector: " + nm)
 		w = p.m.w16(adr)
 		p.todo(w, p.cpu.disass)
 		p.setlabel(w, nm + "_VECTOR")
