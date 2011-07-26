@@ -13,6 +13,7 @@ import const
 import pyreveng
 import hp53xx
 import cpu_mc6800
+import render
 
 #----------------------------------------------------------------------
 # Set up our PyRevEng instance
@@ -339,7 +340,7 @@ class dot_float(tree.tree):
 # NMI/GPIB debugger
 
 xnmi = p.t.add(0x7f79, 0x7ff8, "src")
-xnmi.blockcmt += """
+xnmi.blockcmt += """-
 NMI based GPIB debugger interface.
 """
 
@@ -458,7 +459,7 @@ for col in range(8,0,-1):
 		aa += 2
 
 x = p.t.add(ba, ea, "tbl")
-x.blockcmt += """
+x.blockcmt += """-
 Dispatch table for Keyboard commands
 """
 
@@ -502,7 +503,7 @@ for i in range(0, hpib_numcmds):
 		p.setlabel(w, "CMD_" + tt + "_" + gpib_expl[tt])
 
 x = p.t.add(ba, ea, "tbl")
-x.blockcmt += """
+x.blockcmt += """-
 Dispatch table for GPIB commands with numeric argument
 """
 
@@ -528,7 +529,7 @@ for j in range(hpib_numcmds, len(hpib_cmd)):
 	p.setlabel(w, "CMD_" + tt + "_" + gpib_expl[tt])
 
 x = p.t.add(ba, aa + 2, "tbl")
-x.blockcmt += """
+x.blockcmt += """-
 Dispatch table for GPIB commands without argument
 """
 
@@ -545,51 +546,27 @@ p.build_procs()
 
 if True:
 	x = p.t.add(0x7d96, 0x7da3, "block")
-	x.blockcmt += """
-	RESET entry point
-	"""
+	x.blockcmt += "RESET entry point\n"
 	x = p.t.add(0x7da3, 0x7db1, "block")
-	x.blockcmt += """
-	Self & Service test start
-	"""
+	x.blockcmt += "Self & Service test start\n"
 	x = p.t.add(0x7db1, 0x7de8, "block")
-	x.blockcmt += """
-	RAM test
-	"""
+	x.blockcmt += "RAM test\n"
 	x = p.t.add(0x7de8, 0x7df8, "block")
-	x.blockcmt += """
-	Display "Err 6.N" RAM error
-	"""
-
+	x.blockcmt += 'Display "Err 6.N" RAM error\n'
 	x = p.t.add(0x7df8, 0x7e30, "block")
-	x.blockcmt += """
-	Display "Err N.M"
-	"""
-
+	x.blockcmt += 'Display "Err N.M\n'
 	x = p.t.add(0x7e40, 0x7ebf, "block")
-	x.blockcmt += """
-	EPROM test
-	"""
+	x.blockcmt += "EPROM test\n"
 	x = p.t.add(0x7ebf, 0x7ef9, "block")
-	x.blockcmt += """
-	A16 Service Switch bit 2: "Write Test"
-	"""
+	x.blockcmt += 'A16 Service Switch bit 2: "Write Test"\n'
 	x = p.t.add(0x7ef9, 0x7f24, "block")
-	x.blockcmt += """
-	A16 Service Switch bit 3: "Display Test"
-	"""
+	x.blockcmt += 'A16 Service Switch bit 3: "Display Test"\n'
 	x = p.t.add(0x7f24, 0x7f46, "block")
-	x.blockcmt += """
-	A16 Service Switch bit 4: "Read Test"
-	"""
+	x.blockcmt += 'A16 Service Switch bit 4: "Read Test"\n'
 	x = p.t.add(0x7f46, 0x7f4d, "block")
-	x.blockcmt += """
-	A16 Service Switch bit 7: "Loop Tests"
-	"""
+	x.blockcmt += 'A16 Service Switch bit 7: "Loop Tests"\n'
 	x = p.t.add(0x7f6b, 0x7f79, "block")
-	x.blockcmt += """
-	LAMP/LED test
-	"""
+	x.blockcmt += "LAMP/LED test\n"
 
 #######################################################################
 if True:
@@ -706,6 +683,14 @@ def dottage(t):
 	}
 	""")
 
+def xyzzy(t, priv=None, lvl=0):
+	print(t)
+	if 'flow' in t.a:
+		t.cmt.append(str(t.a['flow']))
+	
+
+p.t.recurse(xyzzy)
+
 
 
 # Tail-recursion resolution candidates:
@@ -715,10 +700,7 @@ def dottage(t):
 
 #xnmi.recurse()
 
-import render
 r = render.render(p)
 r.render("/tmp/_hp5370b")
-
-#p.render("/tmp/_hp5370b")
 
 #p.t.recurse()

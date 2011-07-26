@@ -275,7 +275,7 @@ class pyreveng(object):
 			x = self.t.add(sa, ea, "proc")
 		except:
 			return
-		x.blockcmt += "\n-\n"
+		x.blockcmt += "-\n"
 		x.blockcmt += "Procedure %x..%x\n" % (sa, ea)
 		x.a['indent'] = True
 		#x.a['flow_in'] = t.a['flow_in']
