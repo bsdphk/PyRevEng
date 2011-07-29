@@ -151,7 +151,7 @@ class mc6800(object):
 			else:
 				x.a['flow'] = (("ret", "T", None),)
 		elif c[1] == "w":
-			x.a['flow'] = (("call", "SWI", None),)
+			x.a['flow'] = (("call", "T", None, "SWI"),)
 			x.a['oper'] = list()
 		elif c[1] == " ":
 			x.a['oper'] = list()
