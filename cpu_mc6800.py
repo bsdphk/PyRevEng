@@ -18,7 +18,7 @@ inscode = (
 	"2rBVC", "2rBVS", "2rBPL", "2rBMI", "2rBGE", "2rBLT", "2rBGT", "2rBLE",
 
 	"1 TSX", "1 INS", "1 PULA","1 PULB","1 DES", "1 TXS", "1 PSHA","1 PSHB",
-	"0-???", "1_RTS", "0-???", "1_RTI", "0-???", "0-???", "1 WAI", "1 SWI",
+	"0-???", "1_RTS", "0-???", "1_RTI", "0-???", "0-???", "1 WAI", "1wSWI",
 
 
 	"1 NEGA","0-???", "0-???", "1 COMA","1 LSRA","0-???", "1 RORA","1 ASLA",
@@ -146,7 +146,13 @@ class mc6800(object):
 				x.a['flow'] = (("cond", "T", None),)
 		elif c[1] == "_":
 			x.a['oper'] = list()
-			x.a['flow'] = (("ret", "T", None),)
+			if c[2:] == "RTI":
+				x.a['flow'] = (("ret", "IRQ", None),)
+			else:
+				x.a['flow'] = (("ret", "T", None),)
+		elif c[1] == "w":
+			x.a['flow'] = (("call", "SWI", None),)
+			x.a['oper'] = list()
 		elif c[1] == " ":
 			x.a['oper'] = list()
 		else:
@@ -160,6 +166,7 @@ class mc6800(object):
 		x = const.w16(p, adr)
 		x.cmt.append("Vector: " + nm)
 		w = p.m.w16(adr)
+		x.a['flow'] = (("cond", "T", w),)
 		p.todo(w, p.cpu.disass)
 		p.setlabel(w, nm + "_VECTOR")
 		p.markbb(w, ("call", nm, None))
