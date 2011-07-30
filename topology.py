@@ -146,6 +146,7 @@ class segment(object):
 		self.hi = None
 
 	def dot_fmt(self, fo):
+		fo.write('Segment [shape=parallelogram,label="%04x-%04x"]\n' % (self.lo, self.hi))
 		for b in self.bbs:
 			b.dot_fmt(fo)
 			for j in b.flow_out:
@@ -310,7 +311,6 @@ class topology(object):
 				if i.lo >= g.hi and i.hi <= bb.lo:
 					#print("COLL_HI: BB %04x-%04x G %04x-%04x vs G %04x-%04x" % (bb.lo, bb.hi, g.lo,g.hi, i.lo,i.hi))
 					return False
-			g.lo = bb.lo
 			g.hi = bb.hi
 
 		bb.segment = g
@@ -344,12 +344,17 @@ class topology(object):
 			self.segments.append(g)
 			self.__do_seg(g, bb)
 			return g
-		for b in self.bbs.keys():
-			if self.bbs[b].segment != None:
-				continue
-			g = segment()
-			self.segments.append(g)
-			self.__do_seg(g, self.bbs[b])
+		done = True
+		while done:
+			done = False
+			for b in self.bbs.keys():
+				if self.bbs[b].segment != None:
+					continue
+				g = segment()
+				self.segments.append(g)
+				self.__do_seg(g, self.bbs[b])
+				done = True
+			self.segments.sort(key=lambda x: x.lo)
 
 	##################################################################
 	# DOT graph output
