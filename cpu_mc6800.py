@@ -169,7 +169,7 @@ class mc6800(object):
 		x.a['flow'] = (("cond", "T", w),)
 		p.todo(w, p.cpu.disass)
 		p.setlabel(w, nm + "_VECTOR")
-		p.markbb(w, ("call", nm, None))
+		# p.markbb(w, ("call", nm, None))
 
 	def vectors(self, p, adr = 0x10000):
 		self.__vector(p, adr - 2, "RST")

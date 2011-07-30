@@ -152,34 +152,6 @@ def wr_test_val(p, start = 0x6000, end = 0x8000):
 		const.byte(p, i)
 
 #----------------------------------------------------------------------
-#  See HPJ 1978-08 p23
-#
-def nmi_debugger(p, nmi):
-	#print("%x" % nmi)
-	#x = p.t.find(nmi, "ins")
-	#x.blockcmt += "\n-\nNMI GPIB debugger facility\n"
-
-	#a = 0
-	#if p.m.w16(nmi + 0x001e) == 0x8105:
-	#	a += 2
-
-	#x = p.t.add(nmi, nmi + 0x007c + a, "src")
-	#x.blockcmt += "\n-\nNMI GPIB debugger facility\n"
-
-	#p.setlabel(nmi + 0x000c, "NMI_LOOP()")
-	#p.setlabel(nmi + 0x0020 + a, "NMI_CMD_01_WRITE() [X,L,D...]")
-	#p.setlabel(nmi + 0x002f + a, "NMI_CMD_02_READ() [X,L]")
-	#p.setlabel(nmi + 0x003e + a, "NMI_CMD_03()")
-	#p.setlabel(nmi + 0x0044 + a, "NMI_CMD_04_TX_X()")
-	#p.setlabel(nmi + 0x0052 + a, "NMI_CMD_05_END()")
-	#p.setlabel(nmi + 0x005B + a, "NMI_RX_X()")
-	#p.setlabel(nmi + 0x0068 + a, "NMI_RX_A()")
-	#p.setlabel(nmi + 0x0071 + a, "NMI_TX_A()")
-
-	return
-
-
-#----------------------------------------------------------------------
 #
 
 def gpib_board(p):

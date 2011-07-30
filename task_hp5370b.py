@@ -24,6 +24,7 @@ m = mem.byte_mem(0, 0x10000, 0, True, "big-endian")
 m.bcols = 3
 p = pyreveng.pyreveng(m)
 p.cmt_start = 56
+p.g = topology.topology(p)
 
 #----------------------------------------------------------------------
 # Load the EPROM image
@@ -47,18 +48,6 @@ hp53xx.eprom(p, 0x6000, 0x8000, 0x400)
 #----------------------------------------------------------------------
 #hp53xx.nmi_debugger(p, p.m.w16(0x7ffc))
 
-#######################################################################
-
-if False:
-	while p.run():
-		pass
-
-	p.build_bb()
-	p.eliminate_trampolines()
-	p.build_procs()
-	p.render("/tmp/_hp5370b")
-	#p.t.recurse()
-	exit(0)
 
 #######################################################################
 #######################################################################
@@ -343,6 +332,7 @@ class dot_float(tree.tree):
 xnmi = p.t.add(0x7f79, 0x7ff8, "src")
 xnmi.blockcmt += """-
 NMI based GPIB debugger interface.
+See HPJ 1978-08 p23
 """
 
 #######################################################################
@@ -408,7 +398,7 @@ hp53xx.wr_test_val(p)
 
 #######################################################################
 # jmp table
-dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "DS7")
+dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "ALL")
 j=0
 for i in range(0x6848,0x6858,2):
 	x = dot_code(p, i)
@@ -538,16 +528,65 @@ Dispatch table for GPIB commands without argument
 while p.run():
 	pass
 
-ff = topology.topology(p.t)
-ff.build_bb()
-ff.segment()
-ff.setlabels(p)
-ff.dump_dot(digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n')
+if True:
+	###########################################################
+	print("Call table for display functions")
+	x = p.t.find(0x6843, "ins")
+	l = []
+	for i in range(0x6848, 0x6858, 2):
+		y = p.m.b16(i)
+		l.append(("call", "DSPFUNC", y))
+		p.todo(y, p.cpu.disass)
+	x.a['flow'] = l
+	while p.run():
+		pass
+
+	###########################################################
+	print("Jump table for Keyboard Dispatch")
+	x = p.t.find(0x7965, "ins")
+	l = list(x.a['flow'])
+	xx = dict()
+	for i in range(0x640c,0x644c,2):
+		y = p.m.b16(i)
+		if y in xx:
+			continue
+		xx[y] = True
+		l.append(('cond', "XFUNC", y))
+		p.todo(y, p.cpu.disass)
+	x.a['flow'] = l
+
+	while p.run():
+		pass
+
+	###########################################################
+	y = p.m.b16(0x7909)
+	p.todo(y, p.cpu.disass)
+
+	while p.run():
+		pass
+
+	x = p.t.find(0x7c62, "ins")
+	x.a['flow'] = (("cond", "XXX", y),)
+
+	###########################################################
+	print("Jump table for GPIB+arg Dispatch")
+	x = p.t.find(0x7d69, "ins")
+	l = list(x.a['flow'])
+	xx = dict()
+	for i in range(0x644c,0x64ac,2):
+		y = p.m.b16(i)
+		if y in xx:
+			continue
+		xx[y] = True
+		l.append(('cond', "XFUNC", y))
+		p.todo(y, p.cpu.disass)
+	x.a['flow'] = l
+
+	while p.run():
+		pass
 
 
-p.build_bb()
-p.eliminate_trampolines()
-p.build_procs()
+
 
 #######################################################################
 # Manual markup
@@ -594,7 +633,11 @@ if True:
 	p.setlabel(0x608d, "LED_BLANK()")
 	p.setlabel(0x608f, "LED_FILL(A)")
 	p.setlabel(0x612a, "*=10.0()")
+	p.setlabel(0x6145, "CLK_TO_TIME()")
 	p.setlabel(0x6153, "SHOW_RESULT()")
+	p.setlabel(0x61f8, "GPIB_RX_ONE()")
+	p.setlabel(0x620b, "TIMEBASE_TO_HPIB()")
+	p.setlabel(0x6217, "CHK_PLL_LOCK()")
 	p.setlabel(0x623e, "ERR4_PLL_UNLOCK")
 	p.setlabel(0x6244, "LedFillMinus()")
 	p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
@@ -602,7 +645,9 @@ if True:
 	p.setlabel(0x6344, "X+=A()")
 	p.setlabel(0x6376, "LED=0.00")
 	p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
+	p.setlabel(0x63ec, "CMD(X+A)")
 	p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
+	p.setlabel(0x6918, "REF_ADJ()")
 	p.setlabel(0x69f5, "REF_VALUE=AVG()")
 	p.setlabel(0x6a0c, "REF_VALUE=0.0()")
 	p.setlabel(0x7048, "PUSH(?*X)")
@@ -619,6 +664,7 @@ if True:
 	p.setlabel(0x714b, "SY.m-=SX.m()")
 	p.setlabel(0x7173, "MULTIPLY()")
 	p.setlabel(0x71fa, "DIVIDE()")
+	p.setlabel(0x7277, "SY==SX?()")
 	p.setlabel(0x72d3, "NEGATE()")
 	p.setlabel(0x72ee, "SX=0.0()")
 	p.setlabel(0x72fb, "NORMRIGHT(*X,A)")
@@ -626,19 +672,43 @@ if True:
 	p.setlabel(0x7326, "NORM(SX,SY)")
 	p.setlabel(0x7356, "SY=0.0()")
 	p.setlabel(0x7363, "NORM(SY)")
+	p.setlabel(0x73c3, "SET_OFLOW()")
 	p.setlabel(0x73ca, "LED_ERR(A)")
+	p.setlabel(0x748a, "FLOAT_FMT()")
 	p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
 	p.setlabel(0x76f9, "RESULT_TO_GPIB()")
 	p.setlabel(0x7716, "LED_TO_GPIB()")
+	p.setlabel(0x7936, "KEY_PRELL")
+	p.setlabel(0x7987, "GET_FN()")
+	p.setlabel(0x798c, "UPDATE_LAMPS()")
+	p.setlabel(0x7a69, "*X=NIBBLES(A)")
+	p.setlabel(0x7bc6, "RESET_STACK_MAIN")
 	p.setlabel(0x7bd7, "HPIB_SEND(*X,A)")
 	p.setlabel(0x7c17, "HPIB_RECV(*X,A)")
+	p.setlabel(0x7c98, "HPIB_CMD_PARSE")
+	p.setlabel(0x7cb2, "SP?")
+	p.setlabel(0x7cb8, "COMMA?")
+	p.setlabel(0x7cbc, "CR?")
+	p.setlabel(0x7cc0, "NL?")
+	p.setlabel(0x7ccb, "TOLOWER")
+	p.setlabel(0x7ccd, "BELOW_A?")
+	p.setlabel(0x7cd1, "ABOVE_Z?")
 	p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
+	p.setlabel(0x7d21, "CMD_FOUND")
+	p.setlabel(0x7d3f, "BELOW_0")
+	p.setlabel(0x7d43, "ABOVE_9")
+	p.setlabel(0x7de8, "ERR6.N")
+	p.setlabel(0x7df8, "ERRN.M")
+	p.setlabel(0x7e40, "ROMTEST")
+	p.setlabel(0x7ec5, "WR_TEST")
+	p.setlabel(0x7eff, "DISPLAYTEST")
+	p.setlabel(0x7f24, "RD_TEST")
+	p.setlabel(0x7f4a, "TEST_LOOP")
 	p.setlabel(0x7f6b, "LAMP_TEST()")
+
 #######################################################################
 
-if False:
 	nmi = p.m.w16(0x7ffc)
-
 
 	p.setlabel(nmi + 0x000c, "NMI_LOOP()")
 	p.setlabel(nmi + 0x0022, "NMI_CMD_01_WRITE() [X,L,D...]")
@@ -659,56 +729,47 @@ for ax in (0x7e23, 0x7e27):
 
 #######################################################################
 
-def dottage(t):
-	fx = open("/tmp/_.dot", "w")
-
-	fx.write("""
-	digraph {
-	""")
-
-	def xxx(t, p, l):
-		if t.tag != "run":
-			return
-		s = "ellipse"
-		for i in t.a['flow_in']:
-			if i[0] == "call":
-				s = "box"
-		fx.write("N%x [shape=%s]\n" % (t.start, s))
-		for i in t.a['flow']:
-			if i[0] == "ret":
-				fx.write("R%x [shape=hexagon,label=RET]\n" % t.start)
-				fx.write("N%x -> R%x\n" % (t.start, t.start))
-			if i[2] != None:
-				c = "black"
-				if i[0] == "call":
-					c = "green"
-				fx.write("N%x -> N%x [color=%s]\n" % (t.start, i[2], c))
-
-	print(t)
-	t.recurse(xxx, p)
-
-	fx.write("""
-	}
-	""")
-
 def xyzzy(t, priv=None, lvl=0):
-	print(t)
 	if 'flow' in t.a:
 		t.cmt.append(str(t.a['flow']))
 	
-
 p.t.recurse(xyzzy)
 
+#######################################################################
+
+p.g.build_bb()
+
+p.g.add_flow("IRQ", p.m.b16(0x7ff8))
+p.g.add_flow("SWI", p.m.b16(0x7ffa))
+p.g.add_flow("NMI", p.m.b16(0x7ffc))
+p.g.add_flow("RST", p.m.b16(0x7ffe))
+
+p.g.findflow(0x7b38,0x7bc6).offpage = True
+p.g.findflow(0x795b,0x795e).offpage = True
+p.g.findflow(0x7d57,0x7d5b).offpage = True
+p.g.findflow(0x70ce, 0x70ac).offpage = True
+p.g.segment()
+p.g.setlabels(p)
+
+p.g.dump_dot()
+
+for i in p.g.bbs:
+	b = p.g.bbs[i]
+	x = p.t.add(b.lo, b.hi, "bb")
+
+for b in p.g.segments:
+	try:
+		x = p.t.add(b.lo, b.hi, "segment")
+	except:
+		print("Segment:  %04x - %04x not added" % (b.lo, b.hi))
+		assert b.lo < 0x7000
+		
 
 
-# Tail-recursion resolution candidates:
-#x = build_func(p, 0x7173)
-#x = build_func(p, 0x71fa)
-#dottage(x)
+#p.build_bb()
+#p.eliminate_trampolines()
+#p.build_procs()
 
-#xnmi.recurse()
 
 r = render.render(p)
 r.render("/tmp/_hp5370b")
-
-#p.t.recurse()

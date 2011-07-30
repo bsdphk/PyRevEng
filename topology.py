@@ -102,6 +102,7 @@ class bb(object):
 	#	flow_in		list (dict ?)
 	#	flow_out	list (dict ?)
 	#	segment		class segment
+	#	trampoline	bool
 	#	dot		str
 	#
 	def __init__(self, low):
@@ -110,6 +111,7 @@ class bb(object):
 		self.flow_out = list()
 		self.flow_in = list()
 		self.label = None
+		self.trampoline = False
 		self.segment = None
 		self.dot = None
 
@@ -120,10 +122,12 @@ class bb(object):
 		else:
 			nmx = nm
 		if dot == None:
-			if nm == None:
-				dot = 'shape=box, label="'
-			else:
+			if nm != None:
 				dot = 'shape=plaintext, label="'
+			elif self.trampoline:
+				dot = 'shape=invhouse, label="'
+			else:
+				dot = 'shape=box, label="'
 			if self.label != None:
 				dot += self.label + "\\n"
 			dot += '%04x-%04x' % (self.lo, self.hi)
@@ -146,7 +150,7 @@ class segment(object):
 		self.hi = None
 
 	def dot_fmt(self, fo):
-		fo.write('Segment [shape=parallelogram,label="%04x-%04x"]\n' % (self.lo, self.hi))
+		fo.write('Segment [shape=parallelogram,label="%04x-%04x\\n%s"]\n' % (self.lo, self.hi, str(self.label)))
 		for b in self.bbs:
 			b.dot_fmt(fo)
 			for j in b.flow_out:
@@ -158,16 +162,15 @@ class topology(object):
 	# Properties
 	#	TBD
 	#
-	def __init__(self, tree):
+	def __init__(self, p):
 		self.src_flow_in = dict()
 		self.src_flow_out = dict()
-		self.tree = tree
+		self.p = p
 		self.idx = dict()
 		self.bbs = dict()
 		self.segments = list()
-		self.tree.recurse(self.collect_flows)
 
-	def collect_flows(self, tree, priv, lvl):
+	def __collect_flows(self, tree, priv, lvl):
 		if tree.start in self.idx:
 			t = self.idx[tree.start]
 			assert t.start == tree.start
@@ -186,7 +189,19 @@ class topology(object):
 				if not dst in self.src_flow_in:
 					self.src_flow_in[dst] = tree.tag
 
+	def add_flow(self,fm,to):
+		if type(fm) == int:
+			if fm not in self.bbs:
+				self.bbs[fm] = bb(fm)
+			fm = self.bbs[fm]
+		if type(to) == int:
+			if to not in self.bbs:
+				self.bbs[to] = bb(fm)
+			to = self.bbs[to]
+		f = flow(fm, to)
+
 	def build_bb(self):
+		self.p.t.recurse(self.__collect_flows)
 		for i in self.src_flow_in.keys():
 			if i not in self.idx:
 				print("NOTE: %x was not in tree" % i)
@@ -196,6 +211,10 @@ class topology(object):
 		for i in self.bbs.keys():
 			b = self.bbs[i]
 			lo = i
+			if 'flow' in self.idx[lo].a:
+				j = self.idx[lo].a['flow']
+				if len(j) == 1 and j[0][0] == "cond" and j[0][1] == "T" and j[0][2] != lo:
+					b.trampoline = True
 			nxt = lo
 			hi = self.idx[nxt].end
 			while True:
@@ -256,10 +275,38 @@ class topology(object):
 
 	##################################################################
 
+	def __res_tramp_lbl(self, b):
+		assert b.trampoline
+		assert len(b.flow_out) == 1
+		n = b.flow_out[0].to
+		if n == None:
+			return
+		if n.trampoline:
+			self.__res_tramp_lbl(n)
+		if n.label != None:
+			b.label = n.label
+
 	def setlabels(self, p):
 		for i in p.label:
 			if i in self.bbs:
 				self.setlabel(i, p.label[i])
+
+		for i in self.bbs:
+			b = self.bbs[i]
+			if b.trampoline:
+				self.__res_tramp_lbl(b)
+
+		for i in self.segments:
+			i.bbs.sort(key=lambda x: x.lo)
+			if i.label != None:
+				continue
+			for j in i.bbs:
+				if j.trampoline:
+					continue
+				if j.label != None:
+					i.label = j.label.lower()
+					break
+			
 
 	##################################################################
 
@@ -281,7 +328,7 @@ class topology(object):
 	# Segmentation
 
 	def __bust_seg(self, g):
-		print("BUSTING %04x-%04x" % (g.lo, g.hi))
+		#print("BUSTING %04x-%04x" % (g.lo, g.hi))
 		for i in g.bbs:
 			i.segment = None
 		self.segments.remove(g)
@@ -290,6 +337,7 @@ class topology(object):
 	def __do_seg(self, g, bb):
 		if bb.segment == g:
 			return True
+		#print("DOSEG(%04x-%04x)" % (bb.lo, bb.hi))
 		if bb.segment != None:
 			print("ERR: bb.seg %04x-%04x" % (bb.segment.lo, bb.segment.hi))
 		assert bb.segment == None
@@ -300,10 +348,10 @@ class topology(object):
 				if i == g:
 					continue
 				if g.lo >= i.lo and g.lo < i.hi:
-					print("BUSTING.lo %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
+					#print("BUSTING.lo %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
 					self.__bust_seg(i)
 				elif g.hi > i.lo and g.hi <= i.hi:
-					print("BUSTING.hi %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
+					#print("BUSTING.hi %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
 					self.__bust_seg(i)
 		elif bb.lo < g.lo:
 			for i in self.segments:
@@ -338,6 +386,20 @@ class topology(object):
 					ff.offpage = True
 		return True
 
+	def __chk_overlap(self):
+		for i in self.segments:
+			for j in self.segments:
+				if i == j:
+					continue
+				if i.hi <= j.lo:
+					continue
+				if i.lo >= j.hi:
+					continue
+				print("COLL: %04x-%04x vs %04x-%04x" % (i.lo,i.hi,j.lo,j.hi))
+				self.__bust_seg(j)
+				self.__bust_seg(i)
+				return
+
 	def segment(self, adr = None, label = None):
 		if adr != None:
 			if adr not in self.bbs:
@@ -363,12 +425,18 @@ class topology(object):
 				self.segments.append(g)
 				self.__do_seg(g, self.bbs[b])
 				done = True
-			self.segments.sort(key=lambda x: x.lo)
+
+			#self.__chk_overlap()
+
+		self.segments.sort(key=lambda x: x.lo)
+
 
 	##################################################################
 	# DOT graph output
 
-	def dump_dot(self, filename = "/tmp/_.dot", digraph=""):
+	def dump_dot(self, filename = "/tmp/_.dot", digraph=None):
+		if digraph == None:
+			digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n'
 		fo = open(filename, "w")
 		for gg in self.segments:
 			fo.write("digraph {\n" + digraph + "\n" + gg.digraph + "\n")
