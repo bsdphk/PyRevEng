@@ -13,6 +13,7 @@ class flow(object):
 	#	condition 	{"T", "F", str}
 	#	offpage		bool
 	#	dot		str
+	#	anondot		str
 	#
 	def __init__(self, fm, to, tp = "goto"):
 
@@ -44,37 +45,53 @@ class flow(object):
 		assert self.fm != None or self.to != None
 
 
-	def dot_out(self, fo):
+	def dot_fmt(self, fo, fm, to):
 		dot = self.dot
 
 		if dot == None and self.tp == "call":
 			dot = "color=blue"
 
+		if fm:
+			fmn = "BB%x" % self.fm.lo
+		else:
+			fmn = "FLF%x" % id(self)
+			if self.fm != None:
+				self.fm.dot_fmt(fo, fmn)
+
+		if to:
+			ton = "BB%x" % self.to.lo
+		else:
+			ton = "FLT%x" % id(self)
+			if self.to != None:
+				self.to.dot_fmt(fo, ton)
+
 		if self.to == None and self.anondot != None:
-			fo.write('FL_%x [%s]\n' % (id(self), self.anondot))
+			fo.write(ton + ' [' + self.anondot + ']\n')
 		elif self.to == None and self.tp == "ret":
-			fo.write('FL_%x [shape=circle,label="ret"]\n' % id(self))
+			# subtype
+			fo.write(ton + ' [shape=circle,label="ret"]\n')
 		elif self.to == None:
-			fo.write('FL_%x [color=red]\n' % id(self))
+			fo.write(ton + ' [color=red]\n')
 
 		if self.fm == None and self.anondot != None:
-			fo.write('FL_%x [%s]\n' % (id(self), self.anondot))
+			fo.write(fmn + ' [' + self.anondot + ']\n')
 		elif self.fm == None:
-			fo.write('FL_%x [color=red]\n' % id(self))
+			fo.write(fmn + ' [color=red]\n')
 
-		if self.fm == None:
-			fo.write('FL_%x' % id(self))
-		else:
-			fo.write('BB%x' % self.fm.lo)
-		fo.write(" -> ")
-		if self.to == None:
-			fo.write('FL_%x' % id(self))
-		else:
-			fo.write('BB%x' % self.to.lo)
+		fo.write(fmn + ' -> ' + ton)
 		if dot != None:
-			fo.write(' [%s]' % dot)
+			fo.write(' [' + dot + ']')
 		fo.write("\n")
-	
+
+	def dot_out(self, fo, b):
+		if self.offpage or self.to == None:
+			self.dot_fmt(fo, True, False)
+		else:
+			self.dot_fmt(fo, True, True)
+
+	def dot_in(self, fo, b):
+		if self.offpage or self.fm == None:
+			self.dot_fmt(fo, False, True)
 
 
 class bb(object):
@@ -84,7 +101,7 @@ class bb(object):
 	#	lang
 	#	flow_in		list (dict ?)
 	#	flow_out	list (dict ?)
-	#	group		class group
+	#	segment		class segment
 	#	dot		str
 	#
 	def __init__(self, low):
@@ -93,24 +110,42 @@ class bb(object):
 		self.flow_out = list()
 		self.flow_in = list()
 		self.label = None
+		self.segment = None
 		self.dot = None
 
-	def dot_out(self, fo):
+	def dot_fmt(self, fo, nm=None):
+		if nm == None:
+			nm = "BB%x" % self.lo
 		dot = self.dot
 		if dot == None:
 			dot = 'shape=box, label="'
 			if self.label != None:
 				dot += self.label + "\\n"
-			dot += '%04x-%04x"\n' % (self.lo, self.hi)
-		fo.write('BB%x [%s]\n' % (self.lo, dot))
+			dot += '%04x-%04x' % (self.lo, self.hi)
+			if self.segment != None and self.segment.label != None:
+				dot += '\\n{' + self.segment.label + '}'
+			dot += '"'
+		fo.write(nm + ' [' + dot + ']\n')
 
-class group(object):
+class segment(object):
 	# Properties
 	#	bbs		list(class bb)
-	#	dot		str
+	#	label		str
 	#
 	def __init__(self):
-		pass
+		self.bbs = list()
+		self.label = None
+
+	def dot_fmt(self, fo):
+		fo.write("digraph {\n")
+		for b in self.bbs:
+			b.dot_fmt(fo)
+			for j in b.flow_out:
+				j.dot_out(fo, b)
+			for j in b.flow_in:
+				j.dot_in(fo, b)
+		fo.write("}\n")
+	
 
 class topology(object):
 	# Properties
@@ -122,6 +157,7 @@ class topology(object):
 		self.tree = tree
 		self.idx = dict()
 		self.bbs = dict()
+		self.segments = list()
 		self.tree.recurse(self.collect_flows)
 
 	def collect_flows(self, tree, priv, lvl):
@@ -199,17 +235,56 @@ class topology(object):
 				hi = self.idx[nxt].end
 			b.hi = hi
 
+	def do_seg(self, g, bb):
+		if bb.segment == g:
+			return
+		assert bb.segment == None
+		bb.segment = g
+		g.bbs.append(bb)
+		for ff in bb.flow_out:
+			if ff.offpage:
+				continue
+			if ff.to != None:
+				self.do_seg(g, ff.to)
+		for ff in bb.flow_in:
+			if ff.offpage:
+				continue
+			if ff.fm != None:
+				self.do_seg(g, ff.fm)
+
+	def segment(self, adr = None):
+		if adr != None:
+			bb = self.bbs[adr]
+			assert bb.segment == None
+			g = segment()
+			self.segments.append(g)
+			self.do_seg(g, bb)
+			return g
+		for b in self.bbs.keys():
+			if self.bbs[b].segment != None:
+				continue
+			g = segment()
+			self.segments.append(g)
+			self.do_seg(g, self.bbs[b])
+
 	def dump_dot(self, filename = "/tmp/_.dot"):
 		fo = open(filename, "w")
-		fo.write("digraph {\n")
+		for gg in self.segments:
+			gg.dot_fmt(fo)
+		xxx = False
 		for i in self.bbs:
 			b = self.bbs[i]
-			b.dot_out(fo)
+			if b.segment != None:
+				continue
+			if not xxx:
+				fo.write("digraph {\n")
+				xxx = True
+			b.dot_fmt(fo)
 			for j in b.flow_out:
-				j.dot_out(fo)
+				j.dot_out(fo, b)
 			for j in b.flow_in:
-				if j.fm == None:
-					j.dot_out(fo)
-		fo.write("}\n")
+				j.dot_in(fo, b)
+		if xxx:
+			fo.write("}\n")
 		fo.close()
 	
