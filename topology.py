@@ -114,38 +114,42 @@ class bb(object):
 		self.dot = None
 
 	def dot_fmt(self, fo, nm=None):
-		if nm == None:
-			nm = "BB%x" % self.lo
 		dot = self.dot
+		if nm == None:
+			nmx = "BB%x" % self.lo
+		else:
+			nmx = nm
 		if dot == None:
-			dot = 'shape=box, label="'
+			if nm == None:
+				dot = 'shape=box, label="'
+			else:
+				dot = 'shape=plaintext, label="'
 			if self.label != None:
 				dot += self.label + "\\n"
 			dot += '%04x-%04x' % (self.lo, self.hi)
 			if self.segment != None and self.segment.label != None:
 				dot += '\\n{' + self.segment.label + '}'
 			dot += '"'
-		fo.write(nm + ' [' + dot + ']\n')
+		fo.write(nmx + ' [' + dot + ']\n')
 
 class segment(object):
 	# Properties
 	#	bbs		list(class bb)
 	#	label		str
+	#	digraph		str
 	#
 	def __init__(self):
 		self.bbs = list()
 		self.label = None
+		self.digraph = ""
 
 	def dot_fmt(self, fo):
-		fo.write("digraph {\n")
 		for b in self.bbs:
 			b.dot_fmt(fo)
 			for j in b.flow_out:
 				j.dot_out(fo, b)
 			for j in b.flow_in:
 				j.dot_in(fo, b)
-		fo.write("}\n")
-	
 
 class topology(object):
 	# Properties
@@ -178,6 +182,7 @@ class topology(object):
 			if type(dst) == int:
 				if not dst in self.src_flow_in:
 					self.src_flow_in[dst] = tree.tag
+
 	def build_bb(self):
 		for i in self.src_flow_in.keys():
 			if i not in self.idx:
@@ -235,7 +240,35 @@ class topology(object):
 				hi = self.idx[nxt].end
 			b.hi = hi
 
-	def do_seg(self, g, bb):
+	##################################################################
+
+	def setlabel(self, adr, lbl):
+		if adr not in self.bbs:
+			print("ERROR: %x is not a BB" % adr)
+		if self.bbs[adr].label != None and self.bbs[adr].label != lbl:
+			print("NOTE: %x changed label from" % adr, self.bbs[adr].label, "to", lbl)
+		self.bbs[adr].label = lbl
+
+	##################################################################
+
+	def findflow(self, fm, to):
+		if fm not in self.bbs:
+			print("ERROR: %x is not a BB" % fm)
+			return
+		fm = self.bbs[fm]
+		if to not in self.bbs:
+			print("ERROR: %x is not a BB" % to)
+			return
+		to = self.bbs[to]
+		for ff in fm.flow_out:
+			if ff.to == to:
+				return ff
+		return
+
+	##################################################################
+	# Segmentation
+
+	def __do_seg(self, g, bb):
 		if bb.segment == g:
 			return
 		assert bb.segment == None
@@ -245,32 +278,44 @@ class topology(object):
 			if ff.offpage:
 				continue
 			if ff.to != None:
-				self.do_seg(g, ff.to)
+				self.__do_seg(g, ff.to)
 		for ff in bb.flow_in:
 			if ff.offpage:
 				continue
 			if ff.fm != None:
-				self.do_seg(g, ff.fm)
+				self.__do_seg(g, ff.fm)
 
-	def segment(self, adr = None):
+	def segment(self, adr = None, label = None):
 		if adr != None:
+			if adr not in self.bbs:
+				print("ERROR: %x is not a BB" % adr)
+				return
 			bb = self.bbs[adr]
+			if bb.segment != None:
+				print("ERROR: %x is already segmented" % adr, bb.segment.label)
+				return
 			assert bb.segment == None
 			g = segment()
+			g.label = label
 			self.segments.append(g)
-			self.do_seg(g, bb)
+			self.__do_seg(g, bb)
 			return g
 		for b in self.bbs.keys():
 			if self.bbs[b].segment != None:
 				continue
 			g = segment()
 			self.segments.append(g)
-			self.do_seg(g, self.bbs[b])
+			self.__do_seg(g, self.bbs[b])
 
-	def dump_dot(self, filename = "/tmp/_.dot"):
+	##################################################################
+	# DOT graph output
+
+	def dump_dot(self, filename = "/tmp/_.dot", digraph=""):
 		fo = open(filename, "w")
 		for gg in self.segments:
+			fo.write("digraph {\n" + digraph + "\n" + gg.digraph + "\n")
 			gg.dot_fmt(fo)
+			fo.write("}\n")
 		xxx = False
 		for i in self.bbs:
 			b = self.bbs[i]
@@ -287,4 +332,3 @@ class topology(object):
 		if xxx:
 			fo.write("}\n")
 		fo.close()
-	
