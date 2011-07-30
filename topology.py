@@ -142,6 +142,8 @@ class segment(object):
 		self.bbs = list()
 		self.label = None
 		self.digraph = ""
+		self.lo = None
+		self.hi = None
 
 	def dot_fmt(self, fo):
 		for b in self.bbs:
@@ -268,22 +270,64 @@ class topology(object):
 	##################################################################
 	# Segmentation
 
+	def __bust_seg(self, g):
+		print("BUSTING %04x-%04x" % (g.lo, g.hi))
+		for i in g.bbs:
+			i.segment = None
+		self.segments.remove(g)
+		del g
+
 	def __do_seg(self, g, bb):
 		if bb.segment == g:
-			return
+			return True
+		if bb.segment != None:
+			print("ERR: bb.seg %04x-%04x" % (bb.segment.lo, bb.segment.hi))
 		assert bb.segment == None
+		if g.lo == None:
+			g.lo = bb.lo
+			g.hi = bb.hi
+			for i in self.segments:
+				if i == g:
+					continue
+				if g.lo >= i.lo and g.lo < i.hi:
+					print("BUSTING.lo %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
+					self.__bust_seg(i)
+				elif g.hi > i.lo and g.hi <= i.hi:
+					print("BUSTING.hi %04x-%04x vs %04x-%04x" % (g.lo, g.hi, i.lo, i.hi))
+					self.__bust_seg(i)
+		elif bb.lo < g.lo:
+			for i in self.segments:
+				if i == g:
+					continue
+				if i.lo >= bb.lo and i.hi <= g.lo:
+					#print("COLL_LO: BB %04x-%04x G %04x-%04x vs G %04x-%04x" % (bb.lo, bb.hi, g.lo,g.hi, i.lo,i.hi))
+					return False
+			g.lo = bb.lo
+		elif bb.hi > g.hi:
+			for i in self.segments:
+				if i == g:
+					continue
+				if i.lo >= g.hi and i.hi <= bb.lo:
+					#print("COLL_HI: BB %04x-%04x G %04x-%04x vs G %04x-%04x" % (bb.lo, bb.hi, g.lo,g.hi, i.lo,i.hi))
+					return False
+			g.lo = bb.lo
+			g.hi = bb.hi
+
 		bb.segment = g
 		g.bbs.append(bb)
 		for ff in bb.flow_out:
 			if ff.offpage:
 				continue
 			if ff.to != None:
-				self.__do_seg(g, ff.to)
+				if not self.__do_seg(g, ff.to):
+					ff.offpage = True
 		for ff in bb.flow_in:
 			if ff.offpage:
 				continue
 			if ff.fm != None:
-				self.__do_seg(g, ff.fm)
+				if not self.__do_seg(g, ff.fm):
+					ff.offpage = True
+		return True
 
 	def segment(self, adr = None, label = None):
 		if adr != None:
