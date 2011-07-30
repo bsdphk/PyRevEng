@@ -239,6 +239,8 @@ class topology(object):
 				if hi in self.src_flow_in:
 					f = flow(b, self.bbs[hi])
 					break
+				if not hi in self.idx:
+					break
 				nxt = hi
 				hi = self.idx[nxt].end
 			b.hi = hi
@@ -251,6 +253,13 @@ class topology(object):
 		if self.bbs[adr].label != None and self.bbs[adr].label != lbl:
 			print("NOTE: %x changed label from" % adr, self.bbs[adr].label, "to", lbl)
 		self.bbs[adr].label = lbl
+
+	##################################################################
+
+	def setlabels(self, p):
+		for i in p.label:
+			if i in self.bbs:
+				self.setlabel(i, p.label[i])
 
 	##################################################################
 

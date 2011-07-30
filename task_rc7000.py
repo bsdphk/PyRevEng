@@ -17,6 +17,7 @@ import cpu_domus_int
 import file_domus
 
 import render
+import topology
 
 
 class DomusError(Exception):
@@ -218,6 +219,12 @@ def dofile(filename, obj = None):
 
 		p.run()
 
+		ff = topology.topology(p.t)
+		ff.build_bb()
+		ff.segment()
+		ff.dump_dot(digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n')
+
+
 		r = render.render(p)
 
 		if obj != None:
@@ -242,10 +249,10 @@ if __name__ == "__main__":
 				pass
 	else:
 		#dofile("__.CODEP", "P0261")
-		#dofile("__.MUSIL")
+		dofile("__.MUSIL")
 		#dofile("__.MUB")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
-		dofile("__.CATLI")
+		#dofile("__.CATLI")
 		#dofile("__.FSLIB")
 		pass

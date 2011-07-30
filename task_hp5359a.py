@@ -36,6 +36,7 @@ import const
 import pyreveng
 import hp53xx
 import cpu_mc6800
+import topology
 
 #----------------------------------------------------------------------
 # Set up our PyRevEng instance
@@ -422,6 +423,12 @@ dot_float(p, 0x7f9b)
 #######################################################################
 while p.run():
 	pass
+
+ff = topology.topology(p.t)
+ff.build_bb()
+ff.segment()
+ff.setlabels(p)
+ff.dump_dot(digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n')
 
 p.build_bb()
 p.eliminate_trampolines()

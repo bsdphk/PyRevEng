@@ -2,6 +2,7 @@
 
 import mem
 import pyreveng
+import topology
 
 import cpu_cdp1802
 
@@ -32,6 +33,11 @@ p.setlabel(0x06c5, "R15 = -R15")
 
 while p.run():
 	pass
+
+ff = topology.topology(p.t)
+ff.build_bb()
+ff.segment()
+ff.dump_dot(digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n')
 
 p.build_bb()
 p.build_procs()
