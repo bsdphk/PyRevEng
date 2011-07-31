@@ -127,6 +127,8 @@ p.t.blockcmt += """-
 		0b....X...: SE[12]
 		0b......X.: SA[12]
 		0b.......X: SO[12]
+	0x00bb:
+		0b......XX: FP/TI Overflow bits
 	0x00bc:
 		0b...XX...: IN[14]
 	0x00c0-0x00c6:	REF_VALUE (FLOAT)

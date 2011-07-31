@@ -83,13 +83,13 @@ class flow(object):
 			fo.write(' [' + dot + ']')
 		fo.write("\n")
 
-	def dot_out(self, fo, b):
+	def dot_out(self, fo):
 		if self.offpage or self.to == None:
 			self.dot_fmt(fo, True, False)
 		else:
 			self.dot_fmt(fo, True, True)
 
-	def dot_in(self, fo, b):
+	def dot_in(self, fo):
 		if self.offpage or self.fm == None:
 			self.dot_fmt(fo, False, True)
 
@@ -125,7 +125,7 @@ class bb(object):
 			if nm != None:
 				dot = 'shape=plaintext, label="'
 			elif self.trampoline:
-				dot = 'shape=invhouse, label="'
+				dot = 'shape=box,color=grey, label="'
 			else:
 				dot = 'shape=box, label="'
 			if self.label != None:
@@ -148,15 +148,30 @@ class segment(object):
 		self.digraph = ""
 		self.lo = None
 		self.hi = None
+		self.trampoline = False
+
+	def dot_fmt2(self, fo):
+		for b in self.bbs:
+			b.dot_fmt(fo)
+			for j in b.flow_in:
+				assert j.to != None
+				j.dot_in(fo)
 
 	def dot_fmt(self, fo):
 		fo.write('Segment [shape=parallelogram,label="%04x-%04x\\n%s"]\n' % (self.lo, self.hi, str(self.label)))
 		for b in self.bbs:
 			b.dot_fmt(fo)
 			for j in b.flow_out:
-				j.dot_out(fo, b)
+				assert j.fm != None
+				j.dot_out(fo)
 			for j in b.flow_in:
-				j.dot_in(fo, b)
+				assert j.to != None
+				if j.offpage and j.fm.segment.trampoline and j.fm.segment != self and True:
+					print("ALSO seg %04x (%04x)" % (j.fm.segment.lo, self.lo))
+					j.fm.segment.dot_fmt2(fo)
+					j.dot_fmt(fo, True, True)
+				else:
+					j.dot_in(fo)
 
 class topology(object):
 	# Properties
@@ -428,6 +443,10 @@ class topology(object):
 
 			#self.__chk_overlap()
 
+		for i in self.segments:
+			if len(i.bbs) == 1 and i.bbs[0].trampoline:
+				i.trampoline = True
+
 		self.segments.sort(key=lambda x: x.lo)
 
 
@@ -448,7 +467,7 @@ class topology(object):
 			if b.segment != None:
 				continue
 			if not xxx:
-				fo.write("digraph {\n")
+				fo.write("digraph {\n" + digraph + "\n")
 				xxx = True
 			b.dot_fmt(fo)
 			for j in b.flow_out:
