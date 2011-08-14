@@ -453,11 +453,13 @@ class topology(object):
 	##################################################################
 	# DOT graph output
 
-	def dump_dot(self, filename = "/tmp/_.dot", digraph=None):
+	def dump_dot(self, filename = "/tmp/_.dot", digraph=None, tramp=False):
 		if digraph == None:
 			digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n'
 		fo = open(filename, "w")
 		for gg in self.segments:
+			if gg.trampoline and not tramp:
+				continue
 			fo.write("digraph {\n" + digraph + "\n" + gg.digraph + "\n")
 			gg.dot_fmt(fo)
 			fo.write("}\n")
