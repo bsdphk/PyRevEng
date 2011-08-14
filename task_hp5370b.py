@@ -755,18 +755,7 @@ p.g.setlabels(p)
 
 p.g.dump_dot()
 
-for i in p.g.bbs:
-	b = p.g.bbs[i]
-	x = p.t.add(b.lo, b.hi, "bb")
-
-for b in p.g.segments:
-	try:
-		x = p.t.add(b.lo, b.hi, "segment")
-	except:
-		print("Segment:  %04x - %04x not added" % (b.lo, b.hi))
-		assert b.lo < 0x7000
-		
-
+p.g.xxx(p)
 
 #p.build_bb()
 #p.eliminate_trampolines()

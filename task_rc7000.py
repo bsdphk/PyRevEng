@@ -249,10 +249,10 @@ if __name__ == "__main__":
 				pass
 	else:
 		#dofile("__.CODEP", "P0261")
-		dofile("__.MUSIL")
+		#dofile("__.MUSIL")
 		#dofile("__.MUB")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
-		#dofile("__.CATLI")
+		dofile("__.CATLI")
 		#dofile("__.FSLIB")
 		pass

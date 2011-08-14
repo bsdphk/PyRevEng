@@ -71,6 +71,10 @@ class mc6800(object):
 		s = t.a['mne']
 		s += "\t"
 		d = ""
+		if 'DA' in t.a:
+			da = t.a['DA']
+			if da in p.label:
+				return (s + p.label[da] + " (" + p.m.afmt(da) + ")",)
 		for i in t.a['oper']:
 			s += d
 			s += str(i)
@@ -122,13 +126,16 @@ class mc6800(object):
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
 			x.a['flow'] = (("call", "T", da),)
+			x.a['DA'] = da
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
 			x.a['flow'] = (("call", "T", da),)
+			x.a['DA'] = da
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
+			x.a['DA'] = da
 			if iw & 0x0f == 00:
 				x.a['flow'] = (("cond", "T", da),)
 			else:
@@ -138,6 +145,7 @@ class mc6800(object):
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
 			x.a['flow'] = (("cond", "T", da),)
+			x.a['DA'] = da
 		elif c[1] == "X":
 			x.a['oper'] = ("0x%02x" % p.m.rd(adr + 1),"X")
 			if x.a['mne'] == "JSR":

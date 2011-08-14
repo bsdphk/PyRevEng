@@ -48,6 +48,17 @@ class pyreveng(object):
 		# Random attributes
 		self.a = dict()
 
+		# @hints
+		self.hints = dict()
+
+	###############################################################
+	# HINT processing
+	#
+	def hint(self, adr):
+		if not adr in self.hints:
+			self.hints[adr] = dict()
+		return self.hints[adr]
+
 	###############################################################
 	# TODO list processing
 	#

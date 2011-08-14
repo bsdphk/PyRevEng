@@ -128,10 +128,14 @@ class bb(object):
 				dot = 'shape=box,color=grey, label="'
 			else:
 				dot = 'shape=box, label="'
+			ll = self.label
 			if self.label != None:
+				ll = ll.lower()
 				dot += self.label + "\\n"
 			dot += '%04x-%04x' % (self.lo, self.hi)
-			if self.segment != None and self.segment.label != None:
+			if self.segment != None and  \
+			   self.segment.label != None and \
+			   self.segment.label.lower() != ll:
 				dot += '\\n{' + self.segment.label + '}'
 			dot += '"'
 		fo.write(nmx + ' [' + dot + ']\n')
@@ -167,7 +171,7 @@ class segment(object):
 			for j in b.flow_in:
 				assert j.to != None
 				if j.offpage and j.fm.segment.trampoline and j.fm.segment != self and True:
-					print("ALSO seg %04x (%04x)" % (j.fm.segment.lo, self.lo))
+					#print("ALSO seg %04x (%04x)" % (j.fm.segment.lo, self.lo))
 					j.fm.segment.dot_fmt2(fo)
 					j.dot_fmt(fo, True, True)
 				else:
@@ -290,6 +294,18 @@ class topology(object):
 
 	##################################################################
 
+	def __set_tramp_lbl(self, b):
+		assert b.trampoline
+		assert len(b.flow_out) == 1
+		n = b.flow_out[0].to
+		if n == None:
+			return
+		if n.label == None:
+			n.label = b.label
+			self.p.setlabel(n.lo, b.label)
+			if n.trampoline:
+				self.__set_tramp_lbl(n)
+
 	def __res_tramp_lbl(self, b):
 		assert b.trampoline
 		assert len(b.flow_out) == 1
@@ -300,6 +316,7 @@ class topology(object):
 			self.__res_tramp_lbl(n)
 		if n.label != None:
 			b.label = n.label
+			self.p.setlabel(b.lo, n.label)
 
 	def setlabels(self, p):
 		for i in p.label:
@@ -308,7 +325,12 @@ class topology(object):
 
 		for i in self.bbs:
 			b = self.bbs[i]
-			if b.trampoline:
+			if b.trampoline and b.label != None:
+				self.__set_tramp_lbl(b)
+
+		for i in self.bbs:
+			b = self.bbs[i]
+			if b.trampoline and b.label == None:
 				self.__res_tramp_lbl(b)
 
 		for i in self.segments:
@@ -449,6 +471,20 @@ class topology(object):
 
 		self.segments.sort(key=lambda x: x.lo)
 
+	def xxx(self, p):
+		for i in p.g.bbs:
+			b = p.g.bbs[i]
+			try:
+				x = p.t.add(b.lo, b.hi, "bb")
+			except:
+				print("BB:  %04x - %04x not added" % (b.lo, b.hi))
+
+		for b in p.g.segments:
+			try:
+				x = p.t.add(b.lo, b.hi, "segment")
+			except:
+				print("Segment:  %04x - %04x not added" % (b.lo, b.hi))
+
 
 	##################################################################
 	# DOT graph output
@@ -461,6 +497,10 @@ class topology(object):
 			if gg.trampoline and not tramp:
 				continue
 			fo.write("digraph {\n" + digraph + "\n" + gg.digraph + "\n")
+
+			h = self.p.hint(gg.lo)
+			if 'dot-page' in h:
+				fo.write(h['dot-page'] + "\n")
 			gg.dot_fmt(fo)
 			fo.write("}\n")
 		xxx = False
