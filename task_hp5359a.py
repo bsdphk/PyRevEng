@@ -399,16 +399,11 @@ p.g.dump_dot()
 p.g.xxx(p)
 
 #----------------------------------------------------------------------
-def xyzzy(t, priv=None, lvl=0):
-	if 'flow' in t.a:
-		t.cmt.append(str(t.a['flow']))
-	
-p.t.recurse(xyzzy)
-
-#----------------------------------------------------------------------
 
 import render
 r = render.render(p)
+
+r.add_flows()
 
 r.render("/tmp/_hp5359a")
 #p.t.recurse()

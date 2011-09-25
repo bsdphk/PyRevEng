@@ -178,3 +178,33 @@ class render(object):
 			fo.write("; XXX %d CAUTIONS in this file\n"
 			    % self.p.cautions)
 		fo.close()
+
+	#----------------------------------------------------------------------
+	def __addflow(self, t, priv=None, lvl=0):
+		if not 'flow' in t.a:
+			return
+		s = ""
+		for i in t.a['flow']:
+			if s != "":
+				s += " "
+			if type(i[2]) == int:
+				d = self.p.m.afmt(i[2])
+			else:
+				d = str(i[2])
+			if i[0] == "cond":
+				s += ">:" + i[1] + ":" + d
+			elif i[0] == "call":
+				s += "C:" + i[1] + ":" + d
+			elif i[0] == "ret":
+				s += "R:" + i[1] + ":" + d
+			else:
+				s += str(i)
+			if len(s) > 40:
+				t.cmt.append(s)
+				s = ""
+			
+		if len(s) > 0:
+			t.cmt.append(s)
+		
+	def add_flows(self):
+		self.p.t.recurse(self.__addflow)

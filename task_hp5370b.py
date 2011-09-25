@@ -731,14 +731,6 @@ for ax in (0x7e23, 0x7e27):
 
 #######################################################################
 
-def xyzzy(t, priv=None, lvl=0):
-	if 'flow' in t.a:
-		t.cmt.append(str(t.a['flow']))
-	
-p.t.recurse(xyzzy)
-
-#######################################################################
-
 p.g.build_bb()
 
 p.g.add_flow("IRQ", p.m.b16(0x7ff8))
@@ -763,4 +755,5 @@ p.g.xxx(p)
 
 
 r = render.render(p)
+r.add_flows()
 r.render("/tmp/_hp5370b")
