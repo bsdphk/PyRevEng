@@ -74,7 +74,8 @@ class mc6800(object):
 		if 'DA' in t.a:
 			da = t.a['DA']
 			if da in p.label:
-				return (s + p.label[da] + " (" + p.m.afmt(da) + ")",)
+				return (s + p.label[da] +
+				    " (" + p.m.afmt(da) + ")",)
 		for i in t.a['oper']:
 			s += d
 			s += str(i)
@@ -140,7 +141,10 @@ class mc6800(object):
 				x.a['flow'] = (("cond", "T", da),)
 			else:
 				c2 = inscode[iw ^ 1]
-				x.a['flow'] = (("cond", c2[3:], adr + l), ("cond", c[3:], da),)
+				x.a['flow'] = (
+				    ("cond", c2[3:], adr + l),
+				    ("cond", c[3:], da),
+				)
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
 			x.a['oper'] = (p.m.afmt(da),)
@@ -184,4 +188,5 @@ class mc6800(object):
 		self.__vector(p, adr - 4, "NMI")
 		self.__vector(p, adr - 6, "SWI")
 		self.__vector(p, adr - 8, "IRQ")
-		p.t.add(adr - 8, adr, "tbl").blockcmt += "\n-\nMC6800 Vector Table\n\n"
+		x = p.t.add(adr - 8, adr, "tbl")
+		x.blockcmt += "\n-\nMC6800 Vector Table\n\n"
