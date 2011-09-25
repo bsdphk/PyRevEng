@@ -28,7 +28,7 @@ def one_eprom(p, start, eprom_size):
 	if j == 0xffff:
 		j = "OK"
 	else:
-		printf("NB: Bad Eprom checksum @%x" % start)
+		print("NB: Bad Eprom checksum @%x" % start)
 		j = "BAD"
 
 	x = const.w16(p, start)
