@@ -26,10 +26,13 @@ def radix40(y):
 	return ((s[l1] + s[l2] + s[l3] + s[l4] + s[l5]).strip(), v2 & 0x1f)
 
 class file_domus(object):
-	def __init__(self, filename):
+	def __init__(self, filename, skip = 0):
 		# Read the entire file
 		f = open(filename, "rb")
-		self.d = array.array("H", f.read())
+		if skip & 1:
+			self.d = array.array("H", f.read()[skip:-1])
+		else:
+			self.d = array.array("H", f.read()[skip:])
 		self.filename = filename
 		f.close()
 		self.index = self.build_index()
@@ -39,7 +42,8 @@ class file_domus(object):
 		l=dict()
 		a = 0
 		a0 = a
-		titl = None
+		nobj = 0
+		titl = "OBJ%02d" % nobj
 		while a < len(self.d):
 			rec_typ = self.d[a]
 			if rec_typ > 9:
@@ -62,7 +66,8 @@ class file_domus(object):
 				titl = radix40(self.d[a0 + 6:a0+9])[0]
 			if rec_typ == 6:
 				l[titl] = (a0, a)
-				titl = None
+				nobj += 1
+				titl = "OBJ%02d" % nobj
 				a0 = a
 		return l
 
