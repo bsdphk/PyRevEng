@@ -219,13 +219,14 @@ def dofile(filename, obj = None):
 
 		p.run()
 
-		ff = topology.topology(p.t)
+		ff = topology.topology(p)
 		ff.build_bb()
 		ff.segment()
 		ff.dump_dot(digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n')
 
 
 		r = render.render(p)
+		r.add_flows()
 
 		if obj != None:
 			r.render("/tmp/" + filename + "_" + obj)
