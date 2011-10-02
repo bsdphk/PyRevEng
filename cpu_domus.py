@@ -589,11 +589,9 @@ class domus(cpu_nova.nova):
 
 		# Try the CLEAR_INTERRUPT
 		try:
-			cli = p.m.rd(a + 26)
-			print("CLI %o" %cli)
-			if cli & 0o100000:
-				pass
-			elif cli != 0:
+			cli = p.m.rd(adr + 26)
+			print("CLI " + p.m.afmt(cli))
+			if cli != 0:
 				p.todo(cli, p.cpu.disass)
 		except:
 			pass

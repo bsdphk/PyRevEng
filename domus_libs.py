@@ -55,7 +55,10 @@ class domus_libs(object):
 	def match(self, tmem, tadr):
 		if not self.loaded:
 			for fn in self.filenames:
-				self.load(self.prefix, fn)
+				try:
+					self.load(self.prefix, fn)
+				except:
+					pass
 			self.loaded = True
 		t = self.t
 		adr = tadr
