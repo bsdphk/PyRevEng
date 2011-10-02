@@ -28,17 +28,29 @@ class DomusError(Exception):
         def __str__(self):
                 return repr(self.value)
 
-def dofile(filename, obj = None):
+def dofile(filename, obj = None, skip = 0):
 
 	print("DOFILE", filename, obj);
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
 	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
-	fn = dn + filename
 
-	load_file = file_domus.file_domus(fn)
+	try:
+		import os
+		fn = filename
+		load_file = file_domus.file_domus(fn, skip)
+		filename=os.path.basename(fn)
+	except:
+		fn = dn + filename
+		load_file = file_domus.file_domus(fn, skip)
 
 	objidx = load_file.build_index()
 	for obj in objidx:
+
+		print("tfm",
+		    "%04x" % skip,
+		    "%04x" % (skip + objidx[obj][0]*2),
+		    "%04x" % (skip + objidx[obj][1]*2),
+		    objidx[obj])
 
 		p = pyreveng.pyreveng(mem_domus.mem_domus())
 		p.cpu = cpu_domus.domus()
@@ -50,7 +62,7 @@ def dofile(filename, obj = None):
 		ld = load_file.rec_end
 		print(obj, ld)
 
-		if len(objidx) != 1:
+		if ld == None and len(objidx) != 1:
 			ld = load_file.min_nrel
 			p.todo(ld, p.cpu.disass)
 		elif ld == None:
@@ -254,6 +266,8 @@ if __name__ == "__main__":
 		#dofile("__.MUB")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
-		dofile("__.CATLI")
+		#dofile("__.CATLI")
 		#dofile("__.FSLIB")
+		for o in (0x55c, 0x4b11, 0x8742):
+			dofile("/home/phk/rc7000_atm_asnaes.bin", None, o)
 		pass
