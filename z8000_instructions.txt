@@ -1,78 +1,84 @@
 # Z8000 instruction list
 #
-# From Z8000 CPU Technical Manual (March 1981)
+# From:
+#	Z8000 CPU User's Reference Manual
+#	ISBN 0-13-9839080-9
 #
-#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+# Trailing 'address' and 'data' fields are not included, they are
+# divined by the Disassembler code.
+#
+#
+#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
 ADC	Rd,Rs			|1 0|1 1 0 1 0|W| Rs    | Rd    |
 
 ADD	Rd,Rs			|1 0|0 0 0 0 0|W| Rs    | Rd    |
 ADDL	RRd,RRs			|1 0|0 1 0 1 1 0| RRs   | RRd   |
-ADD	Rd,#data		|0 0|0 0 0 0 0 1|0 0 0 0| Rd    | data                          |
-ADDB	Rbd,#data		|0 0|0 0 0 0 0 0|0 0 0 0| Rbd   | data          | data          |
-ADDL	RRd,#data		|0 0|0 1 0 1 1 0|0 0 0 0| RRd   | data                                                          |
+ADD	Rd,#data		|0 0|0 0 0 0 0 1|0 0 0 0| Rd    |
+ADDB	Rbd,#data		|0 0|0 0 0 0 0 0|0 0 0 0| Rbd   |
+ADDL	RRd,#data		|0 0|0 1 0 1 1 0|0 0 0 0| RRd   |
 ADD	Rd,@Rs			|0 0|0 0 0 0 0|W| Rs!=0 | Rd    |
 ADDL	RRd,@Rs			|0 0|0 1 0 1 1 0| Rs!=0 | RRd   |
-ADD	Rd,address		|0 1|0 0 0 0 0|W|0 0 0 0| Rd    | address			|
-ADDL	RRd,address		|0 1|0 1 0 1 1 0|0 0 0 0| RRd   | address			|
-ADD	Rd,addr(Rs)		|0 1|0 0 0 0 0|W| Rs!=0	| Rd    | address                       |
-ADDL	RRd,addr(Rs)		|0 1|0 1 0 1 1 0| Rs!=0	| RRd   | address                       |
+ADD	Rd,address		|0 1|0 0 0 0 0|W|0 0 0 0| Rd    |
+ADDL	RRd,address		|0 1|0 1 0 1 1 0|0 0 0 0| RRd   |
+ADD	Rd,addr(Rs)		|0 1|0 0 0 0 0|W| Rs!=0	| Rd    |
+ADDL	RRd,addr(Rs)		|0 1|0 1 0 1 1 0| Rs!=0	| RRd   |
 
 AND	Rd,Rs			|1 0|0 0 0 1 1|W| Rs    | Rd    |
-AND	Rd,#data		|0 0|0 0 0 1 1 1|0 0 0 0| Rd    | data                          |
-ANDB	Rbd,#data		|0 0|0 0 0 1 1 0|0 0 0 0| Rbd   | data          | data          |
+AND	Rd,#data		|0 0|0 0 0 1 1 1|0 0 0 0| Rd    |
+ANDB	Rbd,#data		|0 0|0 0 0 1 1 0|0 0 0 0| Rbd   |
 AND	Rd,@Rs			|0 0|0 0 0 1 1|W| Rs!=0 | Rd    |
-AND	Rd,address		|0 1|0 0 0 1 1|W|0 0 0 0| Rd    | address			|
-AND	Rd,addr(Rs)		|0 1|0 0 0 1 1|W| Rs!=0	| Rd    | address                       |
+AND	Rd,address		|0 1|0 0 0 1 1|W|0 0 0 0| Rd    |
+AND	Rd,addr(Rs)		|0 1|0 0 0 1 1|W| Rs!=0	| Rd    |
 
 BIT	Rd,#b			|1 0|1 0 0 1 1|W| Rd    | b     |
 BIT	@Rd,#b			|0 0|1 0 0 1 1|W| Rd!=0 | b     |
-BIT	address,#b		|0 1|1 0 0 1 1|W|0 0 0 0| b     | address                       |
-BIT	addr(Rd),#b		|0 1|1 0 0 1 1|W| Rd!=0 | b     | address                       |
+BIT	address,#b		|0 1|1 0 0 1 1|W|0 0 0 0| b     |
+BIT	addr(Rd),#b		|0 1|1 0 0 1 1|W| Rd!=0 | b     |
 BIT	Rd,Rs			|0 0|1 0 0 1 1|W|0 0 0 0| Rs    |0 0 0 0| Rd    |0 0 0 0|0 0 0 0|
 
 CALL	@Rd			|0 0|0 1 1 1 1 1| Rd!=0 |0 0 0 0|
-CALL	address			|0 1|0 1 1 1 1 1|0 0 0 0|0 0 0 0| address                       |
-CALL	addr(Rd)		|0 1|0 1 1 1 1 1| Rd!=0 |0 0 0 0| address                       |
+CALL	address			|0 1|0 1 1 1 1 1|0 0 0 0|0 0 0 0|
+CALL	addr(Rd)		|0 1|0 1 1 1 1 1| Rd!=0 |0 0 0 0|
 
-CALR	address			|1 1 0 1| displacement          |
+CALR	disp12			|1 1 0 1| disp12	        |
 
 CLR	Rd   			|1 0|0 0 1 1 0|W| Rd    |1 0 0 0|
 CLR	@Rd			|0 0|0 0 1 1 0|W| Rd!=0 |1 0 0 0|
-CLR	address			|0 1|0 0 1 1 0|W|0 0 0 0|1 0 0 0| address			|
-CLR	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0	|1 0 0 0| address                       |
+CLR	address			|0 1|0 0 1 1 0|W|0 0 0 0|1 0 0 0|
+CLR	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0	|1 0 0 0|
 
 COM	Rd   			|1 0|0 0 1 1 0|W| Rd    |0 0 0 0|
 COM	@Rd			|0 0|0 0 1 1 0|W| Rd!=0 |0 0 0 0|
-COM	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 0 0 0| address			|
-COM	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0	|0 0 0 0| address                       |
+COM	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 0 0 0|
+COM	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0	|0 0 0 0|
 
 COMFLG	flags			|1 0 0 0 1 1 0 1| flags |0 1 0 1|
 
 CP	Rd,Rs			|1 0|0 0 1 0 1|W| Rs    | Rd    |
 CPL	RRd,RRs			|1 0|0 1 0 0 0 0| RRs   | RRd   |
-CP	Rd,#data		|0 0|0 0 1 0 1 1|0 0 0 0| Rd    | data                          |
-CPB	Rbd,#data		|0 0|0 0 1 0 1 0|0 0 0 0| Rbd   | data          | data          |
-CPL	RRd,#data		|0 0|0 1 0 0 0 0|0 0 0 0| RRd   | data                                                          |
+CP	Rd,#data		|0 0|0 0 1 0 1 1|0 0 0 0| Rd    |
+CPB	Rbd,#data		|0 0|0 0 1 0 1 0|0 0 0 0| Rbd   |
+CPL	RRd,#data		|0 0|0 1 0 0 0 0|0 0 0 0| RRd   |
 CP	Rd,@Rs			|0 0|0 0 1 0 1|W| Rs!=0 | Rd    |
 CPL	RRd,@Rs			|0 0|0 1 0 0 0 0| Rs!=0 | RRd   |
-CP	Rd,address		|0 1|0 0 1 0 1|W|0 0 0 0| Rd    | address			|
-CPL	RRd,address		|0 1|0 1 0 0 0 0|0 0 0 0| RRd   | address			|
-CP	Rd,addr(Rs)		|0 1|0 0 1 0 1|W| Rs!=0	| Rd    | address                       |
-CPL	RRd,addr(Rs)		|0 1|0 1 0 0 0 0| Rs!=0	| RRd   | address                       |
+CP	Rd,address		|0 1|0 0 1 0 1|W|0 0 0 0| Rd    |
+CPL	RRd,address		|0 1|0 1 0 0 0 0|0 0 0 0| RRd   |
+CP	Rd,addr(Rs)		|0 1|0 0 1 0 1|W| Rs!=0	| Rd    |
+CPL	RRd,addr(Rs)		|0 1|0 1 0 0 0 0| Rs!=0	| RRd   |
 
 # NB: Manual p70 lists 'W' bit for both variants
-CP	@Rd,#data		|0 0|0 0 1 1 0|1| Rd!=0	|0 0 0 1| data                          |
-CPB	@Rd,#data		|0 0|0 0 1 1 0|0| Rd!=0 |0 0 0 1| data          | data          |
+CP	@Rd,#data		|0 0|0 0 1 1 0|1| Rd!=0	|0 0 0 1|
+CPB	@Rd,#data		|0 0|0 0 1 1 0|0| Rd!=0 |0 0 0 1|
 
 # NB: Manual p71 lists 'W' bit for both variants
-CP	address,#data		|0 1|0 0 1 1 0|1|0 0 0 0|0 0 0 1| address                       | data				|
-CPB	address,#data		|0 1|0 0 1 1 0|0|0 0 0 0|0 0 0 1| address                       | data          | data		|
+CP	address,#data		|0 1|0 0 1 1 0|1|0 0 0 0|0 0 0 1|
+CPB	address,#data		|0 1|0 0 1 1 0|0|0 0 0 0|0 0 0 1|
 
 # NB: Manual p71 lists 'W' bit for both variants
-CP	addr(Rd)		|0 1|0 0 1 1 0|1| Rd!=0 |0 0 0 1| address			| data				|
-CPB	addr(Rd)		|0 1|0 0 1 1 0|0| Rd!=0 |0 0 0 1| address			| data		| data		|
+CP	addr(Rd),#data		|0 1|0 0 1 1 0|1| Rd!=0 |0 0 0 1|
+CPB	addr(Rd),#data		|0 1|0 0 1 1 0|0| Rd!=0 |0 0 0 1|
 
-#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
 
 CPD	Rd,@Rs,r,cc		|1 0|1 1 1 0 1|W| Rs!=0 |1 0 0 0|0 0 0 0| r     | Rd    | cc    |
 CPDR	Rd,@Rs,r,cc		|1 0|1 1 1 0 1|W| Rs!=0 |1 1 0 0|0 0 0 0| r     | Rd    | cc    |
@@ -88,32 +94,32 @@ DAB	Rbd			|1 0|1 1 0 0 0 0| Rbd   |0 0 0 0|
 
 DEC	Rd,#n			|1 0|1 0 1 0 1|W| Rd    | n-1   |
 DEC	@Rd,#n			|0 0|1 0 1 0 1|W| Rd!=0 | n-1   |
-DEC	address,#n		|0 1|1 0 1 0 1|W|0 0 0 0| n-1   | address			|
-DEC	addr(Rd),#n		|0 1|1 0 1 0 1|W| Rd!=0 | n-1   | address			|
+DEC	address,#n		|0 1|1 0 1 0 1|W|0 0 0 0| n-1   |
+DEC	addr(Rd),#n		|0 1|1 0 1 0 1|W| Rd!=0 | n-1   |
 
 DI	int			|0 1|1 1 1 1 0 0|0 0 0 0 0 0|int|
 
 DIV	RRd,Rs			|1 0|0 1 1 0 1 1| Rs    | RRd   |
 DIVL	RQd,RRs			|1 0|0 1 1 0 1 0| RRs   | RQd   |
 
-DIV	RRd,#data		|0 0|0 1 1 0 1 1|0 0 0 0| RRd   | data                          |
-DIVL	RQd,#data		|0 0|0 1 1 0 1 0|0 0 0 0| RQd   | data								|
+DIV	RRd,#data		|0 0|0 1 1 0 1 1|0 0 0 0| RRd   |
+DIVL	RQd,#data		|0 0|0 1 1 0 1 0|0 0 0 0| RQd   |
 DIV	RRd,@Rs			|0 0|0 1 1 0 1 1| Rs!=0 | RRd   |
 DIVL	RQd,@Rs			|0 0|0 1 1 0 1 0| Rs!=0 | RQd   |
-DIV	RRd,address		|0 1|0 1 1 0 1 1|0 0 0 0| RRd   | address			|
-DIVL	RQD,address		|0 1|0 1 1 0 1 0|0 0 0 0| RQd   | address			|
-DIV	RRd,addr(Rs)		|0 1|0 1 1 0 1 1| Rs!=0 | RRd	| address			|
-DIVL	RQd,addr(Rs)		|0 1|0 1 1 0 1 0| Rs!=0 | RQd	| address			|
+DIV	RRd,address		|0 1|0 1 1 0 1 1|0 0 0 0| RRd   |
+DIVL	RQD,address		|0 1|0 1 1 0 1 0|0 0 0 0| RQd   |
+DIV	RRd,addr(Rs)		|0 1|0 1 1 0 1 1| Rs!=0 | RRd	|
+DIVL	RQd,addr(Rs)		|0 1|0 1 1 0 1 0| Rs!=0 | RQd	|
 
-DJNZ	R,address		|1 1 1 1| r     |1| disp        |
-DBJNZ	R,address		|1 1 1 1| r     |0| disp        |
+DJNZ	r,dispu8		|1 1 1 1| r     |1| dispu8      |
+DBJNZ	r,dispu8		|1 1 1 1| r     |0| dispu8      |
 
 EI	int			|0 1 1 1 1 1 0 0|0 0 0 0 0 1|int|
 
 EX	Rd,Rs			|1 0|1 0 1 1 0|W| Rs    | Rd    |
 EX	Rd,@Rs			|0 0|1 0 1 1 0|W| Rs!=0 | Rd    |
-EX	Rd,address		|0 1|1 0 1 1 0|W|0 0 0 0| Rd    | address			|
-EX	Rd,addr(Rs)		|0 1|1 0 1 1 0|W| Rs!=0 | Rd    | address			|
+EX	Rd,address		|0 1|1 0 1 1 0|W|0 0 0 0| Rd    |
+EX	Rd,addr(Rs)		|0 1|1 0 1 1 0|W| Rs!=0 | Rd    |
 
 EXTSB	Rd			|1 0|1 1 0 0 0 1| Rd    |0 0 0 0|
 EXTS	RRd			|1 0|1 1 0 0 0 1| RRd   |1 0 1 0|
@@ -126,8 +132,8 @@ IN	Rd,port			|0 0|1 1 1 0 1|W| Rd    |0 1 0|S| port				|
 
 INC	Rd,#n			|1 0|1 0 1 0 0|W| Rd    | n-1   |
 INC	@Rd,#n			|0 0|1 0 1 0 0|W| Rd!=0 | n-1   |
-INC	address,#n		|0 1|1 0 1 0 0|W|0 0 0 0| n-1   | address			|
-INC	addr(Rd),#n		|0 1|1 0 1 0 0|W| Rd!=0 | n-1   | address			|
+INC	address,#n		|0 1|1 0 1 0 0|W|0 0 0 0| n-1   |
+INC	addr(Rd),#n		|0 1|1 0 1 0 0|W| Rd!=0 | n-1   |
 
 IND	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 INDR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
@@ -137,46 +143,46 @@ INIR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0
 IRET	""			|0 1 1 1 1 0 1 1|0 0 0 0 0 0 0 0|
 
 JP	cc,@Rd			|0 0|0 1 1 1 1 0| Rd!=0 | cc    |
-JP	cc,address		|0 1|0 1 1 1 1 0|0 0 0 0| cc    | address                       |
-JP	cc,addr(Rd)		|0 1|0 1 1 1 1 0| Rd!=0 | cc    | address                       |
+JP	cc,address		|0 1|0 1 1 1 1 0|0 0 0 0| cc    |
+JP	cc,addr(Rd)		|0 1|0 1 1 1 1 0| Rd!=0 | cc    |
 
-JR	cc,address		|1 1 1 0| cc    | displacement  |
+JR	cc,disp8		|1 1 1 0| cc    | disp8		|
 
 LD	Rd,Rs			|1 0|1 0 0 0 0|W| Rs    | Rd    |
 LDL	RRd,RRs			|1 0|0 1 0 1 0 0| RRs   | RRd   |
 LD	Rd,@Rs			|0 0|1 0 0 0 0|W| Rs!=0 | Rd    |
 LDL	RRD,@Rs			|0 0|0 1 0 1 0 0| Rs!=0 | RRd   |
-LD	Rd,address		|0 1|1 0 0 0 0|W|0 0 0 0| Rd    | address			|
-LDL	RRd,address		|0 1|0 1 0 1 0 0|0 0 0 0| RRd	| address			|
-LD	Rd,addr(Rs)		|0 1|1 0 0 0 0|W| Rs!=0 | Rd    | address			|
-LDL	RRd,addr(Rs)		|0 1|0 1 0 1 0 0| Rs!=0 | RRd   | address			|
-LD	Rd,Rs(#disp)		|0 0|1 1 0 0 0|W| Rs!=0 | Rd    | displacement			|
+LD	Rd,address		|0 1|1 0 0 0 0|W|0 0 0 0| Rd    |
+LDL	RRd,address		|0 1|0 1 0 1 0 0|0 0 0 0| RRd	|
+LD	Rd,addr(Rs)		|0 1|1 0 0 0 0|W| Rs!=0 | Rd    |
+LDL	RRd,addr(Rs)		|0 1|0 1 0 1 0 0| Rs!=0 | RRd   |
+LD	Rd,Rs(#disp16)		|0 0|1 1 0 0 0|W| Rs!=0 | Rd    | disp16			|
 LD	Rd,Rs(Rx)		|0 1|1 1 0 0 0|W| Rs!=0 | Rd    |0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LDL	RRd,Rs(Rx)		|0 1|1 1 0 1 0|1| Rs!=0 | RRd   |0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LD	@Rd,Rs			|0 0|1 0 1 1 1|W| Rd!=0 | Rs    |
 LDL	@Rd,RRs			|0 0|0 1 1 1 0 1| Rd!=0 | RRs   |
-LD	address,Rs		|0 1|1 0 1 1 1|W|0 0 0 0| Rs    | address			|
-LDL	address,RRs		|0 1|0 1 1 1 0 1|0 0 0 0| RRs	| address			|
-LD	addr(Rd),Rs		|0 1|1 0 1 1 1|W| Rd!=0 | Rs    | address			|
-LDL	addr(Rd),RRs		|0 1|0 1 1 1 0 1| Rd!=0 | RRs	| address			|
-LD	Rd(#disp),Rs		|0 0|1 1 0 0 1|W| Rd!=0 | Rs    | displacement			|
-LDL	Rd(#disp),RRs		|0 0|1 1 0 1 1 1| Rd!=0 | RRs   | displacement			|
+LD	address,Rs		|0 1|1 0 1 1 1|W|0 0 0 0| Rs    |
+LDL	address,RRs		|0 1|0 1 1 1 0 1|0 0 0 0| RRs	|
+LD	addr(Rd),Rs		|0 1|1 0 1 1 1|W| Rd!=0 | Rs    |
+LDL	addr(Rd),RRs		|0 1|0 1 1 1 0 1| Rd!=0 | RRs	|
+LD	Rd(#disp16),Rs		|0 0|1 1 0 0 1|W| Rd!=0 | Rs    | disp16			|
+LDL	Rd(#disp16),RRs		|0 0|1 1 0 1 1 1| Rd!=0 | RRs   | disp16			|
 LD	Rd(Rx),Rs		|0 1|1 1 0 0 1|W| Rd!=0 | Rs	|0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LDL	Rd(Rx),RRs		|0 1|1 1 0 1 1 1| Rd!=0 | RRs	|0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 
-LD	Rd,#data		|0 0|1 0 0 0 0 1|0 0 0 0| Rd    | data				|
-LDB	Rbd,#data		|0 0|1 0 0 0 0 0|0 0 0 0| Rbd   | data          | data          |
-LDB	Rbd,#data		|1 1 0 0| Rbd   | data          |
-LDL	RRD,#data		|0 0|0 1 0 1 0 0|0 0 0 0| RRd   | data								|
-LD	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |0 1 0 1| data				|
-LDB	#Rd,#data		|0 0|0 0 1 1 0 0| Rd!=0 |0 1 0 1| data		| data		|
-LD	address,#data		|0 1|0 0 1 1 0 1|0 0 0 0|0 1 0 1| address			| data				|
-LDB	address,#data		|0 1|0 0 1 1 0 0|0 0 0 0|0 1 0 1| address			| data		| data		|
-LD	addr(Rd),#data		|0 1|0 0 1 1 0 1| Rd!=0 |0 1 0 1| address			| data				|
-LDB	addr(Rd),#data		|0 1|0 0 1 1 0 0| Rd!=0 |0 1 0 1| address			| data		| data		|
+LD	Rd,#data		|0 0|1 0 0 0 0 1|0 0 0 0| Rd    |
+LDB	Rbd,#data		|0 0|1 0 0 0 0 0|0 0 0 0| Rbd   |
+LDB	Rbd,#byte		|1 1 0 0| Rbd   | byte          |
+LDL	RRD,#data		|0 0|0 1 0 1 0 0|0 0 0 0| RRd   |
+LD	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |0 1 0 1|
+LDB	#Rd,#data		|0 0|0 0 1 1 0 0| Rd!=0 |0 1 0 1|
+LD	address,#data		|0 1|0 0 1 1 0 1|0 0 0 0|0 1 0 1|
+LDB	address,#data		|0 1|0 0 1 1 0 0|0 0 0 0|0 1 0 1|
+LD	addr(Rd),#data		|0 1|0 0 1 1 0 1| Rd!=0 |0 1 0 1|
+LDB	addr(Rd),#data		|0 1|0 0 1 1 0 0| Rd!=0 |0 1 0 1|
 
-LDA	Rd,address		|0 1|1 1 0 1 1 0|0 0 0 0| Rd    | address                       |
-LDA	Rd,addrRs)		|0 1|1 1 0 1 1 0| Rs!=0 | Rd    | address			|
+LDA	Rd,address		|0 1|1 1 0 1 1 0|0 0 0 0| Rd    |
+LDA	Rd,addr(Rs)		|0 1|1 1 0 1 1 0| Rs!=0 | Rd    |
 LDA	Rd,Rs(#disp)		|0 0|1 1 0 1 0 0| Rs!=0 | Rd    | disp                          |
 LDA	Rd,Rs(Rx)		|0 1|1 1 0 1 0 0| Rs!=0	| Rd    |0 0 0 0| Rx    |0 0 0 0|0 0 0 0|
 
@@ -197,25 +203,25 @@ LDCTL	Rd,NSPSEG		|0 1 1 1 1 1 0 1| Rd    |0 1 1 0|
 LDCTL	Rd,NSPOFF		|0 1 1 1 1 1 0 1| Rd    |0 1 1 1|
 
 LDCTLB	FLAGS,Rbs		|1 0 0 0 1 1 0 0| Rbs   |1 0 0 1|
-LDCTLB	Rbd,FLAGS		|1 0 0 0 1 1 0 0| Rdb	|0 0 0 1|
+LDCTLB	Rbd,FLAGS		|1 0 0 0 1 1 0 0| Rbd	|0 0 0 1|
 
-#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
 LDDR	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |1 0 0 1|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 LDI	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |0 0 0 1|0 0 0 0| r     | Rd!=0 |1 0 0 0|
-LDK	Rd,#data		|1 0|1 1 1 1 0 1| Rd    | data  |
+LDK	Rd,#nibble		|1 0|1 1 1 1 0 1| Rd    | nibble|
 LDM	Rd,@Rs,#n		|0 0|0 1 1 1 0 0| Rs!=0 |0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   |
-LDM	Rd,address,#n		|0 1|0 1 1 1 0 0|0 0 0 0|0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   | address                       |
-LDM	Rd,addr(Rs),#n		|0 1|0 1 1 1 0 0| Rs!=0 |0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   | address                       |
+LDM	Rd,address,#n		|0 1|0 1 1 1 0 0|0 0 0 0|0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   |
+LDM	Rd,addr(Rs),#n		|0 1|0 1 1 1 0 0| Rs!=0 |0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   |
 LDM	@Rd,Rs,#n		|0 0|0 1 1 1 0 0| Rd!=0 |1 0 0 1|0 0 0 0| Rs    |0 0 0 0| n-1   |
-LDM	address,Rs,#n		|0 1|0 1 1 1 0 0|0 0 0 0|1 0 0 1|0 0 0 0| Rs    |0 0 0 0| n-1   | address                       |
-LDM	addr(Rd),Rs,#n		|0 1|0 1 1 1 0 0| Rd!=0 |1 0 0 1|0 0 0 0| Rs    |0 0 0 0| n-1   | addr                          |
+LDM	address,Rs,#n		|0 1|0 1 1 1 0 0|0 0 0 0|1 0 0 1|0 0 0 0| Rs    |0 0 0 0| n-1   |
+LDM	addr(Rd),Rs,#n		|0 1|0 1 1 1 0 0| Rd!=0 |1 0 0 1|0 0 0 0| Rs    |0 0 0 0| n-1   |
 LDPS	@Rs			|0 0|1 1 1 0 0 1| Rs!=0 |0 0 0 0|
-LDPS	address			|0 1|1 1 1 0 0 1|0 0 0 0|0 0 0 0| address                       |
-LDPS	addr(Rs)		|0 1|1 1 1 0 0 1| Rs!=0 |0 0 0 0| address                       |
-LDR	Rd,address		|0 0 1 1 0 0 0|W|0 0 0 0| Rd    | displacement                  |
-LDRL	RRd,address		|0 0 1 1 0 1 0 1|0 0 0 0| RRd   | displacement                  |
-LDR	address,Rs		|0 0 1 1 0 0 1|W|0 0 0 0| Rs    | displacement                  |
-LDRL	adress,RRs		|0 0 1 1 0 1 1 1|0 0 0 0| RRs   | displacement                  |
+LDPS	address			|0 1|1 1 1 0 0 1|0 0 0 0|0 0 0 0|
+LDPS	addr(Rs)		|0 1|1 1 1 0 0 1| Rs!=0 |0 0 0 0|
+LDR	Rd,disp16		|0 0 1 1 0 0 0|W|0 0 0 0| Rd    | disp16                  	|
+LDRL	RRd,disp16		|0 0 1 1 0 1 0 1|0 0 0 0| RRd   | disp16                  	|
+LDR	disp16,Rs		|0 0 1 1 0 0 1|W|0 0 0 0| Rs    | disp16                  	|
+LDRL	disp16,RRs		|0 0 1 1 0 1 1 1|0 0 0 0| RRs   | disp16                  	|
 MBIT	""			|0 1 1 1 1 0 1 1 0 0 0 0 1 0 1 0|
 MREQ	Rd			|0 1|1 1 1 0 1 1| Rd    |1 1 0 1|
 MRES	""			|0 1 1 1 1 0 1 1|0 0 0 0 1 0 0 1|
@@ -223,25 +229,25 @@ MSET	""			|0 1 1 1 1 0 1 1|0 0 0 0 1 0 0 0|
 MULT	RRd,Rs			|1 0|0 1 1 0 0 1| Rs    | RRd   |
 #NB
 MULTL	RQd,RRs			|1 0|0 1 1 0 0 0| Rs    | RRd   |
-MULT	RRd,#data		|0 0|0 1 1 0 0 1|0 0 0 0| RRd   | data                          |
-MULTL	RQd,#data		|0 0|0 1 1 0 0 0|0 0 0 0| RQd   | data                                                          |
+MULT	RRd,#data		|0 0|0 1 1 0 0 1|0 0 0 0| RRd   |
+MULTL	RQd,#data		|0 0|0 1 1 0 0 0|0 0 0 0| RQd   |
 MULT	RRd,@Rs			|0 0|0 1 1 0 0 1| Rs!=0 | RRd   |
 MULTL	RQd,@Rs			|0 0|0 1 1 0 0 0| Rs!=0 | RQd   |
-MULT	RRd,address		|0 1|0 1 1 0 0 1|0 0 0 0| RRd   | address                       |
-MULTL	RQd,address		|0 1|0 1 1 0 0 0|0 0 0 0| RQd   | address                       |
-MULT	RRd,addr(Rs)		|0 1|0 1 1 0 0 1| Rs!=0 | RRd   | address                       |
-MULTL	RQd,addr(Rs)		|0 1|0 1 1 0 0 0| Rs!=0 | RQd   | address                       |
+MULT	RRd,address		|0 1|0 1 1 0 0 1|0 0 0 0| RRd   |
+MULTL	RQd,address		|0 1|0 1 1 0 0 0|0 0 0 0| RQd   |
+MULT	RRd,addr(Rs)		|0 1|0 1 1 0 0 1| Rs!=0 | RRd   |
+MULTL	RQd,addr(Rs)		|0 1|0 1 1 0 0 0| Rs!=0 | RQd   |
 NEG	Rd			|1 0|0 0 1 1 0|W| Rd    |0 0 1 0|
 NEG	@Rd			|0 0|0 0 1 1 0|W| Rd!=0 |0 0 1 0|
-NEG	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 0 1 0| address                       |
-NEG	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 0 1 0| addr                          |
+NEG	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 0 1 0|
+NEG	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 0 1 0|
 NOP	""			|1 0 0 0 1 1 0 1|0 0 0 0 0 1 1 1|
 OR	Rd,Rs			|1 0|0 0 0 1 0|W| Rs    | Rd    |
-OR	Rd,#data		|0 0|0 0 0 1 0 1|0 0 0 0| Rd    | data                          |
-ORB	Rbd,#data		|0 0|0 0 0 1 0 0|0 0 0 0| Rbd   | data          | data          |
+OR	Rd,#data		|0 0|0 0 0 1 0 1|0 0 0 0| Rd    |
+ORB	Rbd,#data		|0 0|0 0 0 1 0 0|0 0 0 0| Rbd   |
 OR	Rd,@Rs			|0 0|0 0 0 1 0|W| Rs!=0 | Rd    |
-OR	Rd,address		|0 1|0 0 0 1 0|W|0 0 0 0| Rd    | address                       |
-OR	Rd,addr(Rs)		|0 1|0 0 0 1 0|W| Rs!=0 | Rd    | address                       |
+OR	Rd,address		|0 1|0 0 0 1 0|W|0 0 0 0| Rd    |
+OR	Rd,addr(Rs)		|0 1|0 0 0 1 0|W| Rs!=0 | Rd    |
 OTDR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 OTIR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 OUT	@Rd,Rs			|0 0 1 1 1 1 1|W| Rd!=0 | Rs    |
@@ -249,36 +255,42 @@ OUT	port,Rs			|0 0 1 1 1 0 1|W| Rs    |0 1 1|S| port                          |
 OTD 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 OTI 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 POP	Rd,@Rs			|1 0|0 1 0 1 1 1| Rs!=0 | Rd    |
-POPL	RRd,@Rs			|1 0|0 1 0 1 0 1| Rs!=0 | Rd    |
+POPL	RRd,@Rs			|1 0|0 1 0 1 0 1| Rs!=0 | RRd   |
 POP	@Rd,@Rs			|0 0|0 1 0 1 1 1| Rs!=0 | Rd!=0 |
 POPL	@Rd,@Rs			|0 0|0 1 0 1 0 1| Rs!=0 | Rd!=0 |
-POP	address,@Rs		|0 1|0 1 0 1 1 1| Rs!=0 |0 0 0 0| address                       |
-POPL	address,@Rs		|0 1|0 1 0 1 0 1| Rs!=0 |0 0 0 0| address                       |
-POP	addr(Rd),@Rs		|0 1|0 1 0 1 1 1| Rs!=0 | Rd!=0 | address                       |
-POPL	addr(Rd),@Rs		|0 1|0 1 0 1 0 1| Rs!=0 | Rd!=0 | address                       |
+POP	address,@Rs		|0 1|0 1 0 1 1 1| Rs!=0 |0 0 0 0|
+POPL	address,@Rs		|0 1|0 1 0 1 0 1| Rs!=0 |0 0 0 0|
+POP	addr(Rd),@Rs		|0 1|0 1 0 1 1 1| Rs!=0 | Rd!=0 |
+POPL	addr(Rd),@Rs		|0 1|0 1 0 1 0 1| Rs!=0 | Rd!=0 |
+
+# p158
+# The manual has some trouble, have fixed to best of my ability
+# based on the opcode field.
 PUSH	@Rd,Rs			|1 0|0 1 0 0 1 1| Rd!=0 | Rs    |
 PUSHL	@Rd,RRs			|1 0|0 1 0 0 0 1| Rd!=0 | RRs   |
-PUSH	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |1 0 0 1| data                          |
+PUSH	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |1 0 0 1|
 PUSH	@Rd,@Rs			|0 0|0 1 0 0 1 1| Rd!=0 | Rs!=0 |
-#NB: PUSHL?
-PUSH	@Rd,@Rs			|0 0|0 1 0 0 0 1| Rd!=0 | Rs!=0 |
-PUSH	@Rd,address		|0 1|0 1 0 0 1 1| Rd!=0 |0 0 0 0| address                       |
-#NB
-PUSHL	@Rd,address		|0 1|0 1 0 0 0 1| Rd!=0 |0 0 0 0| address                       |
-PUSH	@Rd,addr(Rs)		|0 1|0 1 0 0 1 1| Rd!=0 | Rs!=0 | address                       |
-PUSHL	@Rd,addr(Rs)		|0 1|0 1 0 0 0 1| Rd!=0 | Rs!=0 | address                       |
+PUSHL	@Rd,@Rs			|0 0|0 1 0 0 0 1| Rd!=0 | Rs!=0 |
+PUSH	@Rd,address		|0 1|0 1 0 0 1 1| Rd!=0 |0 0 0 0|
+PUSHL	@Rd,address		|0 1|0 1 0 0 0 1| Rd!=0 |0 0 0 0|
+
+# p159
+PUSH	@Rd,addr(Rs)		|0 1|0 1 0 0 1 1| Rd!=0 | Rs!=0 |
+PUSHL	@Rd,addr(Rs)		|0 1|0 1 0 0 0 1| Rd!=0 | Rs!=0 |
+
+
 RES	Rd,#b			|1 0|1 0 0 0 1|W| Rd    | b     |
 RES	@Rd,#b			|0 0|1 0 0 0 1|W| Rd!=0 | b     |
-RES	address,#b		|0 1|1 0 0 0 1|W|0 0 0 0| b     | address                       |
-RES	addr(Rd),#b		|0 1|1 0 0 0 1|W| Rd!=0 | b     | address                       |
+RES	address,#b		|0 1|1 0 0 0 1|W|0 0 0 0| b     |
+RES	addr(Rd),#b		|0 1|1 0 0 0 1|W| Rd!=0 | b     |
 RES	Rd,Rs			|0 0|1 0 0 0 1|W|0 0 0 0| Rs    |0 0 0 0| Rd    |0 0 0 0|0 0 0 0|
 RESFLG	flags			|1 0|0 0 1 1 0 1| flags |0 0 1 1|
 RET	cc			|1 0|0 1 1 1 1 0|0 0 0 0| cc    |
-RL	Rd,#n			|1 0|1 1 0 0 1|W| Rd    |0 0|S|0|
-RLC	Rd,#n			|1 0|1 1 0 0 1|W| Rd    |1 0|S|0|
-RLDB	Rdl,Rbs			|1 0|1 1 1 1 1|0| Rbs   | Rbl   |
-RR	Rd,#n			|1 0|1 1 0 0 1|W| Rd    |0 1|S|0|
-RRC	Rd,#n			|1 0|1 1 0 0 1|W| Rd    |1 1|S|0|
+RL	Rd,#S			|1 0|1 1 0 0 1|W| Rd    |0 0|S|0|
+RLC	Rd,#S			|1 0|1 1 0 0 1|W| Rd    |1 0|S|0|
+RLDB	Rbl,Rbs			|1 0|1 1 1 1 1|0| Rbs   | Rbl   |
+RR	Rd,#S			|1 0|1 1 0 0 1|W| Rd    |0 1|S|0|
+RRC	Rd,#S			|1 0|1 1 0 0 1|W| Rd    |1 1|S|0|
 RRDB	Rbl,Rbs			|1 0|1 1 1 1 0 0| Rbs   | Rbl   |
 SBC	Rd,Rs			|1 0|1 1 0 1 1|W| Rs    | Rd    |
 SC	#src			|0 1 1 1 1 1 1 1| src           |
@@ -290,8 +302,8 @@ SDLB	Rbd,Rs			|1 0|1 1 0 0 1 0| Rbd   |0 0 1 1|0 0 0 0| Rs    |0 0 0 0 0 0 0 0|
 SDLL	RRd,Rs			|1 0|1 1 0 0 1 1| RRd   |0 1 1 1|0 0 0 0| Rs    |0 0 0 0 0 0 0 0|
 SET	Rd,#b			|1 0|1 0 0 1 0|W| Rd    | b     |
 SET	@Rd,#b			|0 0|1 0 0 1 0|W| Rd!=0 | b     |
-SET	address,#b		|0 1|1 0 0 1 0|W|0 0 0 0| b     | address                       |
-SET	addr(Rd),#b		|0 1|1 0 0 1 0|W| Rd!=0 | b     | address                       |
+SET	address,#b		|0 1|1 0 0 1 0|W|0 0 0 0| b     |
+SET	addr(Rd),#b		|0 1|1 0 0 1 0|W| Rd!=0 | b     |
 SET	Rd,Rs			|0 0|1 0 0 1 0|W|0 0 0 0| Rs    |0 0 0 0| Rd    |0 0 0 0 0 0 0 0|
 SETFLG	flags			|1 0 0 0 1 1 0 1| flags |0 0 0 1|
 SLA	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |1 0 0 1| b                             |
@@ -311,26 +323,27 @@ SLLL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |0 1 0 1| b                             |
 
 SUB	Rd,Rs			|1 0|0 0 0 0 1|W| Rs    | Rd    |
 SUBL	RRd,RRs			|1 0|0 1 0 0 1 0| RRs   | RRd   |
-#NB: W-bit ?
-SUB	Rd,#data		|0 0|0 0 0 0 1 0|0 0 0 0| Rd    | data                          |
-#NB: W-bit ?
-SUBB	Rbd,#data		|0 0|0 0 0 0 1 1|0 0 0 0| Rd    | data                          |
-SUBL	RRd,#data		|0 0|0 1 0 0 1 0|0 0 0 0| RRd   | data                                                                                          |
+
+# NB: p190 has the wrong W-bits for these two:
+SUB	Rd,#data		|0 0|0 0 0 0 1 1|0 0 0 0| Rd    |
+SUBB	Rbd,#data		|0 0|0 0 0 0 1 0|0 0 0 0| Rbd   |
+
+SUBL	RRd,#data		|0 0|0 1 0 0 1 0|0 0 0 0| RRd   |
 SUB	Rd,@Rs			|0 0|0 0 0 0 1|W| Rs!=0 | Rd    |
 SUBL	RRd,@Rs			|0 0|0 1 0 0 1 0| Rs!=0 | RRd   |
-SUB	Rd,address		|0 1|0 0 0 0 1|W|0 0 0 0| Rd    | address                       |
-SUBL	RRd,address		|0 1|0 1 0 0 1 0|0 0 0 0| RRd   | address                       |
-SUB	Rd,addr(Rs)		|0 1|0 0 0 0 1|W| Rs!=0 | Rd    | address                       |
-SUBL	RRd,addr(Rs)		|0 1|0 1 0 0 1 0| Rs!=0 | RRd   | address                       |
+SUB	Rd,address		|0 1|0 0 0 0 1|W|0 0 0 0| Rd    |
+SUBL	RRd,address		|0 1|0 1 0 0 1 0|0 0 0 0| RRd   |
+SUB	Rd,addr(Rs)		|0 1|0 0 0 0 1|W| Rs!=0 | Rd    |
+SUBL	RRd,addr(Rs)		|0 1|0 1 0 0 1 0| Rs!=0 | RRd   |
 TCC	cc,Rd			|1 0|1 0 1 1 1|W| Rd    | cc    |
 TEST	Rd			|1 0|0 0 1 1 0|W| Rd    |0 1 0 0|
 TESTL	RRd			|1 0|0 1 1 1 0 0| RRd   |1 0 0 0|
 TEST	@Rd			|0 0|0 0 1 1 0|W| Rd!=0 |0 1 0 0|
 TESTL	@Rd			|0 0|0 1 1 1 0 0| Rd!=0 |1 0 0 0|
-TEST	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 1 0 0| address                       |
-TESTL	address			|0 1|0 1 1 1 0 0|0 0 0 0|1 0 0 0| address                       |
-TEST	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 1 0 0| address                       |
-TESTL	addr(Rd)		|0 1|0 1 1 1 0 0| Rd!=0 |1 0 0 0| address                       |
+TEST	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 1 0 0|
+TESTL	address			|0 1|0 1 1 1 0 0|0 0 0 0|1 0 0 0|
+TEST	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 1 0 0|
+TESTL	addr(Rd)		|0 1|0 1 1 1 0 0| Rd!=0 |1 0 0 0|
 TRDB	@Rd,@Rs,r		|1 0|1 1 1 0 0 0| Rd!=0 |1 0 0 0|0 0 0 0| r     | Rs!=0 |0 0 0 0|
 TRDBR	@Rd,@Rs,r		|1 0|1 1 1 0 0 0| Rd!=0 |1 1 0 0|0 0 0 0| r     | Rs!=0 |0 0 0 0|
 TRIB	@Rd,@Rs,r		|1 0|1 1 1 0 0 0| Rd!=0 |0 0 0 0|0 0 0 0| r     | Rs!=0 |0 0 0 0|
@@ -343,14 +356,14 @@ TRTIB	@Rs1,@Rs2,r		|1 0|1 1 1 0 0 0| Rs1!=0|0 0 1 0|0 0 0 0| r     | Rs2!=0|0 0 
 TRTIRB	@Rd,@Rs,r		|1 0|1 1 1 0 0 0| Rd!=0 |0 1 1 0|0 0 0 0| r     | Rs!=0 |1 1 1 0|
 TSET	Rd			|1 0|0 0 1 1 0|W| Rd    |0 1 1 0|
 TSET	@Rd			|0 0|0 0 1 1 0|W| Rd!=0 |0 1 1 0|
-TSET	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 1 1 0| address                       |
-TSET	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 1 1 0| address                       |
+TSET	address			|0 1|0 0 1 1 0|W|0 0 0 0|0 1 1 0|
+TSET	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 1 1 0|
 XOR	Rd,Rs			|1 0|0 0 1 0 0|W| Rs    | Rd    |
-XOR	Rd,#data		|0 0|0 0 1 0 0 1|0 0 0 0| Rd    | data                          |
-XORB	Rbd,#data		|0 0|0 0 1 0 0 0|0 0 0 0| Rbd   | data          | data          |
+XOR	Rd,#data		|0 0|0 0 1 0 0 1|0 0 0 0| Rd    |
+XORB	Rbd,#data		|0 0|0 0 1 0 0 0|0 0 0 0| Rbd   |
 XOR	Rd,@Rs			|0 0|0 0 1 0 0|W| Rs!=0 | Rd    |
-XOR	Rd,address		|0 1|0 0 1 0 0|W|0 0 0 0| Rd    | address                       |
-XOR	Rd,addr(Rs)		|0 1|0 0 1 0 0|W| Rs!=0 | Rd    | address                       |
+XOR	Rd,address		|0 1|0 0 1 0 0|W|0 0 0 0| Rd    |
+XOR	Rd,addr(Rs)		|0 1|0 0 1 0 0|W| Rs!=0 | Rd    |
 EPU2MEM	@Rd,#n			|0 0|0 0 1 1 1 1| Rd!=0 |1 1|x x|x x x x x x x x x x x x| n-1   |
 EPU2MEM	addr(Rd),#n		|0 1|0 0 1 1 1 1| Rd!=0 |1 1|x x|x x x x x x x x x x x x| n-1   |
 EPU2MEM	address,#n		|0 1|0 0 1 1 1 1|0 0 0 0|1 1|x x|x x x x x x x x x x x x| n-1   |
@@ -365,6 +378,4 @@ FCW2EPU ""			|1 0|0 0 1 1 1 0|x x x x|1 0|x x|x x x x|0 0 0 0|x x x x|0 0 0 0|
 # NB:bit8 ?
 EPUINT  #n			|1 0|0 0 1 1 1 0|x x x x|0 1|x x x x x x x x x x x x x x| n-1   |
 
-
-#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
-
+#				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|

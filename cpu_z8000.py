@@ -146,10 +146,34 @@ def parse_ins(unit=16):
 
 #######################################################################
 
+special_registers = {
+	"FLAGS":	True,
+	"FCW":		True,
+	"PSAOFF":	True,
+	"PSAPSEG":	True,
+	"NSPSEG":	True,
+	"NSPOFF":	True,
+	"REFRESH":	True,
+}
+
+condition_codes = {
+	0:	"F", 	8:	"T",
+	1:	"LT",	9:	"GE",
+	2:	"LE",	10:	"GT",
+	3:	"ULE",	11:	"UGT",
+	4:	"PE",	12:	"PO",
+	5:	"MI",	13:	"PL",
+	6:	"Z",	14:	"NZ",
+	7:	"C",	15:	"NC"
+}
+
 class z8000(object):
-	def __init__(self):
+	def __init__(self, z8001 = True, segmented = False):
 		self.dummy = True
-		self.al = 2
+		if segmented:
+			assert z8001
+		self.z8001 = z8001
+		self.segmented = segmented
 		self.ilist = parse_ins()
 
 	def render(self, p, t):
@@ -177,14 +201,10 @@ class z8000(object):
 		if o + arg[1] < 16:
 			i >>= (16 - (o + arg[1]))
 		i &= (1 << arg[1]) - 1
-		# print("RA", "%04x" % adr, arg, "%04x" % i)
+		#print("RA", "%04x" % adr, arg, "-> %04x" % i)
 		return i
 
-	def get_reg(self, p, adr, arg, c, w = None):
-		if w == None:
-			w = 1
-			if "W" in c:
-				w = self.rdarg(p, adr, c["W"])
+	def get_reg(self, p, adr, arg, c, wid):
 		if arg in c:
 			v = self.rdarg(p, adr, c[arg])
 		elif arg + "!=0" in c:
@@ -197,22 +217,54 @@ class z8000(object):
 		else:
 			print("Error @%04x: %04x %04x  not found %s" %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2), arg))
-			return None
-		if w:
+			assert False
+		if wid == 32:
+			if (v & 1) == 1:
+				print("Error @%04x: %04x %04x  RR%d" %
+				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
+				assert False
+			return "RR%d" % v
+		if wid == 16:
 			return "R%d" % v
-		if v & 8:
+		if wid == 8 and v & 8:
 			return "RL%d" % (v & 7)
-		else:
+		if wid == 8:
 			return "RH%d" % (v & 7)
 
+	def get_address(self, p, na):
+		d1 = p.m.b16(na)
+		na += 2
+		i = "#0x%04x" % d1
+		if self.segmented and d1 & 0x8000:
+			d2 = p.m.b16(na)
+			na += 2
+			i += ":0x%04x" % d2
+		else:
+			d2 = None
+		return (na, d1, d2, i)
+
 	def disass(self, p, adr, priv = None):
+		self.last_c = None
+		if False:
+			x = self.xdisass(p, adr, priv)
+		try:
+			x = self.xdisass(p, adr, priv)
+		except:
+			print("Error @%04x: %04x %04x disass failed" %
+			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
+			if self.last_c != None:
+				print("\t", self.last_c)
+			x = None
+		return x
+		
+	def xdisass(self, p, adr, priv = None):
 		if p.t.find(adr, "ins") != None:
 			return
 		try:
 			iw = p.m.b16(adr)
-			iw2 = p.m.rd(adr + 2)
+			iw2 = p.m.b16(adr + 2)
 		except:
-			print("FETCH failed:", adr)
+			print("FETCH failed:", p.m.afmt(adr))
 			return
 
 		c = None
@@ -226,55 +278,203 @@ class z8000(object):
 		if c == None:
 			print("None Found %04x %04x %04x" % (adr, iw, iw2))
 			return
-		print(">>>", c)
-		x = p.t.add(adr, adr + (c[1] >> 3), "ins")
-		x.a['mne'] = c[2]
+
+		# We have a specification in 'c'
+		self.last_c = c
+		na = adr + (c[1] >> 3)
+
+		mne = c[2]
+
+		# Try to divine the width of this instruction
+		wid = 16
+		if mne[-3:] == "CTL":
+			pass
+		elif mne == "SLL":
+			pass
+		elif mne == "SUB":
+			pass
+		elif mne[-1] == "L":
+			wid = 32
+		elif mne[-1] == "B":
+			wid = 8
+
+		if 'W' in c[4]:
+			w = self.rdarg(p, adr, c[4]["W"])
+			if w == 0:
+				wid = 8
+				mne += "B"
+			elif w == 1:
+				wid = 16
+
+		# Try to divine the src/dest-addr sizes
+		if self.segmented:
+			das = 32
+			sas = 32
+		else:
+			das = 16
+			sas = 16
+
+		if mne[:4] == "OTIR":
+			das = 16
+			if self.rdarg(p, adr, c[4]["S"]):
+				mne = "S" + mne
+
+		#print(">>> %04x" % adr, wid, sas, das, c)
+
 		ol = list()
+		cc = None
+		ncc = None
+		dstadr = None
 		for i in c[3]:
 			y = i
-			if i == "FCW":
+			if i in special_registers:
 				pass
+			elif i == '""':
+				continue
 			elif i == "Rd":
-				i = self.get_reg(p, adr, "Rd", c[4])
-			elif i == "@Rd":
-				i = "@" + self.get_reg(p, adr, "Rd", c[4], w = 1)
+				i = self.get_reg(p, adr, "Rd", c[4], wid)
+			elif i == "RRd":
+				i = self.get_reg(p, adr, "RRd", c[4], 32)
+			elif i == "RRs":
+				i = self.get_reg(p, adr, "RRs", c[4], 32)
 			elif i == "Rbd":
-				i = self.get_reg(p, adr, "Rbd", c[4], w = 0)
+				i = self.get_reg(p, adr, "Rbd", c[4], 8)
+			elif i == "Rbs":
+				i = self.get_reg(p, adr, "Rbs", c[4], 8)
+			elif i == "Rbl":
+				i = self.get_reg(p, adr, "Rbl", c[4], 8)
 			elif i == "Rs":
-				i = self.get_reg(p, adr, "Rs", c[4])
-			elif i == "@Rs":
-				i = "@" + self.get_reg(p, adr, "Rs", c[4], w = 1)
-			elif i == "address":
-				if "address" in c[4]:
-					j = self.rdarg(p, adr, c[4]["address"])
-					if j & 0x8000:
-						print("Error: Long segment address %04x" % j)
-					i = "0x%04x" % j
-			elif i == "addr(Rs)":
-				r = self.get_reg(p, adr, "Rs", c[4], w = 1)
-				j = self.rdarg(p, adr, c[4]["address"])
-				if j & 0x8000:
-					print("Error: High bit set in <address> %04x" % j)
-					return
-				i = "%04x(%s)" % (j, r)
-			elif i == "#data":
-				# XXX: 8-bit data
-				j = self.rdarg(p, adr, c[4]["data"])
-				i = "#%04x" % j
+				i = self.get_reg(p, adr, "Rs", c[4], wid)
+			elif i == "Rbd":
+				assert wid == 8
+				i = self.get_reg(p, adr, "Rbd", c[4], 8)
+			elif i == "int":
+				j = self.rdarg(p, adr, c[4]["int"])
+				i = "<int:%x>" % j
 			elif i == "port":
 				j = self.rdarg(p, adr, c[4]["port"])
-				i = "%04x" % j
+				i = "0x%04x" % j
+			elif i == "#nibble":
+				j = self.rdarg(p, adr, c[4]["nibble"])
+				i = "0x%01x" % j
+			elif i == "flags":
+				j = self.rdarg(p, adr, c[4]["flags"])
+				i = "<flags=%x>" % j
+			elif i == "#src":
+				j = self.rdarg(p, adr, c[4]["src"])
+				i = "#0x%02x" % j
+			elif i == "#byte":
+				j = self.rdarg(p, adr, c[4]["byte"])
+				i = "0x%02x" % j
+			elif i == "dispu8":
+				j = self.rdarg(p, adr, c[4]["dispu8"])
+				dstadr = na - 2 * j
+				i = "0x%04x" % dstadr
+			elif i == "disp8":
+				j = self.rdarg(p, adr, c[4]["disp8"])
+				if j > 127:
+					j -= 256
+				dstadr = na + 2 * j
+				i = "0x%04x" % dstadr
+			elif i == "disp12":
+				j = self.rdarg(p, adr, c[4]["disp12"])
+				if j > 2047:
+					j -= 4096
+				dstadr = na - 2 * j
+				i = "0x%04x" % dstadr
+			elif i == "#S":
+				j = self.rdarg(p, adr, c[4]["S"])
+				i = "#%d" % (j + 1)
+			elif i == "#n":
+				j = self.rdarg(p, adr, c[4]["n-1"])
+				i = "#%d" % (j + 1)
 			elif i == "#b":
-				# XXX: negative shifts modify mne
 				j = self.rdarg(p, adr, c[4]["b"])
+				if mne[:2] == "SL" and j > 127:
+					mne = "SR" + mne[3:]
+					j = 256 - j
 				i = "%d" % j
+			elif i == "#data" and wid == 8:
+				d = p.m.b16(na)
+				if (d >> 8) != (d & 0xff):
+					print("Warning: 8-bit #data not duplicated 0x%04x" % d)
+					assert False
+				na += 2
+				i = "#0x%02x" % (d & 0xff)
+			elif i == "#data" and wid == 16:
+				d = p.m.b16(na)
+				na += 2
+				i = "#0x%04x" % d
+			elif i == "address":
+				(na, d1, d2, i) = self.get_address(p, na)
+				dstadr = d1
+			elif i == "addr(Rs)":
+				j = self.get_reg(p, adr, "Rs", c[4], 16)
+				(na, d1, d2, i) = self.get_address(p, na)
+				i += "(%s)" % j
+			elif i == "addr(Rd)":
+				j = self.get_reg(p, adr, "Rd", c[4], 16)
+				(na, d1, d2, i) = self.get_address(p, na)
+				i += "(%s)" % j
+			elif i == "@Rs":
+				i = "@" + self.get_reg(p, adr, "Rs", c[4], sas)
+			elif i == "@Rd":
+				i = "@" + self.get_reg(p, adr, "Rd", c[4], das)
+			elif i == "Rs(#disp16)":
+				rs = self.get_reg(p, adr, "Rs", c[4], das)
+				d16 = self.rdarg(p, adr, c[4]["disp16"])
+				i = "%s(#0x%04x)" % (rs, d16)
+			elif i == "Rd(#disp16)":
+				rd = self.get_reg(p, adr, "Rd", c[4], das)
+				d16 = self.rdarg(p, adr, c[4]["disp16"])
+				i = "%s(#0x%04x)" % (rd, d16)
+			elif i == "Rd(Rx)":
+				rd = self.get_reg(p, adr, "Rd", c[4], das)
+				rx = self.get_reg(p, adr, "Rx", c[4], das)
+				i = "%s(%s)" % (rd, rx)
+			elif i == "Rs(Rx)":
+				rs = self.get_reg(p, adr, "Rs", c[4], das)
+				rx = self.get_reg(p, adr, "Rx", c[4], das)
+				i = "%s(%s)" % (rs, rx)
+			elif i == "r":
+				i = self.get_reg(p, adr, "r", c[4], 16)
+			elif i == "cc":
+				v = self.rdarg(p, adr, c[4]["cc"])
+				cc = condition_codes[v]
+				ncc = condition_codes[v ^ 8]
+				i = cc
 			else:
+				print(">>> %04x" % adr, wid, sas, das, c)
 				print(y, "???", i)
-			if y != i:
+				return
+			if y != i and False:
 				print(y, "-->", i)
 			ol.append(i)
 			
+		x = p.t.add(adr, na, "ins")
+		x.a['mne'] = mne
 		x.a['oper'] = ol
 		x.render = self.render
-		p.todo(adr + (c[1] >> 3), self.disass)
-		print()
+
+		if mne[0] == "J":
+			if cc != "F":
+				x.a['flow'] = ( ( "cond", cc, dstadr), )
+			if ncc != "F":
+				x.a['flow'] += (( "cond", ncc, na),)
+		if mne[-3:] == "JNZ":
+			x.a['flow'] = (
+			    ( "cond", "NZ", dstadr),
+			    ( "cond", "Z", na),
+			)
+
+		if mne == "CALR":
+			x.a['flow'] = ( ( "call", "T", dstadr), )
+		if mne == "CALL":
+			x.a['flow'] = ( ( "call", "T", dstadr), )
+		if mne == "RET" and cc == "T":
+			x.a['flow'] = ( ( "ret", "T", None), )
+
+		if dstadr != None:
+			x.a['DA'] = dstadr
+
+		p.ins(x, self.disass)

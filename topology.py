@@ -275,8 +275,10 @@ class topology(object):
 					if x:
 						break
 				if hi in self.src_flow_in:
-					f = flow(b, self.bbs[hi])
-					break
+					#print("XXX: ", self.bbs, hi, self.src_flow_in)
+					if hi in self.bbs:
+						f = flow(b, self.bbs[hi])
+						break
 				if not hi in self.idx:
 					break
 				nxt = hi
