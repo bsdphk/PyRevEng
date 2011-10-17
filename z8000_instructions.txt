@@ -32,7 +32,7 @@ BIT	Rd,Rs			|0 0|1 0 0 1 1|W|0 0 0 0| Rs    |0 0 0 0| Rd    |0 0 0 0|0 0 0 0|
 
 CALL	@Rd			|0 0|0 1 1 1 1 1| Rd!=0 |0 0 0 0|
 CALL	address			|0 1|0 1 1 1 1 1|0 0 0 0|0 0 0 0| address                       |
-CALL	addr(Rd)		|0 0|0 1 1 1 1 1| Rd!=0 |0 0 0 0| address                       |
+CALL	addr(Rd)		|0 1|0 1 1 1 1 1| Rd!=0 |0 0 0 0| address                       |
 
 CALR	address			|1 1 0 1| displacement          |
 
@@ -51,7 +51,7 @@ COMFLG	flags			|1 0 0 0 1 1 0 1| flags |0 1 0 1|
 CP	Rd,Rs			|1 0|0 0 1 0 1|W| Rs    | Rd    |
 CPL	RRd,RRs			|1 0|0 1 0 0 0 0| RRs   | RRd   |
 CP	Rd,#data		|0 0|0 0 1 0 1 1|0 0 0 0| Rd    | data                          |
-CPB	Rbd,#data		|0 0|0 0 0 0 0 0|0 0 0 0| Rbd   | data          | data          |
+CPB	Rbd,#data		|0 0|0 0 1 0 1 0|0 0 0 0| Rbd   | data          | data          |
 CPL	RRd,#data		|0 0|0 1 0 0 0 0|0 0 0 0| RRd   | data                                                          |
 CP	Rd,@Rs			|0 0|0 0 1 0 1|W| Rs!=0 | Rd    |
 CPL	RRd,@Rs			|0 0|0 1 0 0 0 0| Rs!=0 | RRd   |
@@ -59,14 +59,19 @@ CP	Rd,address		|0 1|0 0 1 0 1|W|0 0 0 0| Rd    | address			|
 CPL	RRd,address		|0 1|0 1 0 0 0 0|0 0 0 0| RRd   | address			|
 CP	Rd,addr(Rs)		|0 1|0 0 1 0 1|W| Rs!=0	| Rd    | address                       |
 CPL	RRd,addr(Rs)		|0 1|0 1 0 0 0 0| Rs!=0	| RRd   | address                       |
-CP	@Rd,#data		|0 0|0 0 1 1 0|W| Rd!=0	|0 0 0 1| data                          |
-CPB	@Rd,#data		|0 0|0 0 1 1 0|W| Rd!=0 |0 0 0 1| data          | data          |
 
-#NB: W bit
-CP	address,#data		|0 1|0 0 1 1 0|W|0 0 0 0|0 0 0 1| address                       | data				|
-CPB	address,#data		|0 1|0 0 1 1 0|W|0 0 0 0|0 0 0 1| address                       | data          | data		|
-CP	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 0 0 1| address			| data				|
-CPB	addr(Rd)		|0 1|0 0 1 1 0|W| Rd!=0 |0 0 0 1| address			| data		| data		|
+# NB: Manual p70 lists 'W' bit for both variants
+CP	@Rd,#data		|0 0|0 0 1 1 0|1| Rd!=0	|0 0 0 1| data                          |
+CPB	@Rd,#data		|0 0|0 0 1 1 0|0| Rd!=0 |0 0 0 1| data          | data          |
+
+# NB: Manual p71 lists 'W' bit for both variants
+CP	address,#data		|0 1|0 0 1 1 0|1|0 0 0 0|0 0 0 1| address                       | data				|
+CPB	address,#data		|0 1|0 0 1 1 0|0|0 0 0 0|0 0 0 1| address                       | data          | data		|
+
+# NB: Manual p71 lists 'W' bit for both variants
+CP	addr(Rd)		|0 1|0 0 1 1 0|1| Rd!=0 |0 0 0 1| address			| data				|
+CPB	addr(Rd)		|0 1|0 0 1 1 0|0| Rd!=0 |0 0 0 1| address			| data		| data		|
+
 #				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
 
 CPD	Rd,@Rs,r,cc		|1 0|1 1 1 0 1|W| Rs!=0 |1 0 0 0|0 0 0 0| r     | Rd    | cc    |
@@ -161,6 +166,7 @@ LDL	Rd(Rx),RRs		|0 1|1 1 0 1 1 1| Rd!=0 | RRs	|0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 
 LD	Rd,#data		|0 0|1 0 0 0 0 1|0 0 0 0| Rd    | data				|
 LDB	Rbd,#data		|0 0|1 0 0 0 0 0|0 0 0 0| Rbd   | data          | data          |
+LDB	Rbd,#data		|1 1 0 0| Rbd   | data          |
 LDL	RRD,#data		|0 0|0 1 0 1 0 0|0 0 0 0| RRd   | data								|
 LD	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |0 1 0 1| data				|
 LDB	#Rd,#data		|0 0|0 0 1 1 0 0| Rd!=0 |0 1 0 1| data		| data		|
@@ -170,7 +176,7 @@ LD	addr(Rd),#data		|0 1|0 0 1 1 0 1| Rd!=0 |0 1 0 1| address			| data				|
 LDB	addr(Rd),#data		|0 1|0 0 1 1 0 0| Rd!=0 |0 1 0 1| address			| data		| data		|
 
 LDA	Rd,address		|0 1|1 1 0 1 1 0|0 0 0 0| Rd    | address                       |
-LDA	Rd,address(Rs)		|0 1|1 1 0 1 1 0| Rs!=0 | Rd    | address			|
+LDA	Rd,addrRs)		|0 1|1 1 0 1 1 0| Rs!=0 | Rd    | address			|
 LDA	Rd,Rs(#disp)		|0 0|1 1 0 1 0 0| Rs!=0 | Rd    | disp                          |
 LDA	Rd,Rs(Rx)		|0 1|1 1 0 1 0 0| Rs!=0	| Rd    |0 0 0 0| Rx    |0 0 0 0|0 0 0 0|
 
@@ -239,7 +245,7 @@ OR	Rd,addr(Rs)		|0 1|0 0 0 1 0|W| Rs!=0 | Rd    | address                       
 OTDR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 OTIR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 OUT	@Rd,Rs			|0 0 1 1 1 1 1|W| Rd!=0 | Rs    |
-OUT	port,Rs			|0 0 1 1 1 0 1|W| Rs    |0 0 1|S| port                          |
+OUT	port,Rs			|0 0 1 1 1 0 1|W| Rs    |0 1 1|S| port                          |
 OTD 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 OTI 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 POP	Rd,@Rs			|1 0|0 1 0 1 1 1| Rs!=0 | Rd    |
@@ -294,12 +300,15 @@ SLAL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |1 1 0 1| b                             |
 SLL	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |0 0 0 1| b                             |
 SLLB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |0 0 0 1|0 0 0 0 0 0 0 0| b             |
 SLLL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |0 1 0 1| b                             |
-SRA	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |1 0 0 1| -b                            |
-SRAB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |1 0 0 1|0 0 0 0 0 0 0 0| -b            |
-SRAL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |1 1 0 1| -b                            |
-SRL	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |0 0 0 1| -b                            |
-SRLB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |0 0 0 1|0 0 0 0 0 0 0 0| -b            |
-SRLL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |0 1 0 1| -b                            |
+
+# NB: Right shifts are done by negative counts, we handle this in code
+#SRA	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |1 0 0 1| -b                            |
+#SRAB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |1 0 0 1|0 0 0 0 0 0 0 0| -b            |
+#SRAL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |1 1 0 1| -b                            |
+#SRL	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |0 0 0 1| -b                            |
+#SRLB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |0 0 0 1|0 0 0 0 0 0 0 0| -b            |
+#SRLL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |0 1 0 1| -b                            |
+
 SUB	Rd,Rs			|1 0|0 0 0 0 1|W| Rs    | Rd    |
 SUBL	RRd,RRs			|1 0|0 1 0 0 1 0| RRs   | RRd   |
 #NB: W-bit ?
