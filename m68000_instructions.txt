@@ -23,8 +23,13 @@ ADDQ.B		#const,ea	037d	|0 1 0 1|const|0|0 0| eam | ear |
 ADDQ.W		#const,ea	037f	|0 1 0 1|const|0|0 1| eam | ear |
 ADDQ.L		#const,ea	037f	|0 1 0 1|const|0|1 0| eam | ear |
 # 117/4-13
-ADDX.Z		Dy,Dx		0000	|1 1 0 1| Dx  |1| sz|0 0|0| Dy  |
-ADDX.Z		-(Ay),-(Ax)	0000	|1 1 0 1| Dx  |1| sz|0 0|1| Dy  |
+# Collision with ADDA.L
+ADDX.B		Dy,Dx		0000	|1 1 0 1| Dx  |1|0 0|0 0|0| Dy  |
+ADDX.W		Dy,Dx		0000	|1 1 0 1| Dx  |1|0 1|0 0|0| Dy  |
+ADDX.L		Dy,Dx		0000	|1 1 0 1| Dx  |1|1 0|0 0|0| Dy  |
+ADDX.B		-(Ay),-(Ax)	0000	|1 1 0 1| Dx  |1|0 0|0 0|1| Dy  |
+ADDX.W		-(Ay),-(Ax)	0000	|1 1 0 1| Dx  |1|0 1|0 0|1| Dy  |
+ADDX.L		-(Ay),-(Ax)	0000	|1 1 0 1| Dx  |1|1 0|0 0|1| Dy  |
 # 119/4-15
 # XXX AND.W An,Dn sounds like it should be possible ?
 AND.Z		ea,Dn		1f7d	|1 1 0 0| Dn  |0| sz| eam | ear |
@@ -71,14 +76,20 @@ CHK.W		ea,Dn		1f7d	|0 1 0 0| Dn  |1 1|0| eam | ear |
 # 177/4-73
 CLR.Z		ea		037d	|0 1 0 0|0 0 1 0| sz| eam | ear |
 # 179/4-75
-CMP.Z		ea,Dn		1f7f	|1 0 1 1| Dn  |0| sz| eam | ear |
+# Collision with CMPA.L
+CMP.B		ea,Dn		1f7f	|1 0 1 1| Dn  |0|0 0| eam | ear |
+CMP.W		ea,Dn		1f7f	|1 0 1 1| Dn  |0|0 1| eam | ear |
+CMP.L		ea,Dn		1f7f	|1 0 1 1| Dn  |0|1 0| eam | ear |
 # 181/4-77
 CMPA.W		ea,An		1f7f	|1 0 1 1| An  |0 1 1| eam | ear |
 CMPA.L		ea,An		1f7f	|1 0 1 1| An  |1 1 1| eam | ear |
 # 183/4-79
 CMPI.Z		#data,ea	037d	|0 0 0 0|1 1 0 0| sz| eam | ear |
 # 185/4-81
-CMPM.Z		(Ay)+,(Ax)+	0000	|1 0 1 1| Ax  |1| sz|0 0 1| Ay  |
+# Collision with CMPA.L
+CMPM.B		(Ay)+,(Ax)+	0000	|1 0 1 1| Ax  |1|0 0|0 0 1| Ay  |
+CMPM.W		(Ay)+,(Ax)+	0000	|1 0 1 1| Ax  |1|0 1|0 0 1| Ay  |
+CMPM.L		(Ay)+,(Ax)+	0000	|1 0 1 1| Ax  |1|1 0|0 0 1| Ay  |
 # 194/4-90
 DBcc		cc,Dn,#disp16	0000	|0 1 0 1| cc    |1 1 0 0 1| Dn  | #disp16			|
 # 196/4-92
@@ -199,8 +210,13 @@ SUBQ.B		#const,ea	037d	|0 1 0 1|const|1|0 0| eam | ear |
 SUBQ.W		#const,ea	037f	|0 1 0 1|const|1|0 1| eam | ear |
 SUBQ.L		#const,ea	037f	|0 1 0 1|const|1|1 0| eam | ear |
 # 287/4-183
-SUBX.Z		Dx,Dy		0000	|1 0 0 1| Dy  |1| sz|0 0|0| Dx  |
-SUBX.Z		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1| sz|0 0|1| Ax  |
+# Collision with SUBA.L
+SUBX.B		Dx,Dy		0000	|1 0 0 1| Dy  |1|0 0|0 0|0| Dx  |
+SUBX.W		Dx,Dy		0000	|1 0 0 1| Dy  |1|0 1|0 0|0| Dx  |
+SUBX.L		Dx,Dy		0000	|1 0 0 1| Dy  |1|1 0|0 0|0| Dx  |
+SUBX.B		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1|0 0|0 0|1| Ax  |
+SUBX.W		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1|0 1|0 0|1| Ax  |
+SUBX.L		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1|1 0|0 0|1| Ax  |
 # 289/4-185
 SWAP.W		Dn		0000	|0 1 0 0|1 0 0 0|0 1 0 0|0| Dn  |
 # 290/4-186
