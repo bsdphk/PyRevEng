@@ -8,10 +8,10 @@
 ABCD.B		Dy,Dx		0000	|1 1 0 0| Dx  |1 0 0 0 0|0| Dy  |	
 ABCD.B		-(Ay),-(Ax)	0000	|1 1 0 0| Ax  |1 0 0 0 0|1| Ay  |	
 # 108/4-4
-ADD.Z		Dn,ea		037c	|1 1 0 1| Dn  |0| sz| eam | ear |
-ADD.B		ea,Dn		1f7d	|1 1 0 1| Dn  |1 0 0| eam | ear |
-ADD.W		ea,Dn		1f7f	|1 1 0 1| Dn  |1 0 1| eam | ear |
-ADD.L		ea,Dn		1f7f	|1 1 0 1| Dn  |1 1 0| eam | ear |
+ADD.Z		Dn,ea		037d	|1 1 0 1| Dn  |1| sz| eam | ear |
+ADD.B		ea,Dn		1f7d	|1 1 0 1| Dn  |0 0 0| eam | ear |
+ADD.W		ea,Dn		1f7f	|1 1 0 1| Dn  |0 0 1| eam | ear |
+ADD.L		ea,Dn		1f7f	|1 1 0 1| Dn  |0 1 0| eam | ear |
 # 111/4-7
 ADDA.W		ea,An		1f7f	|1 1 0 1| An  |0 1 1| eam | ear |
 ADDA.L		ea,An		1f7f	|1 1 0 1| An  |1 1 1| eam | ear |
@@ -34,8 +34,8 @@ ANDI.Z		#data,ea	037d	|0 0 0 0 0 0 1 0| sz| eam | ear |
 # 124/4-20
 ANDI.B		#const,CCR	0000	|0 0 0 0|0 0 1 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| #const	|
 # 125/4-21
-ASL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 0| Dx  |
-ASR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 0| Dx  |
+ASL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 0| Dy  |
+ASR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 0| Dy  |
 ASL.Z		#rot,Dn		0000	|1 1 1 0| #rot|1| sz|0|0 0| Dn  |
 ASR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|0 0| Dn  |
 ASL.Z		ea		037c	|1 1 1 0|0 0 0|1|1 1| eam | ear |
@@ -92,9 +92,9 @@ EORI.Z		#data,ea	037d	|0 0 0 0|1 0 1 0| sz| eam | ear |
 # 208/4-104
 EORI.B		#const,CCR	0000	|0 0 0 0|1 0 1 0|0 0|1 1 1|1 0 0|0 0 0 0|0 0 0 0| #const	|
 # 209/4-105
-EXG.L		Dx,Dy		0000	|1 1 0 0| Rx  |1|0 1 0 0 0| Dy  |
+EXG.L		Dx,Dy		0000	|1 1 0 0| Dx  |1|0 1 0 0 0| Dy  |
 EXG.L		Ax,Ay		0000	|1 1 0 0| Ax  |1|0 1 0 0 1| Ay  |
-EXG.L		Dx,Ay		0000	|1 1 0 0| Rx  |1|1 0 0 0 1| Ay  |
+EXG.L		Dx,Ay		0000	|1 1 0 0| Dx  |1|1 0 0 0 1| Ay  |
 # 210/4-106
 EXT.W		Dn		0000	|0 1 0 0|1 0 0|0 1 0|0 0 0| Dn  |
 EXT.L		Dn		0000	|0 1 0 0|1 0 0|0 1 1|0 0 0| Dn  |
@@ -109,16 +109,16 @@ LEA.L		ea,An		0f64	|0 1 0 0| An  |1 1 1| eam | ear |
 # 215/4-111
 LINK.W		An,#word	0000	|0 1 0 0|1 1 1 0|0 1 0 1|0| An  | #word				|
 # 217/4-113
-LSL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 1| Dx  |
-LSR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 1| Dx  |
+LSL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 1| Dy  |
+LSR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 1| Dy  |
 LSL.Z		#rot,Dn		0000	|1 1 1 0| #rot|1| sz|0|0 1| Dn  |
 LSR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|0 1| Dn  |
 LSL.Z		ea		037c	|1 1 1 0|0 0 1|1|1 1| eam | ear |
 LSR.Z		ea		037c	|1 1 1 0|0 0 1|0|1 1| eam | ear |
 # 220/4-116
-MOVE.B		ead,ea		1f7f	|0 0|0 1|earx |eamx | eam | ear |
-MOVE.W		ead,ea		1f7f	|0 0|1 1|earx |eamx | eam | ear |
-MOVE.L		ead,ea		1f7f	|0 0|1 0|earx |eamx | eam | ear |
+MOVE.B		ea,ead		1f7f	|0 0|0 1|earx |eamx | eam | ear |
+MOVE.W		ea,ead		1f7f	|0 0|1 1|earx |eamx | eam | ear |
+MOVE.L		ea,ead		1f7f	|0 0|1 0|earx |eamx | eam | ear |
 # 223/4-119
 MOVEA.W		ea,An		1f7f	|0 0|1 1| An  |0 0 1| eam | ear |
 MOVEA.L		ea,An		1f7f	|0 0|1 0| An  |0 0 1| eam | ear |
@@ -134,10 +134,10 @@ MOVEM.L		rlist,ea	0374	|0 1 0 0|1 0 0|0 1 1| eam | ear | rlist				|
 MOVEM.W		ea,rlist	0f6c	|0 1 0 0|1 1 0|0 1 0| eam | ear | rlist				|
 MOVEM.L		ea,rlist	0f6c	|0 1 0 0|1 1 0|0 1 1| eam | ear | rlist				|
 # 235/4-131
-MOVEP.W		Dn,An		0000	|0 0 0 0| Dn  |1|1 0|0 0 1| An  |
-MOVEP.L		Dn,An		0000	|0 0 0 0| Dn  |1|1 1|0 0 1| An  |
-MOVEP.W		An,Dn		0000	|0 0 0 0| Dn  |1|0 0|0 0 1| An  |
-MOVEP.L		An,Dn		0000	|0 0 0 0| Dn  |1|0 1|0 0 1| An  |
+MOVEP.W		Dn,An+#disp16	0000	|0 0 0 0| Dn  |1|1 0|0 0 1| An  | disp16			|
+MOVEP.L		Dn,An+#disp16	0000	|0 0 0 0| Dn  |1|1 1|0 0 1| An  | disp16			|
+MOVEP.W		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 0|0 0 1| An  | disp16			|
+MOVEP.L		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 1|0 0 1| An  | disp16			|
 # 238/4-134
 MOVEQ.L		#data8,Dn	0000	|0 1 1 1| Dn  |0| #data8	|
 # 239/4-135
@@ -164,8 +164,8 @@ ORI		#const,CCR	0000	|0 0 0 0|0 0 0 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| #const	|
 # 263/4-159
 PEA.L		ea		0f64	|0 1 0 0|1 0 0|0 0 1| eam | ear |
 # 264/4-160
-ROL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|1 1| Dx  |
-ROR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|1 1| Dx  |
+ROL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|1 1| Dy  |
+ROR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|1 1| Dy  |
 ROL.Z		#rot,Dn		0000	|1 1 1 0| #rot|1| sz|0|1 1| Dn  |
 ROR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|1 1| Dn  |
 ROL.Z		ea		037c	|1 1 1 0|0 1 1|1|1 1| eam | ear |
