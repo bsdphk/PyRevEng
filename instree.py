@@ -110,12 +110,12 @@ class insline(object):
 			self.flds[i[2]]= (s, width - (1 + e), m)
 		self.line = line
 
-	def get(self, p, adr, func, name):
+	def get_field(self, p, adr, func, scale, name):
 		if name not in self.flds:
 			return None
 		x = self.flds[name]
-		#print(p, adr, func, name, x, "\n", self.line)
-		v = (func(adr + x[0]) >> x[1]) & x[2]
+		v = (func(adr + x[0] * scale) >> x[1]) & x[2]
+		#print(p, adr, func, name, x, "\n", self.line, "0x%x" % v)
 		return v
 
 

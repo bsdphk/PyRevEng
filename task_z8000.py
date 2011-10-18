@@ -35,13 +35,6 @@ const.w16(p, 0)
 const.w16(p, 2)
 const.w16(p, 4)
 const.w16(p, 6)
-#const.txt(p, 0x08)
-#const.txt(p, 0x25)
-#const.txt(p, 0x22f)
-#const.txt(p, 0x0d44)
-#const.txt(p, 0x0d60)
-#const.txt(p, 0x1216)
-#const.txt(p, 0x1332)
 
 if True:
 	# Args to 0x050c and 0x12f0
@@ -77,12 +70,13 @@ if True:
 	
 p.cpu.disass(p, 0x70)
 
-for i in range(0, 16):
-	t1 = p.m.rd(0x1b2 + i)
-	t2 = p.m.b16(0x1c2 + 2 * i)
-	const.w16(p, 0x1c2 + 2 * i)
-	p.todo(t2, p.cpu.disass)
-	p.setlabel(t2, "CMD_%c" % t1)
+if True:
+	for i in range(0, 16):
+		t1 = p.m.rd(0x1b2 + i)
+		t2 = p.m.b16(0x1c2 + 2 * i)
+		const.w16(p, 0x1c2 + 2 * i)
+		p.todo(t2, p.cpu.disass)
+		p.setlabel(t2, "CMD_%c" % t1)
 
 p.setlabel(0xa68, "OUTCHAR")
 p.setlabel(0xa80, "OUTNL")
