@@ -157,11 +157,18 @@ class insbranch(object):
 				if type(i[1][b]) == insbranch:
 					i[1][b].insert(x)
 					return
-				y = insbranch(self.lvl + 1)
-				y.insert(i[1][b])
-				y.insert(x)
-				i[1][b] = y
-				return
+				if len(x.mask) > self.lvl + 1 or \
+				   len(i[1][b].mask) > self.lvl + 1:
+					y = insbranch(self.lvl + 1)
+					y.insert(i[1][b])
+					y.insert(x)
+					i[1][b] = y
+					return
+				else:
+					print("Error:  Collision")
+					print(x)
+					print(i[1][b])
+					assert False
 			if self.lvl + 1 == len(x.mask):
 				i[1][b] = x
 			else:
@@ -194,7 +201,7 @@ class insbranch(object):
 			f += "    "
 		for i in self.spec:
 			print(f + "  & %04x" % i[0])
-			for j in i[1]:
+			for j in sorted(i[1].keys()):
 				if type(i[1][j]) == insbranch:
 					print(f + "    %04x" % j)
 					i[1][j].print()
@@ -237,12 +244,12 @@ class instree(object):
 		r = self.root
 		for i in range(0,10, incr):
 			b = func(adr + i)
-			x = r.find(b)
-			if type(x) != insbranch:
-				return x
+			r = r.find(b)
+			if type(r) != insbranch:
+				return r
 		return None
 
 
 if __name__ == "__main__":
-	it = instree(16, "mc68000_instructions.txt")
+	it = instree(16, "m68000_instructions.txt")
 	it.print()
