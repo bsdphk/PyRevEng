@@ -162,12 +162,22 @@ class insbranch(object):
 				y.insert(x)
 				i[1][b] = y
 				return
-			i[1][b] = x
+			if self.lvl + 1 == len(x.mask):
+				i[1][b] = x
+			else:
+				y = insbranch(self.lvl + 1)
+				y.insert(x)
+				i[1][b] = y
 			return
 		l = list()
 		l.append(m)
 		l.append(dict())
-		l[1][b] = x
+		if self.lvl + 1 == len(x.mask):
+			l[1][b] = x
+		else:
+			y = insbranch(self.lvl + 1)
+			y.insert(x)
+			l[1][b] = y
 		for j in range(0, len(self.spec)):
 			i = self.spec[j]
 			if ~(m & i[0]) & m:
@@ -183,13 +193,13 @@ class insbranch(object):
 		for i in range(0, self.lvl):
 			f += "    "
 		for i in self.spec:
-			print(f + "  & %02x" % i[0])
+			print(f + "  & %04x" % i[0])
 			for j in i[1]:
 				if type(i[1][j]) == insbranch:
-					print(f + "    %02x" % j)
+					print(f + "    %04x" % j)
 					i[1][j].print()
 				else:
-					print(f + "    %02x" % j, i[1][j])
+					print(f + "    %04x " % j, i[1][j])
 
 	def find(self, v):
 		for i in self.spec:
@@ -231,3 +241,8 @@ class instree(object):
 			if type(x) != insbranch:
 				return x
 		return None
+
+
+if __name__ == "__main__":
+	it = instree(16, "mc68000_instructions.txt")
+	it.print()
