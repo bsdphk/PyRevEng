@@ -37,7 +37,11 @@ def parse_match(bit, f):
 # A single line from the specification
 
 class insline(object):
-	def __init__(self, line, width = 8, endian = "big"):
+	def __init__(self, line, width = 8):
+		self.mask = list()
+		self.bits = list()
+		self.flds = dict()
+
 		#print("\n" + line)
 		s = line.expandtabs().split("|")
 		self.spec = s[0].split()
@@ -69,25 +73,51 @@ class insline(object):
 			assert False
 
 		self.width = b
-		self.mask = list()
-		self.bits = list()
 		for i in range(0, int(b/width)):
 			self.mask.append(0)
 			self.bits.append(0)
 
+		# Convert match fields to mask/bits
+		# XXX: there must be a cleaner way...
 		for i in l1:
 			s = i[1] - 1
 			for b in range(i[0], i[0] + i[1]):
 				j = int(b / width)
 				r = b % width + 1
-				assert endian == "big"
 				if i[2] & (1 << s):
 					self.mask[j] |= 1 << (width - r)
 				if i[3] & (1 << s):
 					self.bits[j] |= 1 << (width - r)
 				s -= 1
 			assert s == -1
-		self.fld = l2
+
+		#print(line)
+		for i in l2:
+			b = i[0]
+			w = i[1]
+			e = b + w - 1
+			if int(b / width) != int(e / width):
+				print(
+				    "Error: Field %s spans " % i[2] +
+				    "%d-bit units:\n" % self.width +
+				    "  %s\n" % line)
+				assert False
+			s = int(b / width)
+			b -= s * width
+			e -= s * width
+			m = (1<<w) - 1
+			#print(i[2], width - (1 + e), "0x%x" % m)
+			self.flds[i[2]]= (s, width - (1 + e), m)
+		self.line = line
+
+	def get(self, p, adr, func, name):
+		if name not in self.flds:
+			return None
+		x = self.flds[name]
+		#print(p, adr, func, name, x, "\n", self.line)
+		v = (func(adr + x[0]) >> x[1]) & x[2]
+		return v
+
 
 	def __repr__(self):
 		s = "w%d <" % self.width
@@ -99,17 +129,17 @@ class insline(object):
 		t = ""
 		for i in range(0, len(self.mask)):
 			s += t + "%02x|%02x" % (self.mask[i], self.bits[i])
-			t = ","
+			t = ", "
 		s += "> <"
 		t = ""
-		for i in self.fld:
-			s += t + i[2]
-			t = ","
+		for i in self.flds:
+			s += t + i
+			t = ", "
 		s += ">"
 		return s
 
 #######################################################################
-# 
+#  Branch-point
 
 class insbranch(object):
 	def __init__(self, lvl):
@@ -172,11 +202,11 @@ class insbranch(object):
 # 
 
 class instree(object):
-	def __init__(self, width=8, endian="big"):
+	def __init__(self, width=8, filename=None):
 		self.width = width
-		self.endian = endian
-		self.ins = list()
 		self.root = insbranch(0)
+		if filename != None:
+			self.load(filename)
 
 	def load(self, filename):
 		fi = open(filename, "r")
@@ -184,8 +214,7 @@ class instree(object):
 			i = i.strip()
 			if i == "" or i[0] == "#":
 				continue
-			x = insline(i, self.width, self.endian)
-			self.ins.append(x)
+			x = insline(i, self.width)
 			self.root.insert(x)
 		fi.close()
 
