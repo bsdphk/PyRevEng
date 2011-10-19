@@ -14,7 +14,7 @@ import const
 #----------------------------------------------------------------------
 # Structure of (virtual) EPROMS
 #
-def one_eprom(p, start, eprom_size):
+def one_eprom(p, disass, start, eprom_size):
 
 	x = p.t.add(start, start + eprom_size, "eprom")
 	x.blockcmt += "\n-\nEPROM at 0x%x-0x%x\n\n" % \
@@ -51,14 +51,14 @@ def one_eprom(p, start, eprom_size):
 	for ax in range(start + 3, start + eprom_size, 3):
 		if p.m.rd(ax) != 0x7e:
 			break
-		p.todo(ax, p.cpu.disass)
+		p.todo(ax, disass)
 
-def eprom(p, start, end, sz):
+def eprom(p, disass, start, end, sz):
 	lx = list()
 	for ax in range(start, end, sz):
 		lx.append(ax >> 8)
 		lx.append(ax & 0xff)
-		one_eprom(p, ax, sz)
+		one_eprom(p, disass, ax, sz)
 	lx.append(end >> 8)
 	lx.append(end & 0xff)
 

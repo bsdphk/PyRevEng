@@ -17,14 +17,11 @@ import render
 import topology
 
 #----------------------------------------------------------------------
-# Set up our PyRevEng instance
+# Create suitable memory
 #
 
 m = mem.byte_mem(0, 0x10000, 0, True, "big-endian")
 m.bcols = 3
-p = pyreveng.pyreveng(m)
-p.cmt_start = 56
-p.g = topology.topology(p)
 
 #----------------------------------------------------------------------
 # Load the EPROM image
@@ -33,17 +30,26 @@ p.g = topology.topology(p)
 dn="/rdonly/Doc/TestAndMeasurement/HP5370B/Firmware/"
 
 # The HP5370B inverts the address bus, so start at the end and count down:
-p.m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+m.fromfile(dn + "HP5370B.ROM", 0x7fff, -1)
+
+
+#----------------------------------------------------------------------
+# Create pyreveng instance
+#
+
+p = pyreveng.pyreveng(m)
+p.cmt_start = 56
+p.g = topology.topology(p)
 
 #----------------------------------------------------------------------
 # Add a CPU instance
 #
 
-p.cpu = cpu_mc6800.mc6800()
-p.cpu.vectors(p,0x8000)
+cpu = cpu_mc6800.mc6800(p)
+cpu.vectors(0x8000)
 
 #----------------------------------------------------------------------
-hp53xx.eprom(p, 0x6000, 0x8000, 0x400)
+hp53xx.eprom(p, cpu.disass, 0x6000, 0x8000, 0x400)
 
 #----------------------------------------------------------------------
 #hp53xx.nmi_debugger(p, p.m.w16(0x7ffc))
@@ -297,7 +303,7 @@ class dot_code(tree.tree):
 		self.render = self.rfunc
 		t = p.m.b16(adr)
 		# p.markbb(t, ".code")
-		p.todo(t, p.cpu.disass)
+		p.todo(t, cpu.disass)
 		self.a['EA'] = (t,)
 
 	def rfunc(self, p, t):
@@ -538,7 +544,7 @@ if True:
 	for i in range(0x6848, 0x6858, 2):
 		y = p.m.b16(i)
 		l.append(("call", "DSPFUNC", y))
-		p.todo(y, p.cpu.disass)
+		p.todo(y, cpu.disass)
 	x.a['flow'] = l
 	while p.run():
 		pass
@@ -554,7 +560,7 @@ if True:
 			continue
 		xx[y] = True
 		l.append(('cond', "XFUNC", y))
-		p.todo(y, p.cpu.disass)
+		p.todo(y, cpu.disass)
 	x.a['flow'] = l
 
 	while p.run():
@@ -562,7 +568,7 @@ if True:
 
 	###########################################################
 	y = p.m.b16(0x7909)
-	p.todo(y, p.cpu.disass)
+	p.todo(y, cpu.disass)
 
 	while p.run():
 		pass
@@ -581,7 +587,7 @@ if True:
 			continue
 		xx[y] = True
 		l.append(('cond', "XFUNC", y))
-		p.todo(y, p.cpu.disass)
+		p.todo(y, cpu.disass)
 	x.a['flow'] = l
 
 	while p.run():
@@ -725,35 +731,37 @@ if True:
 
 #######################################################################
 
-for ax in (0x7e23, 0x7e27):
-	x = p.t.find(ax, "ins")
-	hp53xx.sevenseg(p, x, p.m.rd(x.start + 1))
+if True:
+	for ax in (0x7e23, 0x7e27):
+		x = p.t.find(ax, "ins")
+		hp53xx.sevenseg(p, x, p.m.rd(x.start + 1))
 
 #######################################################################
 
 p.g.build_bb()
 
-p.g.add_flow("IRQ", p.m.b16(0x7ff8))
-p.g.add_flow("SWI", p.m.b16(0x7ffa))
-p.g.add_flow("NMI", p.m.b16(0x7ffc))
-p.g.add_flow("RST", p.m.b16(0x7ffe))
+if True:
+	p.g.add_flow("IRQ", p.m.b16(0x7ff8))
+	p.g.add_flow("SWI", p.m.b16(0x7ffa))
+	p.g.add_flow("NMI", p.m.b16(0x7ffc))
+	p.g.add_flow("RST", p.m.b16(0x7ffe))
 
-p.g.findflow(0x7b38,0x7bc6).offpage = True
-p.g.findflow(0x795b,0x795e).offpage = True
-p.g.findflow(0x7d57,0x7d5b).offpage = True
-p.g.findflow(0x70ce, 0x70ac).offpage = True
-p.g.segment()
-p.g.setlabels(p)
+if True:
+	p.g.findflow(0x7b38,0x7bc6).offpage = True
+	p.g.findflow(0x795b,0x795e).offpage = True
+	p.g.findflow(0x7d57,0x7d5b).offpage = True
+	p.g.findflow(0x70ce, 0x70ac).offpage = True
+	p.g.segment()
+	p.g.setlabels(p)
 
-p.g.dump_dot()
+	p.g.dump_dot()
 
-p.g.xxx(p)
-
-#p.build_bb()
-#p.eliminate_trampolines()
-#p.build_procs()
-
+	p.g.xxx(p)
 
 r = render.render(p)
 r.add_flows()
 r.render("/tmp/_hp5370b")
+
+if False:
+	for i in sorted(cpu.ins.keys()):
+		print(i, cpu.ins[i].debug())

@@ -22,11 +22,30 @@ import random
 import tree
 
 class pyreveng(object):
-	def __init__(self, m, t=None):
+	def __init__(self, m, lo=None, hi=None):
+		""" The container class for a reverse engineering task.
+
+		m:
+			A memory class
+		lo:
+			The lowest address of interest
+		hi:
+			The higest address of interest
+		"""
+
 		self.m = m
-		if t == None:
-			t = tree.tree(m.start, m.end)
-		self.t = t
+		self.lo = lo
+		self.hi = hi
+		if self.lo == None:
+			self.lo = m.start
+		if self.hi == None:
+			self.hi = m.end
+		assert type(self.lo) == int
+		assert type(self.hi) == int
+
+		self.t = tree.tree(self.lo, self.hi)
+
+		self.c = dict()
 
 		# @todo
 		self.__tlist = list()
@@ -79,10 +98,10 @@ class pyreveng(object):
 			del self.__tlist[0]
 			#print(">>> 0x%x" % c[0])
 			if True:
-				c[1](self, c[0], c[2])
+				c[1](c[0], c[2])
 				continue
 			try:
-				c[1](self, c[0], c[2])
+				c[1](c[0], c[2])
 			except:
 				print("FAILED %x" % c[0], c)	
 				

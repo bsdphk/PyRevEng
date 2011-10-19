@@ -1,20 +1,36 @@
 
-Resolve incoming trampolines
 
-Tree Properties
-	All
-		render		function
-		result		string
+	p 	-- pyreveng instance
+		General container for a reverse engineering task,
+		to make it possible to have multiple such in a
+		single program program
 
-	Instructions (tag = "ins")
-		mne(monic)	string
-		oper(ands)	list(string)
-		jmp		list(number|None)
-		cond(itional)	list(number|None)
-		call		list(number|None)
-		ret		string
-	
+		p::todo()
+			A task-list facility for serializing
+			work-points, rather than relying on deep
+			recursion to track code.
 
-Toplevel handle
-	.m	memory
-	.t	tree	
+		p::study()
+			A facility for having code study partial
+			results, attempting to divine or deduce
+			further points of attack.
+
+	p.m	-- memory instance
+		The bits we are working on.
+
+	p.t	-- tree instance
+		A hierarchial dissection of the tree into component
+		parts and structures.
+
+	p.c[]	-- array of disassemblers
+		One image can contain multiple kinds of code to be
+		disassembled, typically CPU instructions and some
+		kind of interpreted bytecode.
+
+	p.c[].g -- graph instance
+		Flow-control resolution for particular language
+		domain.
+
+	r(p)	-- renderer
+		Formats or otherwise presents the completed
+		reverse-engineering
