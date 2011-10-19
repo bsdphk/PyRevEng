@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import const
+import bitmap
 
 inscode = (
 	"0-???", "1 NOP", "0-???", "0-???", "0-???", "0-???", "1 TAP", "1 TPA",
@@ -63,6 +64,8 @@ inscode = (
 class mc6800(object):
 	def __init__(self):
 		self.dummy = True
+		self.bm = bitmap.bitmap()
+		self.bm0 = bitmap.bitmap()
 		assert inscode[0x80] == "2iSUBA"
 		assert inscode[0xc0] == "2iSUBB"
 		assert len(inscode) == 256
@@ -83,8 +86,10 @@ class mc6800(object):
 		return (s,)
 
 	def disass(self, p, adr, priv = None):
-		if p.t.find(adr, "ins") != None:
+		if self.bm0.tst(adr):
 			return
+		assert not self.bm.tst(adr)
+
 		try:
 			iw = p.m.rd(adr)
 		except:
@@ -97,6 +102,9 @@ class mc6800(object):
 			return
 
 		try:
+			assert not self.bm.mtst(adr, adr + l)
+			self.bm.mset(adr, adr + l)
+			self.bm0.set(adr)
 			x = p.t.add(adr, adr + l, "ins")
 			x.render = self.render
 		except:

@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import instree
 import sys
+import bitmap
 
 #######################################################################
 
@@ -22,6 +23,8 @@ class m68000(object):
 
 	def __init__(self, z8001 = True, segmented = False):
 		self.dummy = True
+		self.bm = bitmap.bitmap()
+		self.bm0 = bitmap.bitmap()
 		if segmented:
 			assert z8001
 		self.z8001 = z8001
@@ -94,6 +97,11 @@ class m68000(object):
 
 	def disass(self, p, adr, priv = None):
 		sys.stdout.flush()
+
+		if self.bm0.tst(adr):
+			return
+		assert not self.bm.tst(adr)
+
 		self.last_c = None
 		if True:
 			x = self.xdisass(p, adr, priv)
@@ -290,6 +298,10 @@ class m68000(object):
 
 		#print(">>> @%04x" % adr)
 		c = self.root.find(p, adr, p.m.b16)
+		if c == None:
+			print("Error @%04x: %04x %04x no instruction found" %
+			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
+			return None
 		#print("]]} @%04x" % adr, c)
 
 		# We have a specification in 'c'
@@ -441,6 +453,9 @@ class m68000(object):
 			if y != None:
 				ol.append(y)
 			
+		assert not self.bm.mtst(adr, na)
+		self.bm.mset(adr, na)
+		self.bm0.set(adr)
 		try:
 			x = p.t.add(adr, na, "ins")
 		except:

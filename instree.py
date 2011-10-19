@@ -215,6 +215,33 @@ class insbranch(object):
 				return i[1][b]
 		return None
 
+	def addone(self, l, y):
+		# Only add if the new entry is not a proper subset of
+		# of an already existing entry.
+		for j in l:
+			x = False
+			for k in range(0, len(j.mask)):
+				if k >= len(y.mask):
+					break
+				if y.mask[k] & j.mask[k] != y.mask[k]:
+					x = True
+			if not x:
+				return
+		l.append(y)
+
+	def allfind(self, adr, func, incr, l):
+		v = func(adr)
+		for i in self.spec:
+			b = v & i[0]
+			if not b in i[1]:
+				continue
+			y = i[1][b]
+			if type(y) == insbranch:
+				y.allfind(adr + incr, func, incr, l)
+			else:
+				self.addone(l, y)
+		return l
+
 #######################################################################
 # 
 
@@ -249,6 +276,15 @@ class instree(object):
 				return r
 		return None
 
+	# This finds all non-overlapping candidates.
+	# such as mask=0xf002 and mask=0xf001
+	# but not mask=0xf001 and mask=0xf000
+	def allfind(self, p, adr, func, incr = None):
+		l = list()
+		if incr == None:
+			incr = self.width >> 3
+		self.root.allfind(adr, func, incr, l)
+		return l
 
 if __name__ == "__main__":
 	it = instree(16, "m68000_instructions.txt")
