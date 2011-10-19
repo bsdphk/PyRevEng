@@ -66,21 +66,22 @@ class mc6800(disass.assy):
 	"""
 
 	def __init__(self, p, name = "mc6800"):
-		disass.disass.__init__(self, p, name)
+		disass.assy.__init__(self, p, name)
 		assert inscode[0x80] == "2iSUBA"
 		assert inscode[0xc0] == "2iSUBB"
 		assert len(inscode) == 256
 
 	def do_disass(self, adr, ins):
-		p = self.p
-
 		assert ins.lo == adr
+		assert ins.status == "prospective"
+
+		p = self.p
 
 		try:
 			iw = p.m.rd(adr)
 		except:
-			ins.status = "no mem"
 			print("FETCH failed:", adr)
+			ins.fail("no mem")
 			return
 
 		c = inscode[iw]
@@ -157,7 +158,7 @@ class mc6800(disass.assy):
 			pass
 		else:
 			print("UNIMPL %04x: %02x %s" % (adr,iw, c))
-			ins.status = "bad"
+			ins.fail("bad arg")
 			return
 		ins.finish()
 			

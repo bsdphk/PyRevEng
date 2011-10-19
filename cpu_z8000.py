@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import instree
+import disass
 
 #######################################################################
 
@@ -30,10 +31,10 @@ condition_codes = {
 	7:	"C",	15:	"NC"
 }
 
-class z8000(object):
+class z8000(disass.assy):
 
-	def __init__(self, z8001 = True, segmented = False):
-		self.dummy = True
+	def __init__(self, p, name = "z8000", z8001 = True, segmented = False):
+		disass.assy.__init__(self, p, name)
 		if segmented:
 			assert z8001
 		self.z8001 = z8001
@@ -43,21 +44,6 @@ class z8000(object):
 		    filename = "cpus/z8000_instructions.txt",
 		)
 		#self.root.print()
-
-	def render(self, p, t):
-		s = t.a['mne']
-		s += "\t"
-		d = ""
-		if 'DA' in t.a:
-			da = t.a['DA']
-			if da in p.label:
-				return (s + p.label[da] +
-				    " (" + p.m.afmt(da) + ")",)
-		for i in t.a['oper']:
-			s += d
-			s += str(i)
-			d = ','
-		return (s,)
 
 	def rdarg(self, p, adr, c, arg):
 		return c.get_field(p, adr, p.m.b16, 2, arg)
@@ -101,31 +87,24 @@ class z8000(object):
 			d2 = None
 		return (na, d1, d2, i)
 
-	def disass(self, p, adr, priv = None):
-		self.last_c = None
-		if False:
-			x = self.xdisass(p, adr, priv)
+	def do_disass(self, adr, ins):
+		assert ins.lo == adr
+		assert ins.status == "prospective"
 
-		try:
-			x = self.xdisass(p, adr, priv)
-		except:
-			try:
-				print("Error @%04x: %04x %04x disass failed" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
-			except:
-				print("Error @%04x" % adr)
-			if self.last_c != None:
-				print("\t", self.last_c)
-			x = None
-		return x
-		
-	def xdisass(self, p, adr, priv = None):
-		if p.t.find(adr, "ins") != None:
-			return
+		p = self.p
+
+		# By default...
+		ins.hi = ins.lo + 1
 
 		#print(">>> @%04x" % adr)
-		c = self.root.find(p, adr, p.m.b16)
+		try:
+			c = self.root.find(p, adr, p.m.b16)
+		except:
+			ins.fail("no memory")
+			return
 		if c == None:
+			ins.fail("no instruction")
+			return
 			print("Error @%04x: %04x %04x no instruction found" %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
 			return None
@@ -223,6 +202,7 @@ class z8000(object):
 				j = self.rdarg(p, adr, c, "byte")
 				i = "0x%02x" % j
 			elif i == "dispu8":
+				# D[B]JNZ
 				j = self.rdarg(p, adr, c, "dispu8")
 				dstadr = na - 2 * j
 				i = "0x%04x" % dstadr
@@ -259,7 +239,8 @@ class z8000(object):
 					    p.m.b16(adr + 2)) +
 					    "8-bit #data not duplicated" +
 					    " 0x%04x" % d)
-					assert False
+					ins.fail("#data(8) not duplicated")
+					return
 				na += 2
 				i = "#0x%02x" % (d & 0xff)
 			elif i == "#data" and wid == 16:
@@ -307,42 +288,30 @@ class z8000(object):
 			else:
 				print(">>> %04x" % adr, wid, sas, das, c)
 				print(y, "???", i)
+				ins.fail('Unhandled arg')
 				return
 			if y != i and False:
 				print(y, "-->", i)
 			ol.append(i)
 			
-		try:
-			x = p.t.add(adr, na, "ins")
-		except:
-			print("Error: @%04x %04x %04x: overlap" %
-			    (adr, p.m.b16(adr),
-			    p.m.b16(adr + 2)))
-			return None
-			
-		x.a['mne'] = mne
-		x.a['oper'] = ol
-		x.render = self.render
-
 		if mne[0] == "J":
 			if cc != "F":
-				x.a['flow'] = ( ( "cond", cc, dstadr), )
+				ins.flow( "cond", cc, dstadr)
 			if ncc != "F":
-				x.a['flow'] += (( "cond", ncc, na),)
-		if mne[-3:] == "JNZ":
-			x.a['flow'] = (
-			    ( "cond", "NZ", dstadr),
-			    ( "cond", "Z", na),
-			)
+				ins.flow( "cond", ncc, na)
 
 		if mne == "CALR":
-			x.a['flow'] = ( ( "call", "T", dstadr), )
+			ins.flow( "call", "T", dstadr)
 		if mne == "CALL":
-			x.a['flow'] = ( ( "call", "T", dstadr), )
+			ins.flow( "call", "T", dstadr)
 		if mne == "RET" and cc == "T":
-			x.a['flow'] = ( ( "ret", "T", None), )
+			ins.flow( "ret", "T", None)
 
-		if dstadr != None:
-			x.a['DA'] = dstadr
+		#if dstadr != None:
+		#	x.a['DA'] = dstadr
 
-		p.ins(x, self.disass)
+		ins.hi = na
+		ins.mne = mne
+		ins.oper = ol
+
+		ins.finish()

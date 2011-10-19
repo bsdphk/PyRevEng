@@ -26,6 +26,8 @@ class disass(object):
 		disassembly may not happen until later.
 		"""
 
+		assert type(adr) == int
+
 		if adr in self.ins:
 			return self.ins[adr]
 
@@ -134,6 +136,7 @@ class assy(disass):
 		disass.__init__(self, p, name)
 
 	def disass(self, adr, priv=None):
+		assert type(adr) == int
 		j = disass.disass(self, adr, priv)
 		if j.status == "prospective":
 			j.mne = None
@@ -188,11 +191,9 @@ class instruction(object):
 		return s
 
 	def debug(self):
-		s = "<ins " + self.disass.name + " " + str(self.status)
-		s += " %x" % self.lo
+		s = self.__repr__()
 
-		if self.hi != None:
-			s += "-%x" % self.hi
+		s = s[:-1]
 
 		if len(self.flow_in) > 0:
 			s += " FI<"
@@ -221,4 +222,11 @@ class instruction(object):
 		self.flow_out.append((mode, cc, dst))
 
 	def finish(self):
+		assert self.status == "prospective"
 		self.disass.finish_ins(self)
+
+	def fail(self, reason):
+		print("FAIL: ", reason, "\n", self.debug())
+		assert self.status == "prospective"
+		self.status = "fail"
+		self.reason = reason
