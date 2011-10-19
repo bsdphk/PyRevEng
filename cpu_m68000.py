@@ -31,7 +31,7 @@ class m68000(object):
 		self.segmented = segmented
 		self.root = instree.instree(
 		    width = 16,
-		    filename = "m68000_instructions.txt",
+		    filename = "cpus/m68000_instructions.txt",
 		)
 		#self.root.print()
 

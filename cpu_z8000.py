@@ -40,7 +40,7 @@ class z8000(object):
 		self.segmented = segmented
 		self.root = instree.instree(
 		    width = 16,
-		    filename = "z8000_instructions.txt",
+		    filename = "cpus/z8000_instructions.txt",
 		)
 		#self.root.print()
 
