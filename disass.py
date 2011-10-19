@@ -95,9 +95,20 @@ class disass(object):
 		if ins.status != "prospective":
 			return
 
-		ins.status = "OK"
-		# Only process flow for good instructions
+		try:
+			x = self.p.t.add(ins.lo, ins.hi, "ins")
+			x.render = self.render
+			x.a['flow'] = ins.flow_out
+			x.a['ins'] = ins
+		except:
+			print ("FAIL to create tree @ 0x%04x-0x%04x" % 
+			    (ins.lo, ins.hi))
+			ins.status = "fail"
+			return
 
+		ins.status = "OK"
+
+		# Only process flow for good instructions
 		if len(ins.flow_out) == 0:
 			j = self.disass(ins.hi)
 
@@ -205,6 +216,9 @@ class instruction(object):
 
 		s += " >"
 		return s
+
+	def flow(self, mode, cc, dst):
+		self.flow_out.append((mode, cc, dst))
 
 	def finish(self):
 		self.disass.finish_ins(self)

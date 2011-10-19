@@ -6,7 +6,6 @@
 from __future__ import print_function
 
 import const
-import bitmap
 import disass
 
 inscode = (
@@ -75,13 +74,12 @@ class mc6800(disass.assy):
 	def do_disass(self, adr, ins):
 		p = self.p
 
-		this = ins
-		assert this.lo == adr
+		assert ins.lo == adr
 
 		try:
 			iw = p.m.rd(adr)
 		except:
-			this.status = "no mem"
+			ins.status = "no mem"
 			print("FETCH failed:", adr)
 			return
 
@@ -91,7 +89,7 @@ class mc6800(disass.assy):
 			print("UNKNOWN %04x: %02x %s" % (adr,iw, c))
 			return
 
-		this.hi = adr + l
+		ins.hi = adr + l
 		if False:
 			try:
 				x = p.t.add(adr, adr + l, "ins")
@@ -100,82 +98,68 @@ class mc6800(disass.assy):
 				print ("FAIL @ 0x%04x" % adr)
 				return
 		
-		this.mne = c[2:]
+		ins.mne = c[2:]
 
 		if c[1] == "i" and l == 2:
-			this.oper = ("#0x%02x" % p.m.rd(adr + 1),)
+			ins.oper = ("#0x%02x" % p.m.rd(adr + 1),)
 		elif c[1] == "i" and l == 3:
 			aa = p.m.b16(adr + 1)
-			this.oper = ("#0x%04x" % aa,)
+			ins.oper = ("#0x%04x" % aa,)
 			try:
 				p.m.rd(aa)
-				#XXX this.ea = (aa,)
+				#XXX ins.ea = (aa,)
 			except:
 				pass
 		elif c[1] == "x" and l == 2:
-			this.oper = ("0x%02x" % p.m.rd(adr + 1),"X")
+			ins.oper = ("0x%02x" % p.m.rd(adr + 1),"X")
 		elif c[1] == "d":
-			this.oper = ("0x%02x" % p.m.rd(adr + 1),)
-			#XXX this.ea = (p.m.rd(adr + 1),)
+			ins.oper = ("0x%02x" % p.m.rd(adr + 1),)
+			#XXX ins.ea = (p.m.rd(adr + 1),)
 		elif c[1] == "e":
 			aa = p.m.b16(adr + 1)
-			this.oper = ("0x%04x" % aa,)
-			#XXX this.ea = (aa,)
+			ins.oper = ("0x%04x" % aa,)
+			#XXX ins.ea = (aa,)
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
-			this.oper.append(("%s", da))
-			this.flow_out.append(("call", "T", da))
+			ins.oper.append(("%s", da))
+			ins.flow("call", "T", da)
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
-			this.oper.append(("%s", da))
-			this.flow_out.append(("call", "T", da))
+			ins.oper.append(("%s", da))
+			ins.flow("call", "T", da)
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
-			this.oper.append(("%s", da))
+			ins.oper.append(("%s", da))
 			if iw & 0x0f == 00:
-				this.flow_out.append(("cond", "T", da))
+				ins.flow("cond", "T", da)
 			else:
 				c2 = inscode[iw ^ 1]
-				this.flow_out.append(
-				    ("cond", c2[3:], adr + l))
-				this.flow_out.append(
-				    ("cond", c[3:], da))
+				ins.flow("cond", c2[3:], adr + l)
+				ins.flow("cond", c[3:], da)
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
-			this.oper.append(("%s", da))
-			this.flow_out.append(("cond", "T", da))
+			ins.oper.append(("%s", da))
+			ins.flow("cond", "T", da)
 		elif c[1] == "X":
-			this.oper = ("0x%02x" % p.m.rd(adr + 1),"X")
-			if this.mne == "JSR":
-				this.flow_out.append(("call", "T", None))
+			ins.oper = ("0x%02x" % p.m.rd(adr + 1),"X")
+			if ins.mne == "JSR":
+				ins.flow("call", "T", None)
 			else:
-				this.flow_out.append(("cond", "T", None))
+				ins.flow("cond", "T", None)
 		elif c[1] == "_":
-			this.oper = list()
 			if c[2:] == "RTI":
-				this.flow_out.append(("ret", "IRQ", None))
+				ins.flow("ret", "IRQ", None)
 			else:
-				this.flow_out.append(("ret", "T", None))
+				ins.flow("ret", "T", None)
 		elif c[1] == "w":
-			this.flow_out.append(("call", "T", None, "SWI"))
-			this.oper = list()
+			ins.flow("call.SWI", "T", None)
 		elif c[1] == " ":
-			this.oper = list()
+			pass
 		else:
 			print("UNIMPL %04x: %02x %s" % (adr,iw, c))
-			this.oper = ("??",)
+			ins.status = "bad"
 			return
-		this.finish()
-		try:
-			x = p.t.add(adr, adr + l, "ins")
-			x.render = self.render
-			x.a['mne'] = this.mne
-			x.a['oper'] = this.oper
-			x.a['flow'] = this.flow_out
-			x.a['ins'] = this
-		except:
-			print ("FAIL @ 0x%04x" % adr)
-			return
+		ins.finish()
 			
 
 	def __vector(self, adr, nm):
