@@ -88,14 +88,15 @@ class m68000(disass.assy):
 		else:
 			rg += ".W"
 		#print("rg", rg, "wl", wl, "scale", scale, "displ", displ)
-		ea="(%s" % rg
-		if displ < 0:
-			ea +=  "-0x%x+" % -displ
-		elif displ > 0:
-			ea +=  "+0x%x+" % displ
+		ea = "(" + idx
 		if scale != 0:
-			ea +=  "%d*" % (1 << scale)
-		ea += idx + ")"
+			ea +=  "*%d" % (1 << scale)
+		ea += "+" + rg
+		if displ < 0:
+			ea +=  "-0x%x" % -displ
+		elif displ > 0:
+			ea +=  "+0x%x" % displ
+		ea += ")"
 		return ea
 
 	def ea(self, ins, eam, ear, wid):
@@ -125,23 +126,24 @@ class m68000(disass.assy):
 				return (None, None)
 		elif eam == 7 and ear == 0:
 			v = self.p.m.b16(ins.hi)
-			# XXX: signextend
-			ea="#0x%04x" % v
+			if v & 0x8000:
+				v |= 0xffff0000
+			ea=(v, "%s")
 			ins.hi += 2
 		elif eam == 7 and ear == 1:
 			v =self.p.m.b32(ins.hi)
-			ea="#0x%08x" % v
+			ea=(v, "%s")
 			ins.hi += 4
 		elif eam == 7 and ear == 2:
 			v = ins.hi + self.p.m.sb16(ins.hi)
-			ea="#0x%08x" % v
+			ea=(v, "%s")
 			ins.hi += 2
 		elif eam == 7 and ear == 3:
 			ea = self.extword(ins, "PC")
 			if ea == None:
 				return (None, None)
 		elif eam == 7 and ear == 4 and wid == 8:
-			ea="#0x%04x" % (self.p.m.b16(ins.hi) & 0xff)
+			ea="#0x%02x" % (self.p.m.b16(ins.hi) & 0xff)
 			ins.hi += 2
 		elif eam == 7 and ear == 4 and wid == 16:
 			v = self.p.m.b16(ins.hi)
@@ -379,14 +381,11 @@ class m68000(disass.assy):
 				elif j & 0x80:
 					j -= 256
 				dstadr = adr + 2 + j
-				#print("DA %04x:%04x %x %04x" % 
-				#   (adr, ins.hi, j, dstadr))
-				y = "0x%x" % dstadr
+				y = (dstadr, "%s")
 			elif i == "ead":
 				eadr = self.rdarg(adr, c, "earx")
 				eadm = self.rdarg(adr, c, "eamx")
-				(y, junk) = \
-				    self.ea(ins, eadm, eadr, wid)
+				(y, junk) = self.ea(ins, eadm, eadr, wid)
 			elif i == "cc":
 				cc = condition_codes[self.rdarg(adr, c, i)]
 				if mne == "Bcc":
