@@ -35,55 +35,18 @@ class m68000(disass.assy):
 			print("NB: ", arg, "not found in", c)
 		return x
 
-	def get_reg(self, p, adr, arg, c, wid):
-		if arg in c.flds:
-			v = self.rdarg(adr, c, arg)
-		elif arg + "!=0" in c.flds:
-			v = self.rdarg(adr, c, arg + "!=0")
-			if v == 0:
-				print("Error @%04x: %04x %04x  %s == 0" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
-				    arg + "!=0"), c.flds[arg + "!=0"])
-				return None
-		else:
-			print("Error @%04x: %04x %04x  not found %s" %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2), arg))
-			assert False
-		if wid == 32:
-			if (v & 1) == 1:
-				print("Error @%04x: %04x %04x  RR%d" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
-				assert False
-			return "RR%d" % v
-		if wid == 16:
-			return "R%d" % v
-		if wid == 8 and v & 8:
-			return "RL%d" % (v & 7)
-		if wid == 8:
-			return "RH%d" % (v & 7)
-
-	def get_address(self, p, na):
-		d1 = p.m.b16(na)
-		na += 2
-		i = "#0x%04x" % d1
-		if self.segmented and d1 & 0x8000:
-			d2 = p.m.b16(na)
-			na += 2
-			i += ":0x%04x" % d2
-		else:
-			d2 = None
-		return (na, d1, d2, i)
-
-	def extword(self, p, adr, na, idx):
-		ev = p.m.b16(na)
-		na += 2
+	def extword(self, ins, idx):
+		adr = ins.lo
+		p = self.p
+		ev = p.m.b16(ins.hi)
+		ins.hi += 2
 		if ev & 256:
 			print(("Error @%04x: %04x %04x " +
 			    "Long extension word in EA.6 %04x") %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2),
 			    ev))
 			print("\t", self.last_c)
-			return (None, na)
+			return None
 		#print("EA6: Ev: %04x" % ev)
 		da = ev >> 15
 		reg = (ev >> 12) & 7
@@ -109,9 +72,11 @@ class m68000(disass.assy):
 		if scale != 0:
 			ea +=  "%d*" % (1 << scale)
 		ea += idx + ")"
-		return (ea,na)
+		return ea
 
-	def ea(self, p, adr, na, eam, ear, wid):
+	def ea(self, ins, eam, ear, wid):
+
+		adr = ins.lo
 		v = None
 		if eam == 0:
 			ea = "D%d" % ear
@@ -124,64 +89,66 @@ class m68000(disass.assy):
 		elif eam == 4:
 			ea = "-(A%d)" % ear
 		elif eam == 5:
-			v = p.m.sb16(na)
-			na += 2
+			v = self.p.m.sb16(ins.hi)
+			ins.hi += 2
 			if v < 0:
 				ea = "(A%d-#0x%04x)" % (ear, -v)
 			else:
 				ea = "(A%d+#0x%04x)" % (ear, v)
 		elif eam == 6:
-			ea,na = self.extword(p, adr, na, "A%d" % ear)
+			ea = self.extword(ins, "A%d" % ear)
 			if ea == None:
-				return (na, None, None)
+				return (None, None)
 		elif eam == 7 and ear == 0:
-			v = p.m.b16(na)
+			v = self.p.m.b16(ins.hi)
 			# XXX: signextend
 			ea="#0x%04x" % v
-			na += 2
+			ins.hi += 2
 		elif eam == 7 and ear == 1:
-			v =p.m.b32(na)
+			v =self.p.m.b32(ins.hi)
 			ea="#0x%08x" % v
-			na += 4
+			ins.hi += 4
 		elif eam == 7 and ear == 2:
-			v = na + p.m.sb16(na)
+			v = ins.hi + self.p.m.sb16(ins.hi)
 			ea="#0x%08x" % v
-			na += 2
+			ins.hi += 2
 		elif eam == 7 and ear == 3:
-			ea,na = self.extword(p, adr, na, "PC")
+			ea = self.extword(ins, "PC")
 			if ea == None:
-				return (na, None, None)
+				return (None, None)
 		elif eam == 7 and ear == 4 and wid == 8:
-			ea="#0x%04x" % (p.m.b16(na) & 0xff)
-			na += 2
+			ea="#0x%04x" % (self.p.m.b16(ins.hi) & 0xff)
+			ins.hi += 2
 		elif eam == 7 and ear == 4 and wid == 16:
-			v = p.m.b16(na)
+			v = self.p.m.b16(ins.hi)
 			ea="#0x%04x" % v
-			na += 2
+			ins.hi += 2
 		elif eam == 7 and ear == 4 and wid == 32:
-			v = p.m.b32(na)
+			v = self.p.m.b32(ins.hi)
 			ea="#0x%08x" % v
-			na += 4
+			ins.hi += 4
 		else:
 			print(("Error @%04x: %04x %04x " +
 			    "EA.%d.%d w%d missing") %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2),
+			    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
 			    eam, ear, wid))
 			print("\t", self.last_c)
-			return (na, None, None)
-		#print("\team=", eam, "ear=", ear, "wid=%d" % wid, "na=%x" % na,"->", ea, v)
-		return (na, ea, v)
+			return (None, None)
+		#print("\team=", eam, "ear=", ear, "wid=%d" % wid, "ins.hi=%x" % ins.hi,"->", ea, v)
+		return (ea, v)
 		
-	def check_valid_ea(self, p, adr, c, ver = True):
+	def check_valid_ea(self, ins, c, ver = True):
 		# Figure out Effective Address
 		eabit = int(c.spec[2],16)
 		if eabit == 0:
 			return (None, 0, 0)
 
+		adr = ins.lo
+
 		if eabit & 0xe080:
 			print("Error @%04x: %04x %04x " +
 			    "EAbits illegal (%04x)" %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2),
+			    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
 			    eabit))
 			print("\t", c)
 			return (False, None, None)
@@ -193,7 +160,7 @@ class m68000(disass.assy):
 			if ver:
 				print(("Error @%04x: %04x %04x " +
 				    "EA.7.%d illegal (%04x)") %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
+				    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
 				    ear, eabit))
 				print("\t", c)
 			return (False, None, None)
@@ -201,7 +168,7 @@ class m68000(disass.assy):
 			if ver:
 				print(("Error @%04x: %04x %04x " +
 				    "EA.%d illegal (%04x)") %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
+				    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
 				    eam, eabit))
 				print("\t", c)
 			return (False, None, None)
@@ -228,7 +195,7 @@ class m68000(disass.assy):
 					continue
 				if False:
 					(junk, eam, ear) = \
-					    self.check_valid_ea(p, adr, lc[i])
+					    self.check_valid_ea(ins, lc[i])
 					if not junk:
 						del lc[i]
 						continue
@@ -266,7 +233,7 @@ class m68000(disass.assy):
 
 		# We have a specification in 'c'
 		self.last_c = c
-		na = adr + (c.width >> 3)
+		ins.hi = adr + (c.width >> 3)
 
 		mne = c.spec[0]
 
@@ -305,10 +272,10 @@ class m68000(disass.assy):
 		dstadr = None
 		ea = None
 
-		(junk, eam, ear) = self.check_valid_ea(p, adr, c)
+		(junk, eam, ear) = self.check_valid_ea(ins, c)
 
 		if junk == True:
-			na,ea,dstadr = self.ea(p, adr, na, eam, ear, wid)
+			ea,dstadr = self.ea(ins, eam, ear, wid)
 			if ea == None:
 				return None
 
@@ -330,14 +297,14 @@ class m68000(disass.assy):
 			elif i == "Dn" or i == "Dx" or i == "Dy":
 				y = "D%d" % self.rdarg(adr, c, i)
 			elif i == "#data" and wid == 8:
-				y = "#0x%02x" % (p.m.b16(na) & 0xff)
-				na += 2
+				y = "#0x%02x" % (p.m.b16(ins.hi) & 0xff)
+				ins.hi += 2
 			elif i == "#data" and wid == 16:
-				y = "#0x%04x" % p.m.b16(na)
-				na += 2
+				y = "#0x%04x" % p.m.b16(ins.hi)
+				ins.hi += 2
 			elif i == "#data" and wid == 32:
-				y = "#0x%08x" % p.m.b32(na)
-				na += 4
+				y = "#0x%08x" % p.m.b32(ins.hi)
+				ins.hi += 4
 			elif i == "#rot":
 				j = self.rdarg(adr, c, i)
 				if j == 0:
@@ -361,7 +328,7 @@ class m68000(disass.assy):
 				if j & 0x8000:
 					j -= 0x10000
 				dstadr = adr + 2 + j
-				#print("%04x: na=%04x j=%d" % (adr, na, j))
+				#print("%04x: na=%04x j=%d" % (adr, ins.hi, j))
 				y = "0x%04x" % dstadr
 			elif i == "rlist":
 				y = "<%x>" % self.rdarg(adr, c, i)
@@ -373,22 +340,22 @@ class m68000(disass.assy):
 				# Used in Bcc
 				j = self.rdarg(adr, c, "disp8")
 				if j == 0x00:
-					j = p.m.sb16(na)
-					na += 2
+					j = p.m.sb16(ins.hi)
+					ins.hi += 2
 				elif j == 0xff:
-					j = p.m.sb32(na)
-					na += 4
+					j = p.m.sb32(ins.hi)
+					ins.hi += 4
 				elif j & 0x80:
 					j -= 256
 				dstadr = adr + 2 + j
 				#print("DA %04x:%04x %x %04x" % 
-				#   (adr, na, j, dstadr))
+				#   (adr, ins.hi, j, dstadr))
 				y = "0x%x" % dstadr
 			elif i == "ead":
 				eadr = self.rdarg(adr, c, "earx")
 				eadm = self.rdarg(adr, c, "eamx")
-				(na, y, junk) = \
-				    self.ea(p, adr, na, eadm, eadr, wid)
+				(y, junk) = \
+				    self.ea(ins, eadm, eadr, wid)
 			elif i == "cc":
 				cc = condition_codes[self.rdarg(adr, c, i)]
 				if mne == "Bcc":
@@ -423,11 +390,10 @@ class m68000(disass.assy):
 			ins.flow("call", "T", dstadr)
 		elif c.spec[0] == "DBcc" and cc != "F":
 			ins.flow( "cond", cc, dstadr)
-			ins.flow( "cond", cc, na)
+			ins.flow( "cond", cc, ins.hi)
 		elif c.spec[0] == "Bcc":
 			ins.flow("cond", cc, dstadr)
-			ins.flow("cond", cc, na)
+			ins.flow("cond", cc, ins.hi)
 			
 		ins.mne = mne
 		ins.oper = ol
-		ins.hi = na
