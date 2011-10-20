@@ -6,12 +6,12 @@
 from __future__ import print_function
 
 import instree
-import sys
-import bitmap
+import disass
 
 #######################################################################
 
 special_registers = {
+	"USP", "CCR", "SR"
 }
 
 condition_codes = (
@@ -19,48 +19,27 @@ condition_codes = (
 	"VC", "VS", "PL", "MI", "GE", "LT", "GT", "LE"
 )
 
-class m68000(object):
+class m68000(disass.assy):
 
-	def __init__(self, z8001 = True, segmented = False):
-		self.dummy = True
-		self.bm = bitmap.bitmap()
-		self.bm0 = bitmap.bitmap()
-		if segmented:
-			assert z8001
-		self.z8001 = z8001
-		self.segmented = segmented
+	def __init__(self, p, name = "m68000"):
+		disass.assy.__init__(self, p, name)
 		self.root = instree.instree(
 		    width = 16,
 		    filename = "cpus/m68000_instructions.txt",
 		)
 		#self.root.print()
 
-	def render(self, p, t):
-		s = t.a['mne']
-		s += "\t"
-		d = ""
-		if 'DA' in t.a:
-			da = t.a['DA']
-			if da in p.label:
-				return (s + p.label[da] +
-				    " (" + p.m.afmt(da) + ")",)
-		for i in t.a['oper']:
-			s += d
-			s += str(i)
-			d = ','
-		return (s,)
-
-	def rdarg(self, p, adr, c, arg, fail_ok = False):
-		x = c.get_field(p, adr, p.m.b16, 2, arg)
+	def rdarg(self, adr, c, arg, fail_ok = False):
+		x = c.get_field(self.p, adr, self.p.m.b16, 2, arg)
 		if x == None and not fail_ok:
 			print("NB: ", arg, "not found in", c)
 		return x
 
 	def get_reg(self, p, adr, arg, c, wid):
 		if arg in c.flds:
-			v = self.rdarg(p, adr, c, arg)
+			v = self.rdarg(adr, c, arg)
 		elif arg + "!=0" in c.flds:
-			v = self.rdarg(p, adr, c, arg + "!=0")
+			v = self.rdarg(adr, c, arg + "!=0")
 			if v == 0:
 				print("Error @%04x: %04x %04x  %s == 0" %
 				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
@@ -94,31 +73,6 @@ class m68000(object):
 		else:
 			d2 = None
 		return (na, d1, d2, i)
-
-	def disass(self, p, adr, priv = None):
-		sys.stdout.flush()
-
-		if self.bm0.tst(adr):
-			return
-		assert not self.bm.tst(adr)
-
-		self.last_c = None
-		if True:
-			x = self.xdisass(p, adr, priv)
-			return x
-
-		try:
-			x = self.xdisass(p, adr, priv)
-		except:
-			try:
-				print("Error @%04x: %04x %04x disass failed" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
-			except:
-				print("Error @%04x" % adr)
-			if self.last_c != None:
-				print("\t", self.last_c)
-			x = None
-		return x
 
 	def extword(self, p, adr, na, idx):
 		ev = p.m.b16(na)
@@ -232,8 +186,8 @@ class m68000(object):
 			print("\t", c)
 			return (False, None, None)
 
-		eam = self.rdarg(p, adr, c, "eam")
-		ear = self.rdarg(p, adr, c, "ear")
+		eam = self.rdarg(adr, c, "eam")
+		ear = self.rdarg(adr, c, "ear")
 
 		if eam == 7 and (eabit & (256 << ear)) == 0:
 			if ver:
@@ -267,7 +221,7 @@ class m68000(object):
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
 			while i < len(lc):
 				print("\t", lc[i])
-				y = self.rdarg(p, adr, lc[i], "sz", True)
+				y = self.rdarg(adr, lc[i], "sz", True)
 				if y == 3:
 					#print("Elim sz\t", lc[i])
 					del lc[i]
@@ -292,17 +246,23 @@ class m68000(object):
 				return None
 		return c
 		
-	def xdisass(self, p, adr, priv = None):
-		if p.t.find(adr, "ins") != None:
-			return
+	def do_disass(self, adr, ins):
+		assert ins.lo == adr
+		assert ins.status == "prospective"
 
+		p = self.p
 		#print(">>> @%04x" % adr)
-		c = self.root.find(p, adr, p.m.b16)
+		try:
+			c = self.root.find(p, adr, p.m.b16)
+		except:
+			ins.fail("no memory")
+			return
 		if c == None:
 			print("Error @%04x: %04x %04x no instruction found" %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
-			return None
-		#print("]]} @%04x" % adr, c)
+			ins.fail("no instruction")
+			return
+		print("]]} @%04x" % adr, c)
 
 		# We have a specification in 'c'
 		self.last_c = c
@@ -317,7 +277,7 @@ class m68000(object):
 		elif mne[-2:] == ".L":
 			wid = 32
 		elif mne[-2:] == ".Z":
-			y = self.rdarg(p, adr, c, "sz")
+			y = self.rdarg(adr, c, "sz")
 			if y == 0:
 				wid = 8
 				mne = mne[:-1] + "B"
@@ -366,9 +326,9 @@ class m68000(object):
 					return None
 				y = ea
 			elif i == "An" or i == "Ax" or i == "Ay":
-				y = "A%d" % self.rdarg(p, adr, c, i)
+				y = "A%d" % self.rdarg(adr, c, i)
 			elif i == "Dn" or i == "Dx" or i == "Dy":
-				y = "D%d" % self.rdarg(p, adr, c, i)
+				y = "D%d" % self.rdarg(adr, c, i)
 			elif i == "#data" and wid == 8:
 				y = "#0x%02x" % (p.m.b16(na) & 0xff)
 				na += 2
@@ -379,39 +339,39 @@ class m68000(object):
 				y = "#0x%08x" % p.m.b32(na)
 				na += 4
 			elif i == "#rot":
-				j = self.rdarg(p, adr, c, i)
+				j = self.rdarg(adr, c, i)
 				if j == 0:
 					j = 8
 				y = "#%d" % j
 			elif i == "#vect":
-				y = "%d" % self.rdarg(p, adr, c, i) 
+				y = "%d" % self.rdarg(adr, c, i) 
 			elif i == "#const":
-				y = "#0x%01x" % self.rdarg(p, adr, c, "const")
+				y = "#0x%01x" % self.rdarg(adr, c, "const")
 			elif i == "#word":
-				y = "#0x%04x" % self.rdarg(p, adr, c, i)
+				y = "#0x%04x" % self.rdarg(adr, c, i)
 			elif i == "An+#disp16":
-				k = self.rdarg(p, adr, c, "An")
-				j = self.rdarg(p, adr, c, "disp16")
+				k = self.rdarg(adr, c, "An")
+				j = self.rdarg(adr, c, "disp16")
 				if j & 0x8000:
 					y = "(A%d-0x%x)" % (k, -(j - 0x10000))
 				else:
 					y = "(A%d+0x%x)" % (k, j)
 			elif i == "#disp16":
-				j = self.rdarg(p, adr, c, i)
+				j = self.rdarg(adr, c, i)
 				if j & 0x8000:
 					j -= 0x10000
 				dstadr = adr + 2 + j
 				#print("%04x: na=%04x j=%d" % (adr, na, j))
 				y = "0x%04x" % dstadr
 			elif i == "rlist":
-				y = "<%x>" % self.rdarg(p, adr, c, i)
+				y = "<%x>" % self.rdarg(adr, c, i)
 			elif i == "#bn":
-				y = "#%d" % self.rdarg(p, adr, c, i)
+				y = "#%d" % self.rdarg(adr, c, i)
 			elif i == "#data8":
-				y = "#0x%02x" % self.rdarg(p, adr, c, i)
+				y = "#0x%02x" % self.rdarg(adr, c, i)
 			elif i == "#dst":
 				# Used in Bcc
-				j = self.rdarg(p, adr, c, "disp8")
+				j = self.rdarg(adr, c, "disp8")
 				if j == 0x00:
 					j = p.m.sb16(na)
 					na += 2
@@ -425,23 +385,19 @@ class m68000(object):
 				#   (adr, na, j, dstadr))
 				y = "0x%x" % dstadr
 			elif i == "ead":
-				eadr = self.rdarg(p, adr, c, "earx")
-				eadm = self.rdarg(p, adr, c, "eamx")
+				eadr = self.rdarg(adr, c, "earx")
+				eadm = self.rdarg(adr, c, "eamx")
 				(na, y, junk) = \
 				    self.ea(p, adr, na, eadm, eadr, wid)
 			elif i == "cc":
-				cc = condition_codes[self.rdarg(p, adr, c, i)]
+				cc = condition_codes[self.rdarg(adr, c, i)]
 				if mne == "Bcc":
 					mne = "B" + cc
 				elif mne == "DBcc":
 					mne = "DB" + cc
 				else:
 					y = cc
-			elif i == "CCR":
-				y = i
-			elif i == "USP":
-				y = i
-			elif i == "SR":
+			elif i in special_registers:
 				y = i
 			else:
 				print(("Error @%04x: %04x %04x " +
@@ -452,45 +408,26 @@ class m68000(object):
 				return None
 			if y != None:
 				ol.append(y)
-			
-		assert not self.bm.mtst(adr, na)
-		self.bm.mset(adr, na)
-		self.bm0.set(adr)
-		try:
-			x = p.t.add(adr, na, "ins")
-		except:
-			print("Error: @%04x %04x %04x: overlap" %
-			    (adr, p.m.b16(adr),
-			    p.m.b16(adr + 2)))
-			print("\t", c)
-			return None
-			
-		x.a['mne'] = mne
-		x.a['oper'] = ol
-		x.render = self.render
 
 		if mne == "TRAP":
-			x.a['flow'] = ()
+			ins.flow("call.TRAP", "T", None)
 		if mne == "BRA":
-			x.a['flow'] = ( ( "cond", "T", dstadr), )
+			ins.flow("cond", "T", dstadr)
 		elif mne == "JMP":
-			x.a['flow'] = ( ( "cond", "T", dstadr), )
+			ins.flow("cond", "T", dstadr)
 		elif mne == "RTS":
-			x.a['flow'] = ( ( "ret", "T", dstadr), )
+			ins.flow("ret", "T", dstadr)
 		elif mne == "BSR":
-			x.a['flow'] = ( ( "call", "T", dstadr), )
+			ins.flow("call", "T", dstadr)
 		elif mne == "JSR":
-			x.a['flow'] = ( ( "call", "T", dstadr), )
+			ins.flow("call", "T", dstadr)
 		elif c.spec[0] == "DBcc" and cc != "F":
-			x.a['flow'] = (
-				( "cond", cc, dstadr), 
-				( "cond", cc, na), 
-			)
+			ins.flow( "cond", cc, dstadr)
+			ins.flow( "cond", cc, na)
 		elif c.spec[0] == "Bcc":
-			x.a['flow'] = (
-				( "cond", cc, dstadr), 
-				( "cond", cc, na), 
-			)
-
-		p.ins(x, self.disass)
-		# print(">>> @%04x" % adr)
+			ins.flow("cond", cc, dstadr)
+			ins.flow("cond", cc, na)
+			
+		ins.mne = mne
+		ins.oper = ol
+		ins.hi = na

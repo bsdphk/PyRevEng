@@ -29,8 +29,6 @@ class nova(disass.assy):
 		assert ins.lo == adr
 		assert ins.status == "prospective"
 
-		ins.hi = ins.lo + 1
-
 		try:
 			c = self.root.find(self.p, adr, self.p.m.rd)
 		except:
