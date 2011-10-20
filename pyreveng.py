@@ -4,18 +4,15 @@
 #
 # Services rendered:
 #	todo	Todo list, things to do, one thing after another
-#	bb	Basic Block analysis of instructions
-#	render	Rendering
-#
-# Mandatory public members:
-#	.m	= memory, instance of mem.py
-#	.t	= tree, instance of tree.py
-#
 
-from __future__ import print_function
+#----------------------------------------------------------------------
+# Check the python version
 
-# Python dist imports
 import sys
+assert sys.version_info[0] >= 3 or "Need" == "Python v3"
+
+#----------------------------------------------------------------------
+# Python dist imports
 
 # PyRevEng imports
 import tree
