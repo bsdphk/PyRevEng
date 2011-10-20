@@ -58,6 +58,8 @@ class pyreveng(object):
 		# @hints
 		self.hints = dict()
 
+		self.cmt_start = 56
+
 	###############################################################
 	# HINT processing
 	#

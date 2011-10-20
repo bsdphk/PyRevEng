@@ -141,11 +141,6 @@ class render(object):
 		else:
 			fo = open(fname, "w")
 
-
-		if self.p.cautions > 0:
-			fo.write("; XXX %d CAUTIONS in this file\n"
-			    % self.p.cautions)
-
 		if start == None:
 			start = self.m.start
 
@@ -174,9 +169,6 @@ class render(object):
 
 		print("%d locations xxx'ed" % self.gaps)
 
-		if self.p.cautions > 0:
-			fo.write("; XXX %d CAUTIONS in this file\n"
-			    % self.p.cautions)
 		fo.close()
 
 	#----------------------------------------------------------------------

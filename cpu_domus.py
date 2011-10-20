@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 
-import cpu_nova
+import cpus.nova
 import cpu_domus_int
 import tree
 import mem
@@ -183,16 +183,16 @@ ShareDesc = (
 	( 1, "ssize", ),
 )
 
-class domus(cpu_nova.nova):
+class domus(cpus.nova.nova):
 	def __init__(self, p):
-		cpu_nova.nova.__init__(self, p, "domus")
+		cpus.nova.nova.__init__(self, p, "domus")
 		self.root.load("domus/domus_funcs.txt")
 		self.p.loadlabels("domus/domus_page_zero.txt")
 		
 
 	def finish_ins(self, ins):
 		if not ins.mne in domus_syscall.doc:
-			cpu_nova.nova.finish_ins(self, ins)
+			cpus.nova.nova.finish_ins(self, ins)
 			return
 
 		d = domus_syscall.doc[ins.mne]
@@ -203,7 +203,7 @@ class domus(cpu_nova.nova):
 				self.p.setlabel(ins.lo + i + 1, "." + j)
 				ins.flow("cond", j, ins.lo + i + 1)
 
-		cpu_nova.nova.finish_ins(self, ins)
+		cpus.nova.nova.finish_ins(self, ins)
 
 		x = self.p.t.find(ins.lo, "ins")
 		x.cmt += d[0]

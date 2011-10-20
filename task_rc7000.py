@@ -266,7 +266,7 @@ if __name__ == "__main__":
 		#dofile("__.CODEP", "P0261")
 		#dofile("__.INT")
 		#dofile("__.PTR", skip = 1)
-		#dofile("__.MUM")
+		dofile("__.MUM")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
 		#dofile("__.CATLI")

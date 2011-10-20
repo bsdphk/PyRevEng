@@ -4,7 +4,7 @@ import mem
 import pyreveng
 import topology
 
-import cpu_cdp1802
+import cpus.cdp1802
 
 m = mem.byte_mem(0,0x10000, 0, True, "big-endian")
 
@@ -13,7 +13,7 @@ m.bcols = 3
 p = pyreveng.pyreveng(m)
 p.cmt_start = 56
 p.m.fromfile("cdp1802.bin", 0x0000, 1)
-cpu = cpu_cdp1802.cdp1802(p)
+cpu = cpus.cdp1802.cdp1802(p)
 
 cpu.vectors(p)
 

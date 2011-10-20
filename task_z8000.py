@@ -13,7 +13,7 @@ import const
 import pyreveng
 import render
 import topology
-import cpu_z8000
+import cpus.z8000
 
 
 m = mem.byte_mem(0, 0x4000, 0, True, "big-endian")
@@ -22,7 +22,7 @@ p = pyreveng.pyreveng(m)
 p.cmt_start = 56
 p.g = topology.topology(p)
 
-cpu = cpu_z8000.z8000(p)
+cpu = cpus.z8000.z8000(p)
 
 p.m.fromfile("Z8k/u93.bin", 0, 2)
 p.m.fromfile("Z8k/u91.bin", 1, 2)

@@ -12,7 +12,7 @@ import tree
 import const
 import pyreveng
 import hp53xx
-import cpu_mc6800
+import cpus.mc6800
 import render
 import topology
 
@@ -45,7 +45,7 @@ p.g = topology.topology(p)
 # Add a CPU instance
 #
 
-cpu = cpu_mc6800.mc6800(p)
+cpu = cpus.mc6800.mc6800(p)
 cpu.vectors(0x8000)
 
 #----------------------------------------------------------------------
