@@ -88,6 +88,8 @@ class nova(disass.assy):
 					ins.oper.append(self.p.m.dfmt(o, False))
 					ins.oper.append("%d" % r)
 					da = None
+			elif i == '""':
+				pass
 			else:
 				print(i, c)
 				ins.fail("Unhandled arg <%s>" % i)
