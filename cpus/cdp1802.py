@@ -254,7 +254,6 @@ class cdp1802(disass.assy):
 			iw = p.m.rd(adr)
 			nw = p.m.rd(adr + 1)
 		except:
-			print("NOMEM cdp1802.disass(0x%x, " % adr, ")")
 			ins.fail("no mem")
 			return
 

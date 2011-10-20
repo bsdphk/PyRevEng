@@ -73,6 +73,10 @@ class disass(object):
 		"""
 		assert type(ins.lo) == int
 		assert type(ins.hi) == int
+
+		if ins.status == "fail":
+			return
+
 		assert ins.lo >= self.p.lo
 		assert ins.hi <= self.p.hi
 		assert self.bm.tst(ins.lo)
@@ -235,7 +239,7 @@ class instruction(object):
 		self.flow_out.append((mode, cc, dst))
 
 	def fail(self, reason):
-		print("FAIL: ", reason, "\n", self.debug())
+		print("FAIL: ", reason, "\n\t" + self.debug())
 		assert self.status == "prospective"
 		self.status = "fail"
 		self.reason = reason
