@@ -3,8 +3,6 @@
 # Zilog Z800[12] CPU disassembler
 #
 
-from __future__ import print_function
-
 import instree
 import disass
 
@@ -41,7 +39,7 @@ class z8000(disass.assy):
 		self.segmented = segmented
 		self.root = instree.instree(
 		    width = 16,
-		    filename = "cpus/z8000_instructions.txt",
+		    filename = __file__[:-3] + "_instructions.txt"
 		)
 		#self.root.print()
 
