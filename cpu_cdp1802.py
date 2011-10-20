@@ -134,8 +134,9 @@ reset_state = {
 
 import model
 import copy
+import disass
 
-class model_cdp1802(model.model):
+class model_cdp1802(disass.assy):
 	def __init__(self):
 		model.model.__init__(self);
 		self.verbs["MEM"] = (self.verb_mem, "adr")
@@ -232,32 +233,29 @@ class model_cdp1802(model.model):
 		
 
 
-class cdp1802(object):
-	def __init__(self):
-		self.model = model_cdp1802()
+class cdp1802(disass.assy):
+	def __init__(self, p, name = "cdp1802"):
+		disass.assy.__init__(self, p, name)
+		#self.model = model_cdp1802()
 
 	def vectors(self, p):
 		ss = copy.deepcopy(unknown_state)
 		for i in reset_state:
 			ss[i] = reset_state[i]
-		p.todo(0, self.disass, ss)
+		x = self.disass(0)
 
-	def render(self, p, t):
-		s = t.a['mne']
-		if t.a['arg'] != None:
-			s += "\t" + t.a['arg']
-		return (s,)
+	def do_disass(self, adr, ins):
+		assert ins.lo == adr
+		assert ins.status == "prospective"
 
-	def disass(self, p, adr, priv = None):
-		#print("cdp1802.disass(0x%x, " % adr, priv, ")")
-		if p.t.find(adr, "ins") != None:
-			return
+		p = self.p
 
 		try:
 			iw = p.m.rd(adr)
 			nw = p.m.rd(adr + 1)
 		except:
 			print("NOMEM cdp1802.disass(0x%x, " % adr, ")")
+			ins.fail("no mem")
 			return
 
 		#print("cdp1802.disass(0x%x, " % adr, "%02x" % iw, ")")
@@ -266,11 +264,11 @@ class cdp1802(object):
 
 		model = None
 		model = ("SEQ", ("INC", "/R(P)"))
-		flow = None
 		mne = None
 		arg = None
 		length = 1
-		state = priv
+		#state = priv
+		state = None
 
 		if iw == 0xd4:	
 			# XXX: hack
@@ -278,12 +276,12 @@ class cdp1802(object):
 			mne = "xcall"
 			arg = "0x%04x" % da
 			length = 3
-			flow = (("call", "T", da),)
+			ins.flow = ("call", "T", da)
 			model = None
 		elif iw == 0xd5:	
 			# XXX: hack
 			mne = "xret"
-			flow = (("ret", "T", None),)
+			ins.flow = ("ret", "T", None)
 			model = None
 
 		#-----------------------------------------------
@@ -575,14 +573,12 @@ class cdp1802(object):
 			if nreg == 0:
 				# BR a    Branch unconditionally
 				model = ("=", "/R(P)", "#0x%04x" % da)
-				flow = (("cond", "T", da ),)
+				ins.flow = ("cond", "T", da )
 			elif nreg == 1:
 				# BQ a    Branch if Q is on
 				# XXX: Does Q read different from /Q ?
-				flow = (
-				    ("cond", "q", da ),
-				    ("cond", "nq", adr + 2),
-				)
+				ins.flow("cond", "q", da )
+				ins.flow("cond", "nq", adr + 2)
 			elif nreg == 2:
 				# BZ a    Branch on Zero
 				model = ("SEQ",
@@ -592,10 +588,8 @@ class cdp1802(object):
 					("INC", "/R(P)"),
 				    ),
 				)
-				flow = (
-				    ("cond", "Z", da ),
-				    ("cond", "NZ", adr + 2),
-				)
+				ins.flow("cond", "Z", da )
+				ins.flow("cond", "NZ", adr + 2)
 			elif nreg == 3:
 				# BDF a   Branch if DF is 1
 				model = ("SEQ",
@@ -605,29 +599,23 @@ class cdp1802(object):
 					("=", "/R(P)", "#0x%04x" % da),
 				    ),
 				)
-				flow = (
-				    ("cond", "DF", da ),
-				    ("cond", "NDF", adr + 2),
-				)
+				ins.flow("cond", "DF", da )
+				ins.flow("cond", "NDF", adr + 2)
 			elif nreg >= 4 and nreg <= 7:
 				# B1 a    Branch on External Flag 1
 				# B2 a    Branch on External Flag 2
 				# B3 a    Branch on External Flag 3
 				# B4 a    Branch on External Flag 4
-				flow = (
-				    ("cond", "b%d" % (nreg - 3), da ),
-				    ("cond", "nb%d" % (nreg - 3), adr + 2),
-				)
+				ins.flow("cond", "b%d" % (nreg - 3), da )
+				ins.flow("cond", "nb%d" % (nreg - 3), adr + 2)
 			elif nreg == 8:
 				# SKP     Skip one byte
 				model = ("INC", "/R(P)", "#0x02")
-				flow = (("cond", "T", adr + 2 ),)
+				ins.flow("cond", "T", adr + 2 )
 			elif nreg == 9:
 				# BNQ a   Branch if Q is off
-				flow = (
-				    ("cond", "nq", da ),
-				    ("cond", "q", adr + 2),
-				)
+				ins.flow("cond", "nq", da )
+				ins.flow("cond", "q", adr + 2)
 			elif nreg == 0xa:
 				# BNZ a   Branch on Not Zero
 				model = ("SEQ",
@@ -637,10 +625,8 @@ class cdp1802(object):
 					("=", "/R(P)", "#0x%04x" % da),
 				    ),
 				)
-				flow = (
-				    ("cond", "NZ", da ),
-				    ("cond", "Z", adr + 2),
-				)
+				ins.flow("cond", "NZ", da )
+				ins.flow("cond", "Z", adr + 2)
 			elif nreg == 0xb:
 				# BNF a   Branch if DF is 0
 				model = ("SEQ",
@@ -650,19 +636,15 @@ class cdp1802(object):
 					("INC", "/R(P)"),
 				    ),
 				)
-				flow = (
-				    ("cond", "NDF", da ),
-				    ("cond", "DF", adr + 2),
-				)
+				ins.flow("cond", "NDF", da )
+				ins.flow("cond", "DF", adr + 2)
 			elif nreg >= 0xc and nreg <= 0xf:
 				# BN1 a   Branch on Not External Flag 1
 				# BN2 a   Branch on Not External Flag 2
 				# BN3 a   Branch on Not External Flag 3
 				# BN4 a   Branch on Not External Flag 4
-				flow = (
-				    ("cond", "nb%d" % (nreg - 11), da ),
-				    ("cond", "b%d" % (nreg - 11), adr + 2),
-				)
+				ins.flow("cond", "nb%d" % (nreg - 11), da )
+				ins.flow("cond", "b%d" % (nreg - 11), adr + 2)
 
 		#-----------------------------------------------
 		# BRANCH INSTRUCTIONS - LONG BRANCH
@@ -676,7 +658,7 @@ class cdp1802(object):
 				# LBR aa  Long Branch unconditionally
 				mne = "lbr"
 				model = ("=", "/R(P)", "#0x%04x" % da)
-				flow = ( ("cond", "T", da ), )
+				ins.flow("cond", "T", da )
 			elif iw == 0xc1:
 				# LBQ aa  Long Branch if Q is on
 				mne = "lbq"
@@ -684,10 +666,8 @@ class cdp1802(object):
 					("=", "/R(P)", "#0x%04x" % da),
 					("INC", "/R(P)", "#0x3"),
 				)
-				flow = (
-				    ("cond", "Q", da ),
-				    ("cond", "NQ", adr + 3),
-				)
+				ins.flow("cond", "Q", da )
+				ins.flow("cond", "NQ", adr + 3)
 			elif iw == 0xc2:
 				# LBZ aa  Long Branch if Zero
 				mne = "lbz"
@@ -695,10 +675,8 @@ class cdp1802(object):
 					("=", "/R(P)", "#0x%04x" % da),
 					("INC", "/R(P)", "#0x3"),
 				)
-				flow = (
-				    ("cond", "Z", da ),
-				    ("cond", "NZ", adr + 3),
-				)
+				ins.flow("cond", "Z", da )
+				ins.flow("cond", "NZ", adr + 3)
 			elif iw == 0xc3:
 				# LBDF aa Long Branch if DF is 1
 				mne = "lbdf"
@@ -706,17 +684,15 @@ class cdp1802(object):
 					("INC", "/R(P)", "#0x3"),
 					("=", "/R(P)", "#0x%04x" % da),
 				)
-				flow = (
-				    ("cond", "DF", da ),
-				    ("cond", "NDF", adr + 3),
-				)
+				ins.flow("cond", "DF", da )
+				ins.flow("cond", "NDF", adr + 3)
 			elif iw == 0xc8:
 				# LSKP    Long Skip
 				mne = "lskp"
 				length = 1
 				arg = None
 				model = ("INC", "/R(P)", "#0x3")
-				flow = ( ("cond", "T", adr + 3 ), )
+				ins.flow("cond", "T", adr + 3 )
 			elif iw == 0xc9:
 				# LBNQ aa Long Branch if Q is off
 				mne = "lbnq"
@@ -724,10 +700,8 @@ class cdp1802(object):
 					("INC", "/R(P)", "#0x3"),
 					("=", "/R(P)", "#0x%04x" % da),
 				)
-				flow = (
-				    ("cond", "NQ", da ),
-				    ("cond", "Q", adr + 3),
-				)
+				ins.flow("cond", "NQ", da )
+				ins.flow("cond", "Q", adr + 3)
 			elif iw == 0xca:
 				# LBNZ aa Long Branch if Not Zero
 				mne = "lbnz"
@@ -735,10 +709,8 @@ class cdp1802(object):
 					("INC", "/R(P)", "#0x3"),
 					("=", "/R(P)", "#0x%04x" % da),
 				)
-				flow = (
-				    ("cond", "NZ", da ),
-				    ("cond", "Z", adr + 3),
-				)
+				ins.flow("cond", "NZ", da )
+				ins.flow("cond", "Z", adr + 3)
 			elif iw == 0xcb:
 				# LBNF aa Long Branch if DF is 0
 				mne = "lbnf"
@@ -746,10 +718,8 @@ class cdp1802(object):
 					("=", "/R(P)", "#0x%04x" % da),
 					("INC", "/R(P)", "#0x3"),
 				)
-				flow = (
-				    ("cond", "NDF", da ),
-				    ("cond", "DF", adr + 3),
-				)
+				ins.flow("cond", "NDF", da )
+				ins.flow("cond", "DF", adr + 3)
 		#-----------------------------------------------
 		# SKIP INSTRUCTIONS 
 
@@ -761,10 +731,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x3"),
 			        ("INC", "/R(P)", "#0x1"),
 			)
-			flow = (
-			    ("cond", "NZ", adr + 1 ),
-			    ("cond", "Z", adr + 3),
-			)
+			ins.flow("cond", "NZ", adr + 1 )
+			ins.flow("cond", "Z", adr + 3)
 		elif iw == 0xc6:
 			# LSNZ    Long Skip if Not Zero
 			mne = "lsnz"
@@ -772,10 +740,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x1"),
 			        ("INC", "/R(P)", "#0x3"),
 			)
-			flow = (
-			    ("cond", "Z", adr + 1 ),
-			    ("cond", "NZ", adr + 3),
-			)
+			ins.flow("cond", "Z", adr + 1 )
+			ins.flow("cond", "NZ", adr + 3)
 		elif iw == 0xcf:
 			# LSDF    Long Skip if DF is 1
 			mne = "lsdf"
@@ -783,10 +749,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x1"),
 			        ("INC", "/R(P)", "#0x3"),
 			)
-			flow = (
-			    ("cond", "NDF", adr + 1 ),
-			    ("cond", "DF", adr + 3),
-			)
+			ins.flow("cond", "NDF", adr + 1 )
+			ins.flow("cond", "DF", adr + 3)
 		elif iw == 0xc7:
 			# LSNF    Long Skip if DF is 0
 			mne = "lsnf"
@@ -794,10 +758,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x3"),
 			        ("INC", "/R(P)", "#0x1"),
 			)
-			flow = (
-			    ("cond", "DF", adr + 1 ),
-			    ("cond", "NDF", adr + 3),
-			)
+			ins.flow("cond", "DF", adr + 1 )
+			ins.flow("cond", "NDF", adr + 3)
 
 		elif iw == 0xcd:
 			# LSQ     Long Skip if Q is on
@@ -806,10 +768,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x1"),
 			        ("INC", "/R(P)", "#0x3"),
 			)
-			flow = (
-			    ("cond", "NQ", adr + 1 ),
-			    ("cond", "Q", adr + 3),
-			)
+			ins.flow("cond", "NQ", adr + 1 )
+			ins.flow("cond", "Q", adr + 3)
 		elif iw == 0xc5:
 			# LSNQ    Long Skip if Q is off
 			mne = "lsnq"
@@ -817,10 +777,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x3"),
 			        ("INC", "/R(P)", "#0x1"),
 			)
-			flow = (
-			    ("cond", "Q", adr + 1 ),
-			    ("cond", "NQ", adr + 3),
-			)
+			ins.flow("cond", "Q", adr + 1 )
+			ins.flow("cond", "NQ", adr + 3)
 		elif iw == 0xcc:
 			# LSIE    Long Skip if Interrupts Enabled
 			mne = "lsie"
@@ -828,10 +786,8 @@ class cdp1802(object):
 			        ("INC", "/R(P)", "#0x1"),
 			        ("INC", "/R(P)", "#0x3"),
 			)
-			flow = (
-			    ("cond", "NIE", adr + 1 ),
-			    ("cond", "IE", adr + 3),
-			)
+			ins.flow("cond", "NIE", adr + 1 )
+			ins.flow("cond", "IE", adr + 3)
 
 		#-----------------------------------------------
 		# CONTROL INSTRUCTIONS 
@@ -849,7 +805,6 @@ class cdp1802(object):
 			mne = "sep"
 			arg = "%d" % nreg
 			model += ( ("=", "/P", "#0x%x" % nreg), )
-			flow = ()
 		elif ireg == 0xe0:
 			# SEX r   Set X
 			mne = "sex"
@@ -891,7 +846,6 @@ class cdp1802(object):
 			    ("INC", "/R(X)"),
 			    ("=", "/IE", "#0b%d" % (1^(iw & 1))),
 			)
-			flow = ()
 
 		#------------------------------------------
 		# INPUT - OUTPUT BYTE TRANSFER
@@ -904,7 +858,6 @@ class cdp1802(object):
 			    ("BUS", "#0x%x" % nreg, ("MEM", "/R(X)")),
 			    ("INC", "/R(X)"),
 			)
-			flow = ()
 		elif ireg == 0x60 and nreg >= 9 and nreg <= 0xf:
 			# INP p   Input to memory and D (for p = 9 to F)
 			mne = "in"
@@ -918,19 +871,21 @@ class cdp1802(object):
 
 		else:
 			print("cdp1802.disass(0x%x, " % adr, ") = 0x%02x" % iw)
+			ins.fail("no instruction")
 			return
 
 		#print("%04x" % adr, "%02x" % iw, mne, arg, flow)
-		x = p.t.add(adr, adr + length, "ins")
-		x.render = self.render
-		x.a['mne'] = mne
-		x.a['arg'] = arg
+		ins.mne = mne
+		ins.hi = ins.lo + length
+		if arg != None:
+			ins.oper.append(arg)
+
 		if state == None:
 			state = copy.deepcopy(unknown_state)
 			state['/P'] = (4, 3)
 			state['/R3.0'] = (8, adr & 0xff)
 			state['/R3.1'] = (8, adr >> 8)
-		if model != None:
+		if False and model != None:
 			x.a['model'] = model
 			x.cmt.append(str(model))
 			x.cmt.append(self.model.render_state(state))
@@ -939,7 +894,3 @@ class cdp1802(object):
 			if v[1] != None:
 				#print("--> Model %04x %04x" % (adr, v[1]))
 				p.todo(v[1], p.cpu.disass, copy.deepcopy(state))
-		if flow != None:
-			x.a['flow'] = flow
-		p.ins(x, self.disass)
-		
