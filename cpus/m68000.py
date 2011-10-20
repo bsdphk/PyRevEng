@@ -9,6 +9,30 @@ import instree
 import disass
 
 #######################################################################
+def reglist_word(w, p, l):
+	w = w & 0xff
+	if (w == 0):
+		return ""
+	i = 0
+	s = ""
+	while (i < 8):
+		if (w & (1 << i)):
+			s = s + "," + p + l[i]
+			j = i 
+			while ((w & (1 << j))):
+				j = j + 1
+			if (j > i + 1):
+				s = s + "-" + l[j - 1]
+				i = j - 1
+		i = i + 1
+	return s
+
+def reglist(w):
+	r = reglist_word(w, "D", "01234567") + \
+	    reglist_word(w >> 8, "A", "01234567")
+	return "{" + r[1:] + "}"
+
+#######################################################################
 
 special_registers = {
 	"USP", "CCR", "SR"
@@ -25,7 +49,7 @@ class m68000(disass.assy):
 		disass.assy.__init__(self, p, name)
 		self.root = instree.instree(
 		    width = 16,
-		    filename = "cpus/m68000_instructions.txt",
+		    filename = __file__[:-3] + "_instructions.txt"
 		)
 		#self.root.print()
 
@@ -229,7 +253,7 @@ class m68000(disass.assy):
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
 			ins.fail("no instruction")
 			return
-		print("]]} @%04x" % adr, c)
+		#print("]]} @%04x" % adr, c)
 
 		# We have a specification in 'c'
 		self.last_c = c
@@ -261,7 +285,8 @@ class m68000(disass.assy):
 				    y)
 				print("\t", c)
 				print(self.root.allfind(p, adr, p.m.b16))
-				return None
+				ins.fail("wrong sz field")
+				return 
 		
 		else:
 			wid = 16
@@ -277,7 +302,8 @@ class m68000(disass.assy):
 		if junk == True:
 			ea,dstadr = self.ea(ins, eam, ear, wid)
 			if ea == None:
-				return None
+				ins.fail("wrong ea")
+				return
 
 		for i in c.spec[1].split(","):
 			y = None
@@ -290,12 +316,17 @@ class m68000(disass.assy):
 					    (adr, p.m.b16(adr), p.m.b16(adr + 2)
 					    ))
 					print("\t", c)
-					return None
+					ins.fail("wrong ea")
+					return
 				y = ea
 			elif i == "An" or i == "Ax" or i == "Ay":
 				y = "A%d" % self.rdarg(adr, c, i)
 			elif i == "Dn" or i == "Dx" or i == "Dy":
 				y = "D%d" % self.rdarg(adr, c, i)
+			elif i == "-(Ax)" or i == "Ax" or i == "-(Ay)":
+				y = "-(A%d)" % self.rdarg(adr, c, i[2:-1])
+			elif i == "(Ax)+" or i == "Ax" or i == "(Ay)+":
+				y = "(A%d)+" % self.rdarg(adr, c, i[1:-2])
 			elif i == "#data" and wid == 8:
 				y = "#0x%02x" % (p.m.b16(ins.hi) & 0xff)
 				ins.hi += 2
@@ -331,7 +362,7 @@ class m68000(disass.assy):
 				#print("%04x: na=%04x j=%d" % (adr, ins.hi, j))
 				y = "0x%04x" % dstadr
 			elif i == "rlist":
-				y = "<%x>" % self.rdarg(adr, c, i)
+				y = reglist(self.rdarg(adr, c, i))
 			elif i == "#bn":
 				y = "#%d" % self.rdarg(adr, c, i)
 			elif i == "#data8":
@@ -372,7 +403,8 @@ class m68000(disass.assy):
 				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
 				    i))
 				print("\t", c)
-				return None
+				ins.fail("unhandled arg")
+				return
 			if y != None:
 				ol.append(y)
 
