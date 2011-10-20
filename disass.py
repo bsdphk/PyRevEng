@@ -129,8 +129,11 @@ class assy(disass):
 
 	Render function does label resolution on .oper elements
 	of the format:
-		("mumble(%s)", int)
-
+		(int, "foo(%s)")
+			Substitute label or m.afmt() if "%s" present
+		(int, "foo(%s)", "bar(%s)")
+			Substitute label in "foo(%s)" (if "%s" present)
+			Substitute m.afmt() in "bar(%s)" (if "%s" present)
 	"""
 	def __init__(self, p, name):
 		disass.__init__(self, p, name)
@@ -158,11 +161,17 @@ class assy(disass):
 			if type(i) == str:
 				s += i
 				continue
-			if type(i[1]) == int:
-				if i[1] in self.p.label:
-					s += i[0] % self.p.label[i[1]]
+			if type(i[0]) == int:
+				if i[0] in self.p.label:
+					s += i[1] % self.p.label[i[0]]
+				elif len(i) < 3 and i[1].find('%s') != -1:
+					s += i[1] % self.p.m.afmt(i[0])
+				elif len(i) < 3:
+					s += i[1]
+				elif i[2].find('%s') != -1:
+					s += i[2] % self.p.m.afmt(i[0])
 				else:
-					s += i[0] % self.p.m.afmt(i[1])
+					s += i[2]
 				
 			else:
 				s += "<XXX " + str(i) + ">"

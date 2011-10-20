@@ -1,0 +1,31 @@
+# Nova CPU instructions
+
+JMP	@,displ			|0 0 0 0 0|@|idx| displ		|
+JSR	@,displ			|0 0 0 0 1|@|idx| displ		|
+ISZ	@,displ			|0 0 0 1 0|@|idx| displ		|
+DSZ	@,displ			|0 0 0 1 1|@|idx| displ		|
+LDA	acd,@,displ		|0 0 1|acd|@|idx| displ		|
+STA	acs,@,displ		|0 1 0|acs|@|idx| displ		|
+ADD	cy,sh,#,acs,acd,skip	|1|acs|acd|1 1 0|sh |cy |#|skip	|
+SUB	cy,sh,#,acs,acd,skip	|1|acs|acd|1 0 1|sh |cy |#|skip	|
+NEG	cy,sh,#,acs,acd,skip	|1|acs|acd|0 0 1|sh |cy |#|skip	|
+ADC	cy,sh,#,acs,acd,skip	|1|acs|acd|1 0 0|sh |cy |#|skip	|
+MOV	cy,sh,#,acs,acd,skip	|1|acs|acd|0 1 0|sh |cy |#|skip	|
+INC	cy,sh,#,acs,acd,skip	|1|acs|acd|0 1 1|sh |cy |#|skip	|
+COM	cy,sh,#,acs,acd,skip	|1|acs|acd|0 0 0|sh |cy |#|skip	|
+AND	cy,sh,#,acs,acd,skip	|1|acs|acd|1 1 1|sh |cy |#|skip	|
+DIA	flg,acd,dev		|0 1 1|acs|0 0 1|flg|device	|
+DIB	flg,acd,dev		|0 1 1|acs|0 1 1|flg|device	|
+DIC	flg,acd,dev		|0 1 1|acs|1 0 1|flg|device	|
+DOA	flg,acs,dev		|0 1 1|acs|0 1 0|flg|device	|
+DOB	flg,acs,dev		|0 1 1|acs|1 0 0|flg|device	|
+DOC	flg,acs,dev		|0 1 1|acs|1 1 0|flg|device	|
+SKP	tst,dev			|0 1 1|0 0|1 1 1|tst|device	|
+NIO	flg,dev			|0 1 1|0 0|0 0 0|flg|device	|
+INTEN	""			|0 1 1|0 0|0 0 0|0 1|1 1 1 1 1 1|
+INTDS	""			|0 1 1|0 0|0 0 0|1 0|1 1 1 1 1 1|
+READS	acd			|0 1 1|acd|0 0 1|0 0|1 1 1 1 1 1|
+INTA	acd			|0 1 1|acd|0 1 1|0 0|1 1 1 1 1 1|
+MSKO	acs			|0 1 1|acs|1 0 0|0 0|1 1 1 1 1 1|
+IORST	""			|0 1 1|x x|1 0 1|1 0|1 1 1 1 1 1|
+HALT	""			|0 1 1|x x|1 1 0|0 0|1 1 1 1 1 1|

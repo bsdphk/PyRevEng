@@ -11,6 +11,7 @@ import array
 import tree
 import pyreveng
 
+import cpu_nova
 import cpu_domus
 import mem_domus
 import cpu_domus_int
@@ -53,9 +54,10 @@ def dofile(filename, obj = None, skip = 0):
 		    objidx[obj])
 
 		p = pyreveng.pyreveng(mem_domus.mem_domus())
-		p.cpu = cpu_domus.domus()
+		#cpu = cpu_domus.domus(p)
+		cpu = cpu_nova.nova(p)
 
-		p.cpu.iodev[9] = "TTYOUT"
+		cpu.iodev[9] = "TTYOUT"
 
 		load_file.load(p.m, obj, silent=True)
 
@@ -64,13 +66,13 @@ def dofile(filename, obj = None, skip = 0):
 
 		if ld == None and len(objidx) != 1:
 			ld = load_file.min_nrel
-			p.todo(ld, p.cpu.disass)
+			p.todo(ld, cpu.disass)
 		elif ld == None:
 			pass
 		elif ld == 0x8000:
 			pass
 		else:
-			p.todo(ld, p.cpu.procdesc)
+			p.todo(ld, cpu.procdesc)
 
 		for i in range(0,256):
 			try:
@@ -79,21 +81,22 @@ def dofile(filename, obj = None, skip = 0):
 			except:
 				continue
 			if q > 0:
-				p.todo(d, p.cpu.disass)
+				cpu.disass(d)
+			continue
 			j = 0o006200 | i
-			if j in p.cpu.special:
-				p.setlabel(d, p.cpu.special[j][0])
+			if j in cpu.special:
+				p.setlabel(d, cpu.special[j][0])
 				x = p.t.add(i, i + 1, "PZ_CALL")
 				x.render = ".WORD   %o%s" % (d, p.m.qfmt(q))
 				x.blockcmt += "\n"
-				x.cmt.append(p.cpu.special[j][0])
-				if len(p.cpu.special[j]) > 1:
-					for k in p.cpu.special[j][1]:
+				x.cmt.append(cpu.special[j][0])
+				if len(cpu.special[j]) > 1:
+					for k in cpu.special[j][1]:
 						x.cmt.append(k)
 
 		if filename == "__.MUC":
-			p.todo(0o100017, p.cpu.disass)
-			p.todo(0o100034, p.cpu.disass)
+			p.todo(0o100017, cpu.disass)
+			p.todo(0o100034, cpu.disass)
 
 		if filename == "__.INT":
 
@@ -111,16 +114,16 @@ def dofile(filename, obj = None, skip = 0):
 						p.setlabel(a, x[1])
 				x = p.m.rd(i)
 				if x != 0:
-					p.todo(x, p.cpu.disass)
+					p.todo(x, cpu.disass)
 
 			for i in cpu_domus_int.intins:
 				xx(i)
 
 		if filename == "__.DOMUS":
 			# DOMUS
-			p.todo(0x11f1, p.cpu.disass)
+			p.todo(0x11f1, cpu.disass)
 			p.t.a['page_base'] = 0x137a
-			p.cpu.pagedesc(p, 0x1007)
+			cpu.pagedesc(p, 0x1007)
 			for pg in range(3,20):
 				aa = 0x137a + pg * 0x100
 				x = p.t.add(aa, aa + 1, "page %d" % pg)
@@ -132,13 +135,13 @@ def dofile(filename, obj = None, skip = 0):
 				cpu_domus.word(p, aa + 4)
 				nw = p.m.rd(aa)
 				da = (nw & 0x7fff) + p.t.a['page_base']
-				p.todo(da, p.cpu.disass)
+				p.todo(da, cpu.disass)
 				print("CMD: %x -> %x" % (aa,da))
 
 		if filename == "__.MUSIL":
-			#p.todo(0o20550, p.cpu.disass)
-			#p.todo(0o14341, p.cpu.disass)
-			p.cpu.zonedesc(p, 0o11634)
+			#p.todo(0o20550, cpu.disass)
+			#p.todo(0o14341, cpu.disass)
+			cpu.zonedesc(p, 0o11634)
 			x = p.t.add(0o012461, 0o012474, "Func")
 			x = p.t.add(0o012474, 0o012477, "Func")
 			x = p.t.add(0o012477, 0o012512, "Func")
@@ -162,14 +165,14 @@ def dofile(filename, obj = None, skip = 0):
 			do_list(p, 0o026270, 4)
 
 			for a in range(0o015673, 0o015706):
-				p.todo(p.m.rd(a), p.cpu.disass)
+				p.todo(p.m.rd(a), cpu.disass)
 				
 
 			a = 0o12526
 			while True:
 				x = p.t.add(a, a + 5, "XXXTBL")
 				cpu_domus.dot_txt(p, a + 2, a + 5)
-				p.todo(p.m.rd(a + 1), p.cpu.disass)
+				p.todo(p.m.rd(a + 1), cpu.disass)
 				cpu_domus.word(p, a, "%o")
 				cpu_domus.word(p, a + 1, "%o")
 				n = p.m.rd(a)
@@ -178,13 +181,13 @@ def dofile(filename, obj = None, skip = 0):
 				a = n + 2
 
 			# calls to 20574'
-			p.todo(0o20716, p.cpu.disass)
-			p.todo(0o14600, p.cpu.disass)
+			p.todo(0o20716, cpu.disass)
+			p.todo(0o14600, cpu.disass)
 
-			p.todo(0o17343, p.cpu.disass)
+			p.todo(0o17343, cpu.disass)
 
-			p.todo(0o17341, p.cpu.disass)
-			p.todo(0o015271, p.cpu.disass)
+			p.todo(0o17341, cpu.disass)
+			p.todo(0o015271, cpu.disass)
 
 		p.run()
 
@@ -263,11 +266,12 @@ if __name__ == "__main__":
 	else:
 		#dofile("__.CODEP", "P0261")
 		#dofile("__.MUSIL")
-		#dofile("__.MUB")
+		dofile("__.MUB")
+		#dofile("__.MUM")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
 		#dofile("__.CATLI")
 		#dofile("__.FSLIB")
-		for o in (0x55c, 0x4b11, 0x8742):
-			dofile("/home/phk/rc7000_atm_asnaes.bin", None, o)
-		pass
+		#for o in (0x55c, 0x4b11, 0x8742):
+		#	dofile("/home/phk/rc7000_atm_asnaes.bin", None, o)
+		#pass
