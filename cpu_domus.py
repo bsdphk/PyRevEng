@@ -217,8 +217,10 @@ ShareDesc = (
 )
 
 class domus(cpu_nova.nova):
-	def __init__(self):
-		cpu_nova.nova.__init__(self)
+	def __init__(self, p):
+		cpu_nova.nova.__init__(self, p, "domus")
+		self.root.load("domus/domus_funcs.txt")
+		self.p.loadlabels("domus/domus_page_zero.txt")
 		self.special = dict()
 		self.special[0o006002] = (
 			"WAIT",
@@ -511,7 +513,7 @@ class domus(cpu_nova.nova):
 
 		self.special[0o006177] = ( "DIVIDE",)
 
-	def disass(self, p, adr, priv = None):
+	def xdisass(self, p, adr, priv = None):
 		if p.t.find(adr, "ins") != None:
 			return
 		assert type(adr) == int

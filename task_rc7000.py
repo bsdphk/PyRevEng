@@ -11,7 +11,6 @@ import array
 import tree
 import pyreveng
 
-import cpu_nova
 import cpu_domus
 import mem_domus
 import cpu_domus_int
@@ -54,8 +53,7 @@ def dofile(filename, obj = None, skip = 0):
 		    objidx[obj])
 
 		p = pyreveng.pyreveng(mem_domus.mem_domus())
-		#cpu = cpu_domus.domus(p)
-		cpu = cpu_nova.nova(p)
+		cpu = cpu_domus.domus(p)
 
 		cpu.iodev[9] = "TTYOUT"
 
