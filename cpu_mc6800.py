@@ -168,7 +168,6 @@ class mc6800(disass.assy):
 		x.a['flow'] = (("cond", "T", w),)
 		self.p.todo(w, self.disass)
 		self.p.setlabel(w, nm + "_VECTOR")
-		# p.markbb(w, ("call", nm, None))
 
 	def vectors(self, adr = 0x10000):
 		"""Instantiate the four MC6800 vectors
