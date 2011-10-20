@@ -343,6 +343,20 @@ class pyreveng(object):
 		self.label[a] = lbl
 
 	###############################################################
+	# Load labels from file
+	#
+
+	def loadlabels(self, filename):
+		fi = open(filename, "r")
+		for i in fi.readlines():
+			i = i.strip()
+			if i == "" or i[0] == "#":
+				continue
+			j = i.split()
+			self.setlabel(int(j[1], 0), j[0])
+		fi.close()
+
+	###############################################################
 	# Resolve effective addresses that go through unconditional jumps
 	#
 
