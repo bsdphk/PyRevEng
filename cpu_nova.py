@@ -28,7 +28,6 @@ class nova(disass.assy):
 	def do_disass(self, adr, ins):
 		assert ins.lo == adr
 		assert ins.status == "prospective"
-		print("D", ins)
 
 		ins.hi = ins.lo + 1
 
@@ -113,5 +112,3 @@ class nova(disass.assy):
 				ins.flow("cond", "T", da)
 			else:
 				ins.flow("call", "T", da)
-			
-		ins.finish()

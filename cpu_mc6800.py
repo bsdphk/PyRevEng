@@ -122,15 +122,15 @@ class mc6800(disass.assy):
 			#XXX ins.ea = (aa,)
 		elif c[1] == "s":
 			da = p.m.b16(adr + 1)
-			ins.oper.append(("%s", da))
+			ins.oper.append((da, "%s"))
 			ins.flow("call", "T", da)
 		elif c[1] == "R":
 			da = adr + 2 + p.m.s8(adr + 1)
-			ins.oper.append(("%s", da))
+			ins.oper.append((da, "%s"))
 			ins.flow("call", "T", da)
 		elif c[1] == "r":
 			da = adr + 2 + p.m.s8(adr + 1)
-			ins.oper.append(("%s", da))
+			ins.oper.append((da, "%s"))
 			if iw & 0x0f == 00:
 				ins.flow("cond", "T", da)
 			else:
@@ -139,7 +139,7 @@ class mc6800(disass.assy):
 				ins.flow("cond", c[3:], da)
 		elif c[1] == "j":
 			da = p.m.b16(adr + 1)
-			ins.oper.append(("%s", da))
+			ins.oper.append((da, "%s"))
 			ins.flow("cond", "T", da)
 		elif c[1] == "X":
 			ins.oper = ("0x%02x" % p.m.rd(adr + 1),"X")
@@ -160,8 +160,6 @@ class mc6800(disass.assy):
 			print("UNIMPL %04x: %02x %s" % (adr,iw, c))
 			ins.fail("bad arg")
 			return
-		ins.finish()
-			
 
 	def __vector(self, adr, nm):
 		x = const.w16(self.p, adr)

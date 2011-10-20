@@ -313,5 +313,3 @@ class z8000(disass.assy):
 		ins.hi = na
 		ins.mne = mne
 		ins.oper = ol
-
-		ins.finish()

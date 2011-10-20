@@ -8,6 +8,7 @@ import cpu_domus_int
 import tree
 import mem
 
+import domus.syscall as domus_syscall
 
 class word(tree.tree):
 	def __init__(self, p, adr, fmt = "%d"):
@@ -65,40 +66,6 @@ class dot_txt(tree.tree):
 		return (s,)
 
 
-def do_desc(p, a, l, n, desc):
-	dtype = n + "Descriptor"
-	try:
-		x = p.t.find(a, dtype)
-		if x != None:
-			return False
-	except:
-		pass
-
-	if l == 0:
-		for i in desc:
-			try:
-				p.m.rd(a + l)
-			except:
-				break
-			l += i[0]
-	x = p.t.add(a, a + l, dtype)
-	x.blockcmt += n + " descriptor\n"
-	x.fill = False
-	i = 0
-	for j in desc:
-		if j[1] == "name":
-			x = dot_txt(p, a+i, a + i + j[0])
-		else:
-			x = word(p, a + i)
-		x.cmt.append("+%d " % i + j[1])
-		i += j[0]
-		if i >= l:
-			break
-	while i < l:
-		x = word(p, a + i)
-		x.cmt.append("+%d" % i)
-		i += 1
-	return True
 
 PageDesc = (
 	( 1, "page size"),
@@ -221,352 +188,35 @@ class domus(cpu_nova.nova):
 		cpu_nova.nova.__init__(self, p, "domus")
 		self.root.load("domus/domus_funcs.txt")
 		self.p.loadlabels("domus/domus_page_zero.txt")
-		self.special = dict()
-		self.special[0o006002] = (
-			"WAIT",
-			(
-				"     Call    Return   Error",
-				"             ans/msg  t'out/irq",
-				"AC0  delay   first    unchg",
-				"AC1  device  second   device",
-				"AC2  buf     nextbuf  cur",
-				"AC3  link    cur      cur"
-			), (
-				"TIMEOUT",
-				"INTERRUPT",
-				"ANSWER",
-				"MESSAGE"
-			)
-		)
-		self.special[0o006003] = (
-			"WAITINTERRUPT",
-			(
-				"     Call    Return",
-				"AC0  -       unchg",
-				"AC1  device  device",
-				"AC2  delay   cur",
-				"AC3  link    cur",
-			), (
-				"TIMEOUT",
-				"INTERRUPT"
-			)
-		)
-		self.special[0o006004] = (
-			"SENDMESSAGE",
-			(
-				"     Call    Return Error",
-				"AC0  -       unchg  unchg",
-				"AC1  address adress adress",
-				"AC2  nameadr buf    error",
-				"AC3  link    cur    cur"
-			),
-		)
-		self.special[0o006005] = (
-			"WAITANSWER",
-			(
-				"     Call    Return",
-				"AC0  -       first",
-				"AC1  -       second",
-				"AC2  buf     buf",
-				"AC3  link    cur",
-			)
-		)
-		self.special[0o006006] = (
-			"WAITEEVENT",
-			(
-				"     Call    Return",
-				"AC0  -       first",
-				"AC1  -       second",
-				"AC2  buf     next buf",
-				"AC3  link    cur",
-			), (
-				"ANSWER",
-				"MESSAGE"
-			)
-		)
-		self.special[0o006007] = ( "SENDANSWER",)
-		self.special[0o006010] = (
-			 "SEARCHITEM",
-			(
-				"     Call    Return",
-				"AC0  -       unchanged",
-				"AC1  head    head",
-				"AC2  name    item",
-				"AC3  link    cur",
-			)
-		)
-		self.special[0o006011] = ( "CLEANPROCESS",)
-		self.special[0o006012] = ( "BREAKPROCESS",)
-		self.special[0o006013] = ( "STOPPROCESS",)
-		self.special[0o006014] = ( "STARTPROCESS",)
-		self.special[0o006015] = ( "RECHAIN",)
-		self.special[0o006164] = ( "NEXTOPERATION", (), ("CONTROL", "INPUT", "OUTPUT"))
-		self.special[0o006165] = ( "RETURANSWER",)
-		self.special[0o006167] = ( "WAITOPERATION", (), ("TIMER", "INTERRUPT", "ANSWER", "CONTROL", "INPUT", "OUTPUT"))
-		self.special[0o006170] = ( "SETINTERRUPT",)
-		self.special[0o006171] = ( "SETRESERVATION",)
-		self.special[0o006172] = ( "SETCONVERSION",)
-		self.special[0o006173] = ( "CONBYTE",)
-		self.special[0o006174] = ( "GETBYTE",)
-		self.special[0o006175] = ( "PUTBYTE",)
-		self.special[0o006176] = ( "MULTIPLY",)
-
-		self.special[0o006232] = ( "BINDEC",)
-		self.special[0o006233] = ( "DECBIN",)
-		self.special[0o006200] = ( "GETREC",)
-		self.special[0o006201] = ( "PUTREC",)
-		self.special[0o006202] = ( "WAITTRANSFER",)
-		self.special[0o006204] = (
-			"TRANSFER",
-			(
-				"     Call    Return",
-				"AC0  oper    destroyed",
-				"AC1  len     destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006205] = (
-			"INBLOCK",
-			(
-				"     Call    Return",
-				"AC0  -       destroyed",
-				"AC1  -       destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006206] = (
-			"OUTBLOCK",
-			(
-				"     Call    Return",
-				"AC0  -       destroyed",
-				"AC1  -       destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006207] = (
-			"INCHAR",
-			(
-				"     Call    Return",
-				"AC0  -       destroyed",
-				"AC1  -       char",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006210] = ( "FREESHARE",)
-		self.special[0o006211] = (
-			"OUTSPACE",
-			(
-				"     Call    Return",
-				"AC0  -       unchanged",
-				"AC1  -       destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006212] = (
-			"OUTCHAR",
-			(
-				"     Call    Return",
-				"AC0  -       unchanged",
-				"AC1  char    destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006213] = (
-			"OUTNL",
-			(
-				"     Call    Return",
-				"AC0  -       destroyed",
-				"AC1  char    destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006214] = (
-			"OUTEND",
-			(
-				"     Call    Return",
-				"AC0  -       destroyed",
-				"AC1  char    destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006215] = (
-			"OUTTEXT",
-			(
-				"     Call    Return",
-				"AC0  byteadr destroyed",
-				"AC1  -       destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006216] = (
-			"OUTOCTAL",
-			(
-				"     Call    Return",
-				"AC0  value   destroyed",
-				"AC1  -       destroyed",
-				"AC2  zone    zone",
-				"AC3  link    destroyed",
-			)
-		)
-		self.special[0o006217] = ( "SETPOSITION",)
-		self.special[0o006220] = ( "CLOSE",)
-		self.special[0o006221] = ( "OPEN",)
-		self.special[0o006223] = ( "INNAME",)
-		self.special[0o006222] = ( "WAITZONE",)
-		self.special[0o006224] = ( "MOVE",)
-		self.special[0o006225] = ( "INTERPRETE",)
-		self.special[0o002235] = ( "NEXT_INTER",)
-		self.special[0o006236] = ( "TAKEA",)
-		self.special[0o006237] = ( "TAKEV",)
-
-		self.special[0o006334] = ( "CDELAY",)
-		self.special[0o006335] = ( "WAITSE",)
-		self.special[0o006336] = ( "WAITCH",)
-		self.special[0o006337] = ( "CWANSW",)
-		self.special[0o006340] = ( "CTEST",)
-		self.special[0o006341] = ( "CPRINT",)
-		self.special[0o006343] = ( "CTOUT",)
-		self.special[0o006343] = ( "SIGNAL",)
-		self.special[0o006344] = ( "SIGCH",)
-		self.special[0o006345] = ( "CPASS",)
-
-		self.special[0o006346] = ( "CREATEENTRY",)
-		self.special[0o006347] = ( "LOOKUPENTRY",)
-		self.special[0o006350] = ( "CHANGEENTRY",)
-		self.special[0o006351] = ( "REMOVEENTRY",)
-		self.special[0o006352] = ( "INITCATALOG",)
-		self.special[0o006353] = ( "SETENTRY",)
-	
-		self.special[0o006354] = (
-			"COMON",
-			(
-				"     Call    @Dest",
-				"AC0  -       unchg",
-				"AC1  -       unchg",
-				"AC2  -       unchg",
-				"AC3  link    corout",
-			), (	
-				None,
-				"RETURN"
-			)
 		
-		)
-		self.special[0o006355] = (
-			"CALL",
-			(	
-				"     Call    @Dest",
-				"AC0  -       unchg",
-				"AC1  -       unchg",
-				"AC2  -       unchg",
-				"AC3  link    link+1",
-			), (	
-				None,
-				"RETURN"
-			)
-		)
-		self.special[0o006356] = (
-			"GOTO",
-			(	
-				"     Call    @Dest",
-				"AC0  -       unchg",
-				"AC1  -       unchg",
-				"AC2  -       unchg",
-				"AC3  link    destr",
-			), (	
-				None,
-			)
-		)
-		self.special[0o006357] = (
-			"GETADR",
-			(
-				"     Call    return",
-				"AC0  point   unchg",
-				"AC1  -       unchg",
-				"AC2  -       unchg",
-				"AC3  link    address",
-			)
-		)
-		self.special[0o006360] = (
-			"GETPOINT",
-			(
-				"     Call    return",
-				"AC0  address unchg",
-				"AC1  -       unchg",
-				"AC2  -       unchg",
-				"AC3  link    point",
-			)
-		)
 
-		self.special[0o006364] = ( "CSENDM",)
-		self.special[0o006365] = ( "SIGGEN",)
-		self.special[0o006366] = ( "WAITGE",)
-		self.special[0o006367] = ( "CTOP",)
-
-		self.special[0o006177] = ( "DIVIDE",)
-
-	def xdisass(self, p, adr, priv = None):
-		if p.t.find(adr, "ins") != None:
+	def finish_ins(self, ins):
+		if not ins.mne in domus_syscall.doc:
+			cpu_nova.nova.finish_ins(self, ins)
 			return
-		assert type(adr) == int
-		try:
-			q = p.m.rdqual(adr)
-			if q != 1:
-				return
-		except:
-			pass
-		try:
-			iw = p.m.rd(adr)
-		except:
-			return
-		if iw == 0o006225:
-			x = p.t.add(adr, adr + 1, "ins")
-			x.a['mne'] = "INTERPRETE"
-			x.render = self.render
-			x.a['flow'] = (("cond", "F", None),)
-			p.ins(x, self.disass)
-			p.todo(adr + 1, cpu_domus_int.disass)
-			return
-		
-		elif iw not in self.special:
-			cpu_nova.nova.disass(self, p,adr,priv)
-			return
-		x = p.t.add(adr, adr + 1, "ins")
-		ss = self.special[iw]
-		x.a['mne'] = ss[0]
-		x.a['oper'] = list()
-		x.render = self.render
 
-		if len(ss) > 1 and ss[1] != -1:
-			x.cmt += ss[1]
-		if len(ss) > 2:
-			assert len(ss[2]) > 0
-			for i in ss[2]:
-				adr += 1
-				if i != None:
-					if not 'cond' in x.a:
-						x.a['cond'] = list()
-					x.a['cond'].append((i, adr))
-					p.todo(adr, self.disass)
+		d = domus_syscall.doc[ins.mne]
 
-		p.ins(x, self.disass)
+		if len(d) > 1:
+			for i in range(0,len(d[1])):
+				j = d[1][i]
+				self.p.setlabel(ins.lo + i + 1, "." + j)
+				ins.flow("cond", j, ins.lo + i + 1)
+
+		cpu_nova.nova.finish_ins(self, ins)
+
+		x = self.p.t.find(ins.lo, "ins")
+		x.cmt += d[0]
+
 
 	def zonedesc(self, p, adr, priv = None):
-		do_desc(p, adr, 0, "Zone", ZoneDesc)
+		self.do_desc(adr, 0, "Zone", ZoneDesc)
 		x = p.m.rd(adr + 17)
 		if x != 0:
 			p.todo(x, self.sharedesc)
 
 	def sharedesc(self, p, adr, priv = None):
-		do_desc(p, adr, 8, "Share", ShareDesc)
+		self.do_desc(adr, 8, "Share", ShareDesc)
 
 	def progdesc(self, p, adr, priv = None):
 		# 1B0 = has procdesc
@@ -576,32 +226,33 @@ class domus(cpu_nova.nova):
 		# 1B7 = reserve
 		# 1B15 = ??
 		p.a['progdesc'] = adr
-		do_desc(p, adr, 0, "Program", ProgDesc)
+		self.do_desc(adr, 0, "Program", ProgDesc)
 
-	def procdesc(self, p, adr, priv = None):
-		p.a['procdesc'] = adr
-		do_desc(p, adr, p.m.rd(adr + 3), "Process", ProcDesc)
+	def procdesc(self, adr, priv = None):
+		p = self.p
+		self.p.a['procdesc'] = adr
+		self.do_desc(adr, p.m.rd(adr + 3), "Process", ProcDesc)
 
-		p.cpu.msgdesc(p, p.m.rd(adr + 9))
+		self.msgdesc(p, p.m.rd(adr + 9))
 
-		p.cpu.progdesc(p, p.m.rd(adr + 10))
+		self.progdesc(p, p.m.rd(adr + 10))
 
 		# Try the PSW
-		p.todo(p.m.rd(adr + 19)>>1, p.cpu.disass)
+		self.disass(p.m.rd(adr + 19)>>1)
 
 		# Try the CLEAR_INTERRUPT
 		try:
 			cli = p.m.rd(adr + 26)
 			print("CLI " + p.m.afmt(cli))
 			if cli != 0:
-				p.todo(cli, p.cpu.disass)
+				self.disass(cli)
 		except:
 			pass
 
 	def msgdesc(self, p, adr, priv = None):
-		if adr == 0:
+		if adr == 0 or adr == None:
 			return
-		if do_desc(p, adr, 10, "Message", MsgDesc):
+		if self.do_desc(adr, 10, "Message", MsgDesc):
 			try:
 				x = p.m.rd(adr + 2)
 			except:
@@ -611,18 +262,18 @@ class domus(cpu_nova.nova):
 
 	def pagedesc(self, p, adr, priv = None):
 		p.a['pagedesc'] = adr
-		do_desc(p, adr, 0, "Paging", PageDesc)
+		self.do_desc(adr, 0, "Paging", PageDesc)
 
 		w = p.m.rd(adr + 3)
 		i = p.m.rd(w)
-		do_desc(p, w, i + 1, "Page_Table", (
+		self.do_desc(w, i + 1, "Page_Table", (
 			( 1, 		"n_pages" ),
 			( i,		"pageentries"),
 		))
 
 		w = p.m.rd(adr + 4)
 		i = p.m.rd(w)
-		do_desc(p, w, i + 1, "Page_Map", (
+		self.do_desc(w, i + 1, "Page_Map", (
 			( 1,		"n_pages" ),
 			( i,		"pageentries"),
 		))
@@ -630,4 +281,40 @@ class domus(cpu_nova.nova):
 		w = p.m.rd(adr + 5)
 		if w != 0:
 			p.setlabel(w, "Paging_Statproc")
-			p.todo(w, p.cpu.disass)
+			self.disass(w)
+
+	def do_desc(self, a, l, n, desc):
+		p = self.p
+		dtype = n + "Descriptor"
+		try:
+			x = p.t.find(a, dtype)
+			if x != None:
+				return False
+		except:
+			pass
+
+		if l == 0:
+			for i in desc:
+				try:
+					p.m.rd(a + l)
+				except:
+					break
+				l += i[0]
+		x = p.t.add(a, a + l, dtype)
+		x.blockcmt += n + " descriptor\n"
+		x.fill = False
+		i = 0
+		for j in desc:
+			if j[1] == "name":
+				x = dot_txt(p, a+i, a + i + j[0])
+			else:
+				x = word(p, a + i)
+			x.cmt.append("+%d " % i + j[1])
+			i += j[0]
+			if i >= l:
+				break
+		while i < l:
+			x = word(p, a + i)
+			x.cmt.append("+%d" % i)
+			i += 1
+		return True

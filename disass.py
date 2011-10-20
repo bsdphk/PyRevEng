@@ -38,8 +38,13 @@ class disass(object):
 		else:
 			ins.status = "prospective"
 			self.bm.set(adr)
-			self.p.todo(adr, self.do_disass, ins)
+			self.p.todo(adr, self.xxdo_disass, ins)
 		return ins
+
+	def xxdo_disass(self, adr, ins):
+		assert ins.status == "prospective"
+		self.do_disass(adr, ins)
+		self.finish_ins(ins)
 
 	def is_ins(self, adr):
 		"""Test if we have an instruction on address already
@@ -65,7 +70,6 @@ class disass(object):
 	def finish_ins(self, ins):
 		"""Finish the definition of an instruction
 
-		Called via ins.finish()
 		"""
 		assert type(ins.lo) == int
 		assert type(ins.hi) == int
@@ -187,7 +191,7 @@ class instruction(object):
 		self.flow_out = list()
 		self.render = None
 		self.lo = adr
-		self.hi = None
+		self.hi = adr + 1
 		self.model = None
 		self.status = "new"
 
@@ -229,10 +233,6 @@ class instruction(object):
 
 	def flow(self, mode, cc, dst):
 		self.flow_out.append((mode, cc, dst))
-
-	def finish(self):
-		assert self.status == "prospective"
-		self.disass.finish_ins(self)
 
 	def fail(self, reason):
 		print("FAIL: ", reason, "\n", self.debug())

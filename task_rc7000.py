@@ -19,6 +19,9 @@ import file_domus
 import render
 import topology
 
+dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/rc7000/"
+dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
+dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 
 class DomusError(Exception):
         def __init__(self, adr, reason):
@@ -31,8 +34,6 @@ class DomusError(Exception):
 def dofile(filename, obj = None, skip = 0):
 
 	print("DOFILE", filename, obj);
-	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
-	dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 
 	try:
 		import os
@@ -44,6 +45,7 @@ def dofile(filename, obj = None, skip = 0):
 		load_file = file_domus.file_domus(fn, skip)
 
 	objidx = load_file.build_index()
+	print(objidx)
 	for obj in objidx:
 
 		print("tfm",
@@ -253,7 +255,6 @@ if __name__ == "__main__":
 	if False:
 		import os 
 
-		dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 		fl = os.listdir(dn)
 		for i in fl:
 			try:
@@ -263,8 +264,8 @@ if __name__ == "__main__":
 				pass
 	else:
 		#dofile("__.CODEP", "P0261")
-		#dofile("__.MUSIL")
-		dofile("__.MUB")
+		#dofile("__.INT")
+		#dofile("__.PTR", skip = 1)
 		#dofile("__.MUM")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
