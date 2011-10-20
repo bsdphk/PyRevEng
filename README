@@ -8,6 +8,8 @@ anything else.
 For now, we are limited to 32 bits of memory width, but should
 pythons array type grow a 64 bit subtype, we can go higher.
 
-My two test-cases are the 6800 EPROM dump from an HP5370B Time
-Interval Counter and various program files from an RC7000/DOMUS
-system.
+A good place to start is:
+
+	cd tasks/mc6800_hp53xx
+	python3.2 task_hp5370b.py
+	less /tmp/_.hp5370b.txt
