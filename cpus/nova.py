@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import disass
 import instree
+import domus.const as const
 
 class nova(disass.assy):
 	def __init__(self, p, name = "nova"):
@@ -36,7 +37,8 @@ class nova(disass.assy):
 			return
 
 		ins.mne = c.spec[0]
-		da = 0
+		da = None
+		indir = 0
 		for i in c.spec[1].split(","):
 			if i == "#":
 				if self.rdarg(ins, c, i) != 0:
@@ -44,6 +46,7 @@ class nova(disass.assy):
 			elif i == "@":
 				if self.rdarg(ins, c, i) != 0:
 					ins.mne += "@"
+					indir = 1
 			elif i == "sh":
 				ins.mne += (
 				    "", "L", "R", "S"
@@ -84,7 +87,6 @@ class nova(disass.assy):
 				else:
 					ins.oper.append(self.p.m.dfmt(o, False))
 					ins.oper.append("%d" % r)
-					da = None
 			elif i == '""':
 				pass
 			else:
@@ -92,13 +94,24 @@ class nova(disass.assy):
 				ins.fail("Unhandled arg <%s>" % i)
 				return
 
+		if da != None and indir:
+			if True:
+				w = self.p.m.rd(da)
+				const.word(self.p, da)
+				if w != 0:
+					da = w;
+				else:
+					da = None
+			if False:
+				da = None
+
 		# XXX: should also handle SKP instructions masked by macros
 		if ins.mne[1:3] == "SZ" or ins.mne[:3] == "SKP":
 			ins.flow("cond", "?", ins.lo + 1)
 			ins.flow("cond", "?", ins.lo + 2)
-		elif ins.mne == "JMP":
+		elif ins.mne[:3] == "JMP":
 			ins.flow("cond", "T", da)
-		elif ins.mne == "JSR":
+		elif ins.mne[:3] == "JSR":
 			ins.flow("call", "T", da)
 		elif ins.mne == "JMP@" or ins.mne == "JSR@":
 			if da != None:
