@@ -119,9 +119,14 @@ for f in (fof, fopz):
 # Manual fixups
 
 vsyms[0x10020] = "CUR"
+vsyms[0x10000 | 0o02235] = "NEXTINTER"
+vsyms[0x10000 | 0o06236] = "TAKEA"
+vsyms[0x10000 | 0o06237] = "TAKEV"
+
+#############################################################################
 
 for i in sorted(vsyms.keys()):
-	#print("%05x %06o %s" % (i, i, vsyms[i]))
+	print("%05x %06o %s" % (i, i, vsyms[i]))
 	if i >= 0x10000 and i <= 0x10100:
 		fopz.write("%s 0x%04x\n" % (vsyms[i], i & 0xffff))
 	elif i >= 0x10400 and i < 0x11000:

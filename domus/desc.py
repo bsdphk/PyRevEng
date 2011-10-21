@@ -222,7 +222,8 @@ ZoneDesc = (
 	( 1, "z"),
 )
 
-def zonedesc(p, adr, priv = None):
+def zonedesc(adr, priv = None):
+	p = priv
 	do_desc(p, adr, 0, "Zone", ZoneDesc)
 	x = p.m.rd(adr + 17)
 	if x != 0:
