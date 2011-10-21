@@ -15,6 +15,8 @@ import domus.cpu
 import mem_domus
 import domus.inter
 import domus.reloc_file
+import domus.const as const
+import domus.desc as desc
 
 import render
 import topology
@@ -72,7 +74,7 @@ def dofile(filename, obj = None, skip = 0):
 		elif ld == 0x8000:
 			pass
 		else:
-			p.todo(ld, cpu.procdesc)
+			desc.procdesc(p, ld, cpu.disass)
 
 		for i in range(0,256):
 			try:
@@ -105,7 +107,7 @@ def dofile(filename, obj = None, skip = 0):
 				i  = n + tbl_base
 				if n in domus.inter.intins:
 					x = domus.inter.intins[n]
-					y = domus.cpu.word(p,i)
+					y = const.word(p,i)
 					y.cmt.append(str(x))
 					a = p.m.rd(i)
 					if len(x) == 2:
@@ -123,16 +125,16 @@ def dofile(filename, obj = None, skip = 0):
 			# DOMUS
 			p.todo(0x11f1, cpu.disass)
 			p.t.a['page_base'] = 0x137a
-			cpu.pagedesc(p, 0x1007)
+			desc.pagedesc(p, 0x1007)
 			for pg in range(3,20):
 				aa = 0x137a + pg * 0x100
 				x = p.t.add(aa, aa + 1, "page %d" % pg)
 				x.a['cmt'] = "; PAGE %d" % pg
 			for c in range(0,19):
 				aa = 0x1d90 + 5 * c
-				domus.cpu.word(p, aa)
-				domus.cpu.dot_txt(p, aa + 1, aa + 4)
-				domus.cpu.word(p, aa + 4)
+				const.word(p, aa)
+				const.dot_txt(p, aa + 1, aa + 4)
+				const.word(p, aa + 4)
 				nw = p.m.rd(aa)
 				da = (nw & 0x7fff) + p.t.a['page_base']
 				p.todo(da, cpu.disass)
@@ -141,20 +143,20 @@ def dofile(filename, obj = None, skip = 0):
 		if filename == "__.MUSIL":
 			#p.todo(0o20550, cpu.disass)
 			#p.todo(0o14341, cpu.disass)
-			cpu.zonedesc(p, 0o11634)
+			desc.zonedesc(p, 0o11634)
 			x = p.t.add(0o012461, 0o012474, "Func")
 			x = p.t.add(0o012474, 0o012477, "Func")
 			x = p.t.add(0o012477, 0o012512, "Func")
 			x = p.t.add(0o013272, 0o013303, "Func")
 
-			domus.cpu.dot_txt(p, 0o012517, None)
+			const.dot_txt(p, 0o012517, None)
 
 			def do_list(p,a, nw):
 				while True:
 					x = p.t.add(a - 4, a + nw, "XXXTBL")
-					domus.cpu.dot_txt(p, a - 4, a)
+					const.dot_txt(p, a - 4, a)
 					for i in range(0,nw):
-						domus.cpu.word(p, a + i, "%o")
+						const.word(p, a + i, "%o")
 					n = p.m.rd(a)
 					if n == 0:
 						break
@@ -171,10 +173,10 @@ def dofile(filename, obj = None, skip = 0):
 			a = 0o12526
 			while True:
 				x = p.t.add(a, a + 5, "XXXTBL")
-				domus.cpu.dot_txt(p, a + 2, a + 5)
+				const.dot_txt(p, a + 2, a + 5)
 				p.todo(p.m.rd(a + 1), cpu.disass)
-				domus.cpu.word(p, a, "%o")
-				domus.cpu.word(p, a + 1, "%o")
+				const.word(p, a, "%o")
+				const.word(p, a + 1, "%o")
 				n = p.m.rd(a)
 				if n == 0:
 					break;
@@ -195,36 +197,36 @@ def dofile(filename, obj = None, skip = 0):
 			# See RCSL 43-GL-7915 p35
 			pgd = p.a['progdesc']
 			print("CATW", pgd)
-			x = domus.cpu.word(p, pgd + 7)
+			x = const.word(p, pgd + 7)
 			x.cmt.append(" +7 First Area Process")
-			x = domus.cpu.word(p, pgd + 8)
+			x = const.word(p, pgd + 8)
 			x.cmt.append(" +8 Top Area Process")
-			x = domus.cpu.word(p, pgd + 9)
+			x = const.word(p, pgd + 9)
 			x.cmt.append(" +9 Head of Unit Chain")
-			x = domus.cpu.word(p, pgd + 10)
+			x = const.word(p, pgd + 10)
 			x.cmt.append(" +10 Chain of Head of Unit Chain")
 			a = pgd + 11
 			while True:
 				x = p.t.add(a, a + 20, "UnitDesc")
 
-				x = domus.cpu.word(p, a)
+				x = const.word(p, a)
 				x.cmt.append(" +0 Driver name reference")
 
-				x = domus.cpu.word(p, a + 1)
+				x = const.word(p, a + 1)
 				x.cmt.append(" +1 Unit number")
 
-				x = domus.cpu.word(p, a + 2)
+				x = const.word(p, a + 2)
 				x.cmt.append(" +2 chain")
 
-				x = domus.cpu.word(p, a + 3)
+				x = const.word(p, a + 3)
 				x.cmt.append(" +3 size of unit desc")
 
-				x = domus.cpu.dot_txt(p, a + 4, a + 7)
-				x = domus.cpu.dot_txt(p, a + 7, a + 10)
+				x = const.dot_txt(p, a + 4, a + 7)
+				x = const.dot_txt(p, a + 7, a + 10)
 
-				x = domus.cpu.word(p, a + 10)
+				x = const.word(p, a + 10)
 				x.cmt.append(" +10 Kit displacement")
-				x = domus.cpu.word(p, a + 11)
+				x = const.word(p, a + 11)
 				x.cmt.append(" +11 Kit displacement")
 
 				n = p.m.rd(a + 2)
