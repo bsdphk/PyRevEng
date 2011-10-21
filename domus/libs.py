@@ -4,7 +4,7 @@
 # by matching against preloaded domus libraries.  We built a dictionary 
 # tree of position independent information and  walk that.
 
-import mem_domus
+import domus.mem
 import domus.reloc_file
 
 def sign(m, off, adr):
@@ -35,7 +35,7 @@ class libs(object):
 	def load(self, prefix, filename):
 		f = domus.reloc_file.reloc_file(prefix + filename)
 		for obj in f.build_index():
-			m = mem_domus.mem_domus()
+			m = domus.mem.mem_domus()
 			f.load(m, obj, silent=True)
 			ln = 1 + f.max_nrel - f.min_nrel
 			lz = 1 + f.max_zrel - f.min_zrel

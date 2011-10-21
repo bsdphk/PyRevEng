@@ -5,14 +5,10 @@ from __future__ import print_function
 
 import sys
 
-import mem
-import array
-
-import tree
 import pyreveng
 
 import domus.cpu
-import mem_domus
+import domus.mem
 import domus.inter
 import domus.reloc_file
 import domus.const as const
@@ -56,7 +52,7 @@ def dofile(filename, obj = None, skip = 0):
 		    "%04x" % (skip + objidx[obj][1]*2),
 		    objidx[obj])
 
-		p = pyreveng.pyreveng(mem_domus.mem_domus())
+		p = pyreveng.pyreveng(domus.mem.mem_domus())
 		cpu = domus.cpu.cpu(p)
 
 		cpu.iodev[9] = "TTYOUT"
