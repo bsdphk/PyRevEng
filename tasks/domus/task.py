@@ -55,6 +55,8 @@ for tf in targets:
 		p = domus.do_file.load_obj(load_file, obj)
 		i = inter.inter(p)
 
+		p.c["domus"].pz_entries()
+
 		domus.do_file.auto_magic(p)
 		domus.do_file.auto_hints(p)
 

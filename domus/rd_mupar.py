@@ -119,9 +119,15 @@ for f in (fof, fopz):
 # Manual fixups
 
 vsyms[0x10020] = "CUR"
+vsyms[0x10000 | 0o02234] = "CNEXTINTER"
 vsyms[0x10000 | 0o02235] = "NEXTINTER"
 vsyms[0x10000 | 0o06236] = "TAKEA"
 vsyms[0x10000 | 0o06237] = "TAKEV"
+
+vsyms[0x10000 | 0o00227] = "RINTGIVEUP"
+vsyms[0x10000 | 0o00231] = "RINTBREAK"
+vsyms[0x10000 | 0o00240] = "PINTGIVEUP"
+vsyms[0x10000 | 0o00241] = "PRINTGIVEUP"
 
 #############################################################################
 

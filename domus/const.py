@@ -16,6 +16,8 @@ class word(tree.tree):
 			x = p.m.rd(t.start)
 		except:
 			return ()
+		if x in p.label:
+			return ((".word\t" + p.label[x]),)
 		q = p.m.rdqual(t.start)
 		if q == 3:
 			return ((".word\t" + p.m.afmt(x/2) + "*2"),)
