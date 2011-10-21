@@ -86,12 +86,8 @@ class pyreveng(object):
 		while len(self.__tlist) > 0:
 			c = self.__tlist[0]
 			del self.__tlist[0]
-			#print(">>> 0x%x" % c[0])
-			if True:
-				c[1](c[0], c[2])
-				continue
 			try:
-				c[1](c[0], c[2])
+				c[1](self, c[0], c[2])
 			except:
 				print("FAILED %x" % c[0], c)	
 				

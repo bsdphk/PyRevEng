@@ -41,7 +41,8 @@ class disass(object):
 			self.p.todo(adr, self.xxdo_disass, ins)
 		return ins
 
-	def xxdo_disass(self, adr, ins):
+	def xxdo_disass(self, p, adr, ins):
+		assert p == self.p
 		assert ins.status == "prospective"
 		self.do_disass(adr, ins)
 		self.finish_ins(ins)

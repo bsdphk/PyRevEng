@@ -317,7 +317,7 @@ class dot_code(tree.tree):
 		p.t.add(adr, adr + 2, "dot-code", True, self)
 		self.render = self.rfunc
 		t = p.m.b16(adr)
-		p.todo(t, cpu.disass)
+		cpu.disass(t)
 		self.a['EA'] = (t,)
 
 	def rfunc(self, p, t):

@@ -6,13 +6,22 @@ import domus.const as const
 #----------------------------------------------------------------------
 
 def do_desc(p, a, l, n, desc):
-	dtype = n + "Descriptor"
-	try:
-		x = p.t.find(a, dtype)
-		if x != None:
+
+	if not 'domus_desc' in p.a:
+		p.a['domus_desc'] = dict()
+
+	id = (a, l, n, desc)
+	if a in p.a['domus_desc']:
+		b = p.a['domus_desc'][a]
+		if b == id:
 			return False
-	except:
-		pass
+
+		print("Redo diff desc @ " + p.m.afmt(a), b, id)
+		return False
+
+	p.a['domus_desc'][a] = id
+
+	dtype = n + "Descriptor"
 
 	if l == 0:
 		for i in desc:
@@ -222,8 +231,7 @@ ZoneDesc = (
 	( 1, "z"),
 )
 
-def zonedesc(adr, priv = None):
-	p = priv
+def zonedesc(p, adr, priv = None):
 	do_desc(p, adr, 0, "Zone", ZoneDesc)
 	x = p.m.rd(adr + 17)
 	if x != 0:
@@ -243,5 +251,4 @@ ShareDesc = (
 )
 
 def sharedesc(p, adr, priv = None):
-	print("SHARE", p, adr, priv)
 	do_desc(p, adr, 8, "Share", ShareDesc)

@@ -15,6 +15,17 @@ class cpu(cpus.nova.nova):
 
 	def finish_ins(self, ins):
 		if ins.mne == "INTPRETE":
+			if "inter" in self.p.c:
+				self.p.c["inter"].disass(ins.hi)
+			else:
+				print("\n"
+				    "NOTE:  This programs uses the "
+				    "DOMUS Interpreter.\n"
+				    "You should load a disassembler "
+				    "for this also (domus.inter.inter)"
+				    "\n"
+				)
+				    
 			ins.flow("cond", "T", None)
 
 		if not ins.mne in domus_syscall.doc:

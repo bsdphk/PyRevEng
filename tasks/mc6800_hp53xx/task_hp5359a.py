@@ -72,9 +72,9 @@ hp53xx.wr_test_val(p)
 
 
 # See 0x61a4
-p.todo(0x6175, cpu.disass)
+cpu.disass(0x6175)
 # See 0x61fa
-p.todo(0x616b, cpu.disass)
+cpu.disass(0x616b)
 #----------------------------------------------------------------------
 while p.run():
 	pass
@@ -123,7 +123,7 @@ class dot_code(tree.tree):
 		p.t.add(adr, adr + 2, "dot-code", True, self)
 		self.render = self.rfunc
 		t = p.m.b16(adr)
-		p.todo(t, cpu.disass)
+		cpu.disass(t)
 		self.a['EA'] = (t,)
 
 	def rfunc(self, p, t):
@@ -574,7 +574,7 @@ if False:
 	p.setlabel(0x016a, "HPIB_TX_LEN")
 	p.setlabel(0x016b, "HPIB_TX_PTR")
 
-	p.todo(0x616b, cpu.disass)
+	cpu.disass(0x616b)
 	p.setlabel(0x016b, "HPIB_RX_FUNC1")
 	p.setlabel(0x016d, "HPIB_RX_FUNC")
 
@@ -625,13 +625,13 @@ if False:
 		for ax in range(0x703d,0x7055,2):
 			x = const.w16(p, ax)
 			x.a['EA'] = (ea(p, ax),)
-			p.todo(p.m.w16(ax), cpu.disass)
+			cpu.disass(p.m.w16(ax))
 		for ax in range(0x707d,0x708f,2):
 			x = const.w16(p, ax)
 			eax = ea(p,ax)
 			x.a['EA'] = (eax,)
 			p.setlabel(eax, "SRVKEY_%04x" % ax)
-			p.todo(p.m.w16(ax), cpu.disass)
+			cpu.disass(p.m.w16(ax))
 
 	p.setlabel(0x6912, "SRVKEY_DISP_012c")
 	p.setlabel(0x6918, "SRVKEY_DISP_0124")
@@ -723,7 +723,7 @@ if False:
 		x.a['EA'] = (ea(p, ay),)
 
 		p.setlabel(ea(p, ay), "CMD_" + sx + ssx)
-		p.todo(wx, cpu.disass)
+		cpu.disass(wx)
 
 	# Overwrite this one
 	p.setlabel(0x6a4e, "MAIN_LOOP()")
@@ -732,7 +732,7 @@ if False:
 	# SWI jmp's to X
 
 	# @609d
-	p.todo(0x6355, cpu.disass)
+	cpu.disass(0x6355)
 
 	#----------------------------------------------------------------------
 	#----------------------------------------------------------------------

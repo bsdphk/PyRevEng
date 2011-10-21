@@ -166,7 +166,7 @@ class mc6800(disass.assy):
 		x.cmt.append("Vector: " + nm)
 		w = self.p.m.w16(adr)
 		x.a['flow'] = (("cond", "T", w),)
-		self.p.todo(w, self.disass)
+		self.disass(w)
 		self.p.setlabel(w, nm + "_VECTOR")
 
 	def vectors(self, adr = 0x10000):

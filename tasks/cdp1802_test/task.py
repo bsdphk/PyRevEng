@@ -46,12 +46,12 @@ cpu = cpus.cdp1802.cdp1802(p)
 cpu.vectors(p)
 
 # Subr R(4)
-p.todo(0x0644, cpu.disass)
+cpu.disass(0x644)
 x = p.t.add(0x0644,0x0654, "subr")
 p.setlabel(0x0644, "SUBR R(4)")
 
 # Subr R(5)
-p.todo(0x0654, cpu.disass)
+cpu.disass(0x654)
 x = p.t.add(0x0654,0x0661, "subr")
 p.setlabel(0x0654, "SUBR R(5)")
 

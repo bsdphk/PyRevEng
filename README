@@ -13,3 +13,13 @@ A good place to start is:
 	cd tasks/mc6800_hp53xx
 	python3.2 task_hp5370b.py
 	less /tmp/_.hp5370b.txt
+
+A much more advanced example can be found in:
+
+	cd tasks/domus
+	python3.2 task.py
+	less /tmp/_.CATLI_OBJ00.txt
+
+Enjoy,
+
+Poul-Henning

@@ -4,11 +4,13 @@
 import disass
 import domus.const as const
 import domus.desc as desc
+import domus.inter.lib as inter_lib
 
 class inter(disass.disass):
 
 	def __init__(self, p, name = "inter"):
 		disass.disass.__init__(self, p, name)
+		self.gc_max = 0
 
 	def render(self, p, ins):
 
@@ -40,6 +42,9 @@ class inter(disass.disass):
 			return
 		op = w >> 8
 		arg = w & 0xff
+		if op not in intins:
+			ins.fail("Unknown INT oper %d" % op)
+			return
 		l = intins[op]
 		#print("%04x" % w, l, ins)
 		ins.spec = l
@@ -92,7 +97,7 @@ class inter(disass.disass):
 					isn.fail("Zone not reloc")
 					return
 				ins.args.append("zone: " + p.m.afmt(nxt))
-				p.todo(nxt, desc.zonedesc, p)
+				p.todo(nxt, desc.zonedesc)
 				ins.hi += 1
 				arg >>= 2
 				p.c["domus"].disass(p.m.rd(nxt + 3))
@@ -107,6 +112,16 @@ class inter(disass.disass):
 			elif i == "CONST":
 				ins.args.append("ci: " + p.m.dfmt(nxt))
 				ins.hi += 1
+			elif i == "CL":
+				ins.args.append("i: " + p.m.dfmt(nxt))
+				ins.flow("call", "T", nxt + 1)
+				ins.hi += 1
+				p.c["domus"].disass(nxt)
+			elif i == "LN":
+				ins.args.append("ret: " + p.m.dfmt(nxt))
+				ins.hi += 1
+				ins.flow("ret", "T", None)
+				x = p.t.add(nxt, ins.hi, "int_func")
 			elif i == "RET":
 				ins.args.append("ret: " + p.m.dfmt(nxt))
 				ins.hi += 1
@@ -118,11 +133,11 @@ class inter(disass.disass):
 				ins.flow("call", "T", nxt + 1)
 				ins.hi += 1
 				p.c["domus"].disass(nxt)
-				# self.disass(nxt + 1)
 			elif i == "N":
 				pass
 			elif i == "GC":
-				ins.args.append("code-proc(%d, faked)" % arg)
+				l = inter_lib.ident_gc(p, self, ins, arg)
+				ins.args.append("CODEP%d" % arg)
 
 				a = p.a['procdesc'] - arg
 				const.word(p, a)
@@ -136,36 +151,8 @@ class inter(disass.disass):
 				arg = nxt
 				ins.hi += 1
 
-				if cp == 1:
-					action.append("A")
-					action.append("A")
-					action.append("A")
-					action.append("A")
-					action.append("A")
-				elif cp == 2:
-					action.append("A")
-					action.append("V")
-					action.append("A")
-					action.append("A")
-				elif cp == 3:
-					action.append("A")
-				elif cp == 4:
-					action.append("A")
-				elif cp == 5:
-					action.append("A")
-				elif cp == 6:
-					action.append("A")
-					action.append("A")
-					action.append("A")
-				elif cp == 7:
-					action.append("A")
-					action.append("A")
-					action.append("A")
-				elif cp == 8:
-					action.append("V")
-				else:
-					ins.fail("Unfakeable GC %d" % cp)
-					return
+				action += l
+
 			elif i == "JUMP":
 				ins.hi += 1
 				ins.args.append("cc: %o" % arg)
