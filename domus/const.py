@@ -19,7 +19,7 @@ class word(tree.tree):
 		q = p.m.rdqual(t.start)
 		if q == 3:
 			return ((".word\t" + p.m.afmt(x/2) + "*2"),)
-		elif q == 2:
+		elif q == 2 or q == 7:
 			return ((".word\t" + p.m.afmt(x)),)
 		else:
 			return ((".word\t" + self.fmt) % x, )
