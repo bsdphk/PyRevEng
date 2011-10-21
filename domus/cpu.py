@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import cpus.nova
-import cpu_domus_int
 import tree
 import mem
 
@@ -183,7 +182,7 @@ ShareDesc = (
 	( 1, "ssize", ),
 )
 
-class domus(cpus.nova.nova):
+class cpu(cpus.nova.nova):
 	def __init__(self, p):
 		cpus.nova.nova.__init__(self, p, "domus")
 		self.root.load("domus/domus_funcs.txt")
@@ -191,6 +190,9 @@ class domus(cpus.nova.nova):
 		
 
 	def finish_ins(self, ins):
+		if ins.mne == "INTPRETE":
+			ins.flow("cond", "T", None)
+
 		if not ins.mne in domus_syscall.doc:
 			cpus.nova.nova.finish_ins(self, ins)
 			return

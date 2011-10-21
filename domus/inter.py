@@ -3,12 +3,12 @@
 
 from __future__ import print_function
 
-import cpu_domus
+import domus.cpu
 import mem
-import domus_libs
+import domus.libs
 
 
-dl = domus_libs.domus_libs()
+dl = domus.libs.libs()
 
 def xxxstr(x):
 	if x >= 32 and x < 127:
@@ -75,10 +75,10 @@ def int_getparams(p, adr, args):
 	print("GETPARMS @%o" % args[0], args)
 
 	a0 = args[0]
-	cpu_domus.dot_txt(p, a0 + 0o527, a0 + 0o532)
-	cpu_domus.dot_txt(p, a0 + 0o533, a0 + 0o535)
-	cpu_domus.dot_txt(p, a0 + 0o536, a0 + 0o540)
-	cpu_domus.dot_txt(p, a0 + 0o552, None)
+	domus.cpu.dot_txt(p, a0 + 0o527, a0 + 0o532)
+	domus.cpu.dot_txt(p, a0 + 0o533, a0 + 0o535)
+	domus.cpu.dot_txt(p, a0 + 0o536, a0 + 0o540)
+	domus.cpu.dot_txt(p, a0 + 0o552, None)
 
 	a0 = args[1] >> 1
 	p.setlabel(a0, "ARGDESC")
@@ -240,7 +240,7 @@ def int_opmess(p, adr, args):
 	a = args[0]>>1
 	try:
 		b = p.m.rd(a)
-		cpu_domus.dot_txt(p, a, None)
+		domus.cpu.dot_txt(p, a, None)
 	except:
 		pass
 
@@ -248,7 +248,7 @@ def int_outtext(p, adr, args):
 	a = args[1]>>1
 	try:
 		b = p.m.rd(a)
-		cpu_domus.dot_txt(p, a, None)
+		domus.cpu.dot_txt(p, a, None)
 	except:
 		pass
 

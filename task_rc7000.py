@@ -11,10 +11,10 @@ import array
 import tree
 import pyreveng
 
-import cpu_domus
+import domus.cpu
 import mem_domus
-import cpu_domus_int
-import file_domus
+import domus.inter
+import domus.reloc_file
 
 import render
 import topology
@@ -38,11 +38,11 @@ def dofile(filename, obj = None, skip = 0):
 	try:
 		import os
 		fn = filename
-		load_file = file_domus.file_domus(fn, skip)
+		load_file = domus.reloc_file.reloc_file(fn, skip)
 		filename=os.path.basename(fn)
 	except:
 		fn = dn + filename
-		load_file = file_domus.file_domus(fn, skip)
+		load_file = domus.reloc_file.reloc_file(fn, skip)
 
 	objidx = load_file.build_index()
 	print(objidx)
@@ -55,7 +55,7 @@ def dofile(filename, obj = None, skip = 0):
 		    objidx[obj])
 
 		p = pyreveng.pyreveng(mem_domus.mem_domus())
-		cpu = cpu_domus.domus(p)
+		cpu = domus.cpu.cpu(p)
 
 		cpu.iodev[9] = "TTYOUT"
 
@@ -103,9 +103,9 @@ def dofile(filename, obj = None, skip = 0):
 			tbl_base = 0o100015
 			def xx(n):
 				i  = n + tbl_base
-				if n in cpu_domus_int.intins:
-					x = cpu_domus_int.intins[n]
-					y = cpu_domus.word(p,i)
+				if n in domus.inter.intins:
+					x = domus.inter.intins[n]
+					y = domus.cpu.word(p,i)
 					y.cmt.append(str(x))
 					a = p.m.rd(i)
 					if len(x) == 2:
@@ -116,7 +116,7 @@ def dofile(filename, obj = None, skip = 0):
 				if x != 0:
 					p.todo(x, cpu.disass)
 
-			for i in cpu_domus_int.intins:
+			for i in domus.inter.intins:
 				xx(i)
 
 		if filename == "__.DOMUS":
@@ -130,9 +130,9 @@ def dofile(filename, obj = None, skip = 0):
 				x.a['cmt'] = "; PAGE %d" % pg
 			for c in range(0,19):
 				aa = 0x1d90 + 5 * c
-				cpu_domus.word(p, aa)
-				cpu_domus.dot_txt(p, aa + 1, aa + 4)
-				cpu_domus.word(p, aa + 4)
+				domus.cpu.word(p, aa)
+				domus.cpu.dot_txt(p, aa + 1, aa + 4)
+				domus.cpu.word(p, aa + 4)
 				nw = p.m.rd(aa)
 				da = (nw & 0x7fff) + p.t.a['page_base']
 				p.todo(da, cpu.disass)
@@ -147,14 +147,14 @@ def dofile(filename, obj = None, skip = 0):
 			x = p.t.add(0o012477, 0o012512, "Func")
 			x = p.t.add(0o013272, 0o013303, "Func")
 
-			cpu_domus.dot_txt(p, 0o012517, None)
+			domus.cpu.dot_txt(p, 0o012517, None)
 
 			def do_list(p,a, nw):
 				while True:
 					x = p.t.add(a - 4, a + nw, "XXXTBL")
-					cpu_domus.dot_txt(p, a - 4, a)
+					domus.cpu.dot_txt(p, a - 4, a)
 					for i in range(0,nw):
-						cpu_domus.word(p, a + i, "%o")
+						domus.cpu.word(p, a + i, "%o")
 					n = p.m.rd(a)
 					if n == 0:
 						break
@@ -171,10 +171,10 @@ def dofile(filename, obj = None, skip = 0):
 			a = 0o12526
 			while True:
 				x = p.t.add(a, a + 5, "XXXTBL")
-				cpu_domus.dot_txt(p, a + 2, a + 5)
+				domus.cpu.dot_txt(p, a + 2, a + 5)
 				p.todo(p.m.rd(a + 1), cpu.disass)
-				cpu_domus.word(p, a, "%o")
-				cpu_domus.word(p, a + 1, "%o")
+				domus.cpu.word(p, a, "%o")
+				domus.cpu.word(p, a + 1, "%o")
 				n = p.m.rd(a)
 				if n == 0:
 					break;
@@ -195,36 +195,36 @@ def dofile(filename, obj = None, skip = 0):
 			# See RCSL 43-GL-7915 p35
 			pgd = p.a['progdesc']
 			print("CATW", pgd)
-			x = cpu_domus.word(p, pgd + 7)
+			x = domus.cpu.word(p, pgd + 7)
 			x.cmt.append(" +7 First Area Process")
-			x = cpu_domus.word(p, pgd + 8)
+			x = domus.cpu.word(p, pgd + 8)
 			x.cmt.append(" +8 Top Area Process")
-			x = cpu_domus.word(p, pgd + 9)
+			x = domus.cpu.word(p, pgd + 9)
 			x.cmt.append(" +9 Head of Unit Chain")
-			x = cpu_domus.word(p, pgd + 10)
+			x = domus.cpu.word(p, pgd + 10)
 			x.cmt.append(" +10 Chain of Head of Unit Chain")
 			a = pgd + 11
 			while True:
 				x = p.t.add(a, a + 20, "UnitDesc")
 
-				x = cpu_domus.word(p, a)
+				x = domus.cpu.word(p, a)
 				x.cmt.append(" +0 Driver name reference")
 
-				x = cpu_domus.word(p, a + 1)
+				x = domus.cpu.word(p, a + 1)
 				x.cmt.append(" +1 Unit number")
 
-				x = cpu_domus.word(p, a + 2)
+				x = domus.cpu.word(p, a + 2)
 				x.cmt.append(" +2 chain")
 
-				x = cpu_domus.word(p, a + 3)
+				x = domus.cpu.word(p, a + 3)
 				x.cmt.append(" +3 size of unit desc")
 
-				x = cpu_domus.dot_txt(p, a + 4, a + 7)
-				x = cpu_domus.dot_txt(p, a + 7, a + 10)
+				x = domus.cpu.dot_txt(p, a + 4, a + 7)
+				x = domus.cpu.dot_txt(p, a + 7, a + 10)
 
-				x = cpu_domus.word(p, a + 10)
+				x = domus.cpu.word(p, a + 10)
 				x.cmt.append(" +10 Kit displacement")
-				x = cpu_domus.word(p, a + 11)
+				x = domus.cpu.word(p, a + 11)
 				x.cmt.append(" +11 Kit displacement")
 
 				n = p.m.rd(a + 2)
@@ -268,11 +268,11 @@ if __name__ == "__main__":
 	else:
 		#dofile("__.CODEP", "P0261")
 		#dofile("__.INT")
-		dofile("__.PTR", skip = 1)
+		#dofile("__.PTR", skip = 1)
 		#dofile("__.MUM")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
-		#dofile("__.CATLI")
+		dofile("__.CATLI")
 		#dofile("__.FSLIB")
 		#for o in (0x55c, 0x4b11, 0x8742):
 		#	dofile("/home/phk/rc7000_atm_asnaes.bin", None, o)
