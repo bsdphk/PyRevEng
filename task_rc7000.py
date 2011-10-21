@@ -19,9 +19,9 @@ import file_domus
 import render
 import topology
 
+dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/rc7000/"
 dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/FILES/"
-dn="/rdonly/DDHF/oldcritter/DDHF/DDHF/RC3600/Sw/Rc3600/rc3600/__/"
 
 class DomusError(Exception):
         def __init__(self, adr, reason):
@@ -234,6 +234,8 @@ def dofile(filename, obj = None, skip = 0):
 
 		p.run()
 
+		cpu.to_tree()
+
 		ff = topology.topology(p)
 		ff.build_bb()
 		ff.segment()
@@ -244,10 +246,11 @@ def dofile(filename, obj = None, skip = 0):
 		r.add_flows()
 
 		if obj != None:
-			r.render("/tmp/" + filename + "_" + obj)
+			fn = "/tmp/" + filename + "_" + obj
 		else:
-			r.render("/tmp/" + filename)
-		print("----------")
+			fn = "/tmp/" + filename
+		print("---------->", fn)
+		r.render(fn)
 		sys.stdout.flush()
 
 if __name__ == "__main__":
@@ -265,8 +268,8 @@ if __name__ == "__main__":
 	else:
 		#dofile("__.CODEP", "P0261")
 		#dofile("__.INT")
-		#dofile("__.PTR", skip = 1)
-		dofile("__.MUM")
+		dofile("__.PTR", skip = 1)
+		#dofile("__.MUM")
 		#dofile("__.CHECK")
 		#dofile("__.CATW")
 		#dofile("__.CATLI")

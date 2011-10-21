@@ -196,17 +196,20 @@ class domus(cpus.nova.nova):
 			return
 
 		d = domus_syscall.doc[ins.mne]
-
-		if len(d) > 1:
+		if type(d) == str:
+			ins.lcmt(d)
+		elif type(d[0]) == str:
+			ins.lcmt(d[0])
+		else:
+			for i in d[0]:
+				ins.lcmt(i)
+		if type(d) != str and len(d) > 1:
 			for i in range(0,len(d[1])):
 				j = d[1][i]
 				self.p.setlabel(ins.lo + i + 1, "." + j)
 				ins.flow("cond", j, ins.lo + i + 1)
 
 		cpus.nova.nova.finish_ins(self, ins)
-
-		x = self.p.t.find(ins.lo, "ins")
-		x.cmt += d[0]
 
 
 	def zonedesc(self, p, adr, priv = None):
