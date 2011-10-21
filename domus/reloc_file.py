@@ -31,6 +31,7 @@ class reloc_file(object):
 			self.d = array.array("H", f.read()[skip:-1])
 		else:
 			self.d = array.array("H", f.read()[skip:])
+		assert len(self.d) != 0
 		self.filename = filename
 		f.close()
 		self.index = self.build_index()
