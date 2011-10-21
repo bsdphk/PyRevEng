@@ -17,7 +17,7 @@ class nova(disass.assy):
 		disass.assy.__init__(self, p, name)
 		self.root = instree.instree(
 		    width = 16,
-		    filename = "cpus/nova_instructions.txt",
+		    filename = __file__[:-3] + "_instructions.txt"
 		)
 		self.iodev = {
 			63: "CPU",
@@ -55,6 +55,20 @@ class nova(disass.assy):
 				ins.mne += (
 				    "", "Z", "O", "C"
 				)[self.rdarg(ins, c, i)]
+			elif i == "flg":
+				ins.mne += (
+				    "", "S", "C", "P"
+				)[self.rdarg(ins, c, i)]
+			elif i == "tst":
+				ins.mne += (
+				    "BN", "BZ", "DN", "DZ"
+				)[self.rdarg(ins, c, i)]
+			elif i == "dev":
+				ins.oper.append(
+				    self.p.m.dfmt(
+				        self.rdarg(ins, c, i)
+				    )
+				)
 			elif i == "skip":
 				j = self.rdarg(ins, c, i)
 				if j:
@@ -95,14 +109,14 @@ class nova(disass.assy):
 				return
 
 		if da != None and indir:
-			if True:
+			try:
 				w = self.p.m.rd(da)
 				const.word(self.p, da)
 				if w != 0:
 					da = w;
 				else:
 					da = None
-			if False:
+			except:
 				da = None
 
 		# XXX: should also handle SKP instructions masked by macros

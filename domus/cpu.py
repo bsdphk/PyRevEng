@@ -9,9 +9,9 @@ import domus.syscall as domus_syscall
 class cpu(cpus.nova.nova):
 	def __init__(self, p):
 		cpus.nova.nova.__init__(self, p, "domus")
-		self.root.load("domus/domus_funcs.txt")
-		self.p.loadlabels("domus/domus_page_zero.txt")
-		
+		dir = __file__[:__file__.rfind('/')]
+		self.root.load(dir + "/domus_funcs.txt")
+		self.p.loadlabels(dir + "/domus_page_zero.txt")
 
 	def finish_ins(self, ins):
 		if ins.mne == "INTPRETE":

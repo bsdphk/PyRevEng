@@ -91,7 +91,7 @@ def pagedesc(p, adr, priv = None):
 	w = p.m.rd(adr + 5)
 	if w != 0:
 		p.setlabel(w, "Paging_Statproc")
-		self.disass(w)
+		priv(w)
 
 #----------------------------------------------------------------------
 
@@ -170,7 +170,7 @@ ProcDesc = (
 )
 
 def procdesc(p, adr, priv = None):
-	print("PD", p, adr)
+	print("ProcDesc %x" % adr)
 	p.a['procdesc'] = adr
 	do_desc(p, adr, p.m.rd(adr + 3), "Process", ProcDesc)
 
@@ -180,7 +180,8 @@ def procdesc(p, adr, priv = None):
 
 	if priv != None:
 		# Try the PSW
-		priv(p.m.rd(adr + 19)>>1)
+		p.a['psw'] = p.m.rd(adr + 19) >> 1
+		priv(p.a['psw'])
 
 	# Try the CLEAR_INTERRUPT
 	try:
@@ -225,7 +226,7 @@ def zonedesc(p, adr, priv = None):
 	do_desc(p, adr, 0, "Zone", ZoneDesc)
 	x = p.m.rd(adr + 17)
 	if x != 0:
-		p.todo(x, sharedesc)
+		sharedesc(p, x)
 
 #----------------------------------------------------------------------
 
@@ -241,4 +242,5 @@ ShareDesc = (
 )
 
 def sharedesc(p, adr, priv = None):
+	print("SHARE", p, adr, priv)
 	do_desc(p, adr, 8, "Share", ShareDesc)

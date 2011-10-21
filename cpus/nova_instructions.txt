@@ -14,14 +14,14 @@ MOV	cy,sh,#,acs,acd,skip	|1|acs|acd|0 1 0|sh |cy |#|skip	|
 INC	cy,sh,#,acs,acd,skip	|1|acs|acd|0 1 1|sh |cy |#|skip	|
 COM	cy,sh,#,acs,acd,skip	|1|acs|acd|0 0 0|sh |cy |#|skip	|
 AND	cy,sh,#,acs,acd,skip	|1|acs|acd|1 1 1|sh |cy |#|skip	|
-DIA	flg,acd,dev		|0 1 1|acs|0 0 1|flg|device	|
-DIB	flg,acd,dev		|0 1 1|acs|0 1 1|flg|device	|
-DIC	flg,acd,dev		|0 1 1|acs|1 0 1|flg|device	|
-DOA	flg,acs,dev		|0 1 1|acs|0 1 0|flg|device	|
-DOB	flg,acs,dev		|0 1 1|acs|1 0 0|flg|device	|
-DOC	flg,acs,dev		|0 1 1|acs|1 1 0|flg|device	|
-SKP	tst,dev			|0 1 1|0 0|1 1 1|tst|device	|
-NIO	flg,dev			|0 1 1|0 0|0 0 0|flg|device	|
+DIA	flg,acd,dev		|0 1 1|acd|0 0 1|flg|dev	|
+DIB	flg,acd,dev		|0 1 1|acd|0 1 1|flg|dev	|
+DIC	flg,acd,dev		|0 1 1|acd|1 0 1|flg|dev	|
+DOA	flg,acs,dev		|0 1 1|acs|0 1 0|flg|dev	|
+DOB	flg,acs,dev		|0 1 1|acs|1 0 0|flg|dev	|
+DOC	flg,acs,dev		|0 1 1|acs|1 1 0|flg|dev	|
+SKP	tst,dev			|0 1 1|0 0|1 1 1|tst|dev	|
+NIO	flg,dev			|0 1 1|0 0|0 0 0|flg|dev	|
 INTEN	""			|0 1 1|0 0|0 0 0|0 1|1 1 1 1 1 1|
 INTDS	""			|0 1 1|0 0|0 0 0|1 0|1 1 1 1 1 1|
 READS	acd			|0 1 1|acd|0 0 1|0 0|1 1 1 1 1 1|
