@@ -76,42 +76,42 @@ def eprom(p, disass, start, end, sz):
 
 def sevenseg(p, y, val):
 	if val & 0x01:
-		y.cmt.append("  --")
+		y.lcmt("  --")
 	else:
-		y.cmt.append("    ")
+		y.lcmt("    ")
 
 	if val & 0x20:
 		s = " |"
 	else:
 		s = "  "
 	if val & 0x02:
-		y.cmt.append(s + "  |")
+		y.lcmt(s + "  |")
 	else:
-		y.cmt.append(s + "   ")
+		y.lcmt(s + "   ")
 
 	if val & 0x40:
-		y.cmt.append("  --")
+		y.lcmt("  --")
 	else:
-		y.cmt.append("    ")
+		y.lcmt("    ")
 
 	if val & 0x10:
 		s = " |"
 	else:
 		s = "  "
 	if val & 0x04:
-		y.cmt.append(s + "  |")
+		y.lcmt(s + "  |")
 	else:
-		y.cmt.append(s + "   ")
+		y.lcmt(s + "   ")
 
 	if val & 0x08:
 		s = "  -- "
 	else:
 		s = "     "
 	if val & 0x80:
-		y.cmt.append(s + ".")
+		y.lcmt(s + ".")
 	else:
-		y.cmt.append(s)
-	y.cmt.append(" ")
+		y.lcmt(s)
+	y.lcmt(" ")
 
 
 def chargen(p, start = 0x6000, end = 0x8000, chars=16):

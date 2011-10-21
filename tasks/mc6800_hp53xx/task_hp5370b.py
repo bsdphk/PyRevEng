@@ -419,19 +419,6 @@ x.blockcmt += "Table of I^2>>8\n"
 hp53xx.wr_test_val(p)
 
 #######################################################################
-# jmp table
-dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "ALL")
-j=0
-for i in range(0x6848,0x6858,2):
-	x = dot_code(p, i)
-	w = p.m.b16(i)
-	p.setlabel(w, "DSP_" + dspf[j])
-	j += 1
-
-x=p.t.add(0x6848,0x6858,"tbl")
-x.blockcmt += "Table of display functions\n"
-p.setlabel(0x6848, "DSP_FUNC_TABLE")
-#######################################################################
 
 # strings
 const.txtlen(p,0x78f3,4)
@@ -553,62 +540,55 @@ while p.run():
 if True:
 	###########################################################
 	print("Call table for display functions")
-	x = p.t.find(0x6843, "ins")
-	l = []
+	ins = cpu.ins[0x6843]
+
+	p.setlabel(0x6848, "DSP_FUNC_TABLE")
+	x=p.t.add(0x6848,0x6858,"tbl")
+	x.blockcmt += "Table of display functions\n"
+	dspf= ("AVG", "STD", "MIN", "MAX", "REF", "EVT", "DS6", "ALL")
+	j=0
 	for i in range(0x6848, 0x6858, 2):
-		y = p.m.b16(i)
-		l.append(("call", "DSPFUNC", y))
-		p.todo(y, cpu.disass)
-	x.a['flow'] = l
-	while p.run():
-		pass
+		x = dot_code(p, i)
+		w = p.m.b16(i)
+		p.setlabel(w, "DSP_" + dspf[j])
+		ins.flow("call", "DSPFUNC", w)
+		cpu.disass(w)
+		j += 1
 
 	###########################################################
 	print("Jump table for Keyboard Dispatch")
-	x = p.t.find(0x7965, "ins")
-	l = list(x.a['flow'])
+	ins = cpu.ins[0x7965]
 	xx = dict()
 	for i in range(0x640c,0x644c,2):
 		y = p.m.b16(i)
 		if y in xx:
 			continue
 		xx[y] = True
-		l.append(('cond', "XFUNC", y))
-		p.todo(y, cpu.disass)
-	x.a['flow'] = l
-
-	while p.run():
-		pass
+		ins.flow('cond', "XFUNC", y)
+		cpu.disass(y)
 
 	###########################################################
 	y = p.m.b16(0x7909)
-	p.todo(y, cpu.disass)
+	cpu.disass(y)
 
-	while p.run():
-		pass
-
-	x = p.t.find(0x7c62, "ins")
-	x.a['flow'] = (("cond", "XXX", y),)
+	ins = cpu.ins[0x7c62]
+	ins.flow("cond", "XXX", y)
 
 	###########################################################
 	print("Jump table for GPIB+arg Dispatch")
-	x = p.t.find(0x7d69, "ins")
-	l = list(x.a['flow'])
+	ins = cpu.ins[0x7d69]
 	xx = dict()
 	for i in range(0x644c,0x64ac,2):
 		y = p.m.b16(i)
 		if y in xx:
 			continue
 		xx[y] = True
-		l.append(('cond', "XFUNC", y))
-		p.todo(y, cpu.disass)
-	x.a['flow'] = l
+		ins.flow('cond', "XFUNC", y)
+		cpu.disass(y)
 
-	while p.run():
-		pass
-
-
-
+#######################################################################
+while p.run():
+	pass
 
 #######################################################################
 # Manual markup
@@ -746,9 +726,15 @@ if True:
 #######################################################################
 
 if True:
+	# Does not work right now
 	for ax in (0x7e23, 0x7e27):
-		x = p.t.find(ax, "ins")
-		hp53xx.sevenseg(p, x, p.m.rd(x.start + 1))
+		ins = cpu.ins[ax]
+		hp53xx.sevenseg(p, ins, p.m.rd(ins.lo + 1))
+
+#######################################################################
+# Move instructions to tree
+
+cpu.to_tree()
 
 #######################################################################
 

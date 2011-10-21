@@ -116,6 +116,8 @@ if False:
 while p.run():
 	pass
 
+cpu.to_tree()
+
 #######################################################################
 # Build code graph
 

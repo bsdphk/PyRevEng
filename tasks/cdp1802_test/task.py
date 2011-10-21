@@ -65,6 +65,8 @@ p.setlabel(0x06c5, "R15 = -R15")
 while p.run():
 	pass
 
+cpu.to_tree()
+
 #######################################################################
 # Build code graph
 if True:

@@ -144,6 +144,12 @@ class tree(object):
 				retval = True
 		return retval
 
+	def lcmt(self, s):
+		if s[-1] == "\n":
+			self.cmt.append(s[:-1])
+		else:
+			self.cmt.append(s)
+
 def sanity(self, priv=None, lvl=0):
 	for i in self.child:
 		assert i.start >= self.start

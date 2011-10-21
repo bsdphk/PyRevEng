@@ -105,18 +105,6 @@ class disass(object):
 		if ins.status != "prospective":
 			return
 
-		if True:
-			try:
-				x = self.p.t.add(ins.lo, ins.hi, "ins")
-				x.render = self.render
-				x.a['flow'] = ins.flow_out
-				x.a['ins'] = ins
-			except:
-				print ("FAIL to create tree @ 0x%04x-0x%04x" % 
-				    (ins.lo, ins.hi))
-				ins.status = "fail"
-				return
-
 		ins.status = "OK"
 
 		# Only process flow for good instructions
@@ -130,6 +118,20 @@ class disass(object):
 				continue
 			j = self.disass(i[2])
 			j.flow_in.append((i[0], i[1], ins.lo))
+
+	def to_tree(self):
+		print("Inserting", self.name, "instructions in tree")
+		for i in self.ins:
+			ins = self.ins[i]
+			if ins.status != "OK":
+				continue
+			x = self.p.t.add(ins.lo, ins.hi, "ins")
+			x.render = self.render
+			x.a['flow'] = ins.flow_out
+			x.a['ins'] = ins
+			if ins.cmt != "":
+				for i in ins.cmt.split("\n"):
+					x.cmt.append(i)
 
 class assy(disass):
 	"""Disassembler for ass' code
@@ -162,6 +164,7 @@ class assy(disass):
 			ins = ins.a['ins']
 
 		assert ins.mne != None
+		assert ins.status == "OK"
 		s = ins.mne
 		d = "\t"
 		for i in ins.oper:
@@ -199,6 +202,7 @@ class instruction(object):
 		self.hi = adr + 1
 		self.model = None
 		self.status = "new"
+		self.cmt = ""
 
 	def __repr__(self):
 		s = "<ins " + self.disass.name + " " + str(self.status)
@@ -216,6 +220,11 @@ class instruction(object):
 			s += ":" + str(fl[2])
 		return s
 
+	def lcmt(self, s):
+		if s[-1] == "\n":
+			self.cmt += s
+		else:
+			self.cmt += s + "\n"
 
 	def debug(self):
 		s = self.__repr__()

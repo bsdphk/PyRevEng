@@ -249,16 +249,14 @@ for i in range(0x703d, 0x708f,2):
 
 
 def jmptbl(p, jmp, low, high, name, flow="call"):
+	x = p.t.add(low, high, "tbl")
 	print("Call table for", name)
-	x = p.t.find(jmp, "ins")
-	l = []
+	ins = cpu.ins[jmp]
 	for i in range(low, high, 2):
 		dot_code(p, i)
 		y = p.m.b16(i)
-		l.append((flow, name, y))
-		p.todo(y, cpu.disass)
-	x.a['flow'] = l
-	x = p.t.add(low, high, "tbl")
+		ins.flow(flow, name, y)
+		cpu.disass(y)
 
 jmptbl(p, 0x6223, 0x6287, 0x62c1, "HPIBCMD", "cond")
 jmptbl(p, 0x703b, 0x703d, 0x708f, "KEYCMD", "cond")
@@ -269,11 +267,13 @@ while p.run():
 
 if True:
 	# SWI calls whatever is in the X register
-	x = p.t.find(0x7422, "ins")
-	x.a['flow']=(("call", "SWI", 0x7018),)
+	ins = cpu.ins[0x7422]
+	ins.flow("call", "SWI", 0x7018)
+	cpu.disass(0x7018)
 
-	x = p.t.find(0x60a0, "ins")
-	x.a['flow']=(("call", "SWI", 0x6355),)
+	ins = cpu.ins[0x60a0]
+	ins.flow("call", "SWI", 0x6355)
+	cpu.disass(0x6355)
 
 #----------------------------------------------------------------------
 
@@ -284,11 +284,9 @@ if True:
 	# @ 61ff -> 6175
 	# @ 6f83 -> 6009
 	# @ 73ef -> 6009
-	x = p.t.find(0x6169, "ins")
-	x.a['flow']= (
-		("cond", "T", 0x6175),
-		("cond", "T", 0x616b),
-	)
+	ins = cpu.ins[0x6169]
+	ins.flow("cond", "T", 0x6175)
+	ins.flow("cond", "T", 0x616b)
 
 #----------------------------------------------------------------------
 p.setlabel(0x7c26, "ram_0x00_fill")
@@ -371,6 +369,16 @@ p.hint(0x7027)['dot-page'] = "rankdir=LR"
 p.hint(0x6b29)['dot-page'] = "rankdir=LR"
 #----------------------------------------------------------------------
 p.setlabel(0x7c03, "UpdateNumber(B)")
+
+#----------------------------------------------------------------------
+cpu.to_tree()
+
+#----------------------------------------------------------------------
+fo = open("/tmp/_", "w")
+for i in cpu.ins:
+	fo.write(cpu.ins[i].debug() + "\n")
+fo.close()
+exit(0)
 #----------------------------------------------------------------------
 
 p.g = topology.topology(p)
