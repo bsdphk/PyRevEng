@@ -105,16 +105,17 @@ class disass(object):
 		if ins.status != "prospective":
 			return
 
-		try:
-			x = self.p.t.add(ins.lo, ins.hi, "ins")
-			x.render = self.render
-			x.a['flow'] = ins.flow_out
-			x.a['ins'] = ins
-		except:
-			print ("FAIL to create tree @ 0x%04x-0x%04x" % 
-			    (ins.lo, ins.hi))
-			ins.status = "fail"
-			return
+		if True:
+			try:
+				x = self.p.t.add(ins.lo, ins.hi, "ins")
+				x.render = self.render
+				x.a['flow'] = ins.flow_out
+				x.a['ins'] = ins
+			except:
+				print ("FAIL to create tree @ 0x%04x-0x%04x" % 
+				    (ins.lo, ins.hi))
+				ins.status = "fail"
+				return
 
 		ins.status = "OK"
 
@@ -207,30 +208,35 @@ class instruction(object):
 		s += ">"
 		return s
 
+	def dflow(self, fl):
+		s = fl[0] + ":" + fl[1] 
+		if type(fl[2]) == int:
+			s += ":" + self.disass.p.m.afmt(fl[2])
+		elif fl[2] != None:
+			s += ":" + str(fl[2])
+		return s
+
+
 	def debug(self):
 		s = self.__repr__()
 
 		s = s[:-1]
 
 		if len(self.flow_in) > 0:
-			s += " FI<"
+			#s += " FI<"
 			t = ""
 			for i in self.flow_in:
-				s += t + str(i)
-				if type(i[2]) == int:
-					s += "=%x" % i[2]
+				s += " <" + self.dflow(i)
 				t = " "
-			s += ">"
+			#s += ">"
 
 		if len(self.flow_out) > 0:
-			s += " FO<"
+			#s += " FO<"
 			t = ""
 			for i in self.flow_out:
-				s += t + str(i)
-				if type(i[2]) == int:
-					s += "=%x" % i[2]
+				s += " >" + self.dflow(i)
 				t = " "
-			s += ">"
+			#s += ">"
 
 		s += " >"
 		return s
