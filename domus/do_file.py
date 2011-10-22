@@ -67,9 +67,12 @@ def find_file(filename, skip = 0):
 
 def load_obj(load_file, obj):
 
-	p = pyreveng.pyreveng(domus.mem.mem_domus())
+	m = domus.mem.mem_domus()
+	load_file.load(m, obj, silent=True)
+	m.hex = True
+
+	p = pyreveng.pyreveng(m)
 	cpu = domus.cpu.cpu(p)
-	load_file.load(p.m, obj, silent=True)
 	ld = load_file.rec_end
 	p.a['library'] = load_file.library
 	p.a['objname'] = obj
@@ -134,8 +137,11 @@ def auto_hints(p):
 		exec("import domus.hints." + id + " as hint\nhint.hint(p)")
 		print("Hints loaded from domus.hints.%s" % id)
 		p.run()
-	except ImportError:
-		print("No auto hints found (domus.hints.%s)" % id)
+	except ImportError as x:
+		if x.args[0] == "No module named " + id:
+			print("No auto hints found (domus.hints.%s)" % id)
+		else:
+			assert False
 	print()
 
 #---------------------------------------------------------------------------

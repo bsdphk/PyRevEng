@@ -8,7 +8,7 @@ import mem
 class mem_domus(mem.base_mem):
 	def __init__(self, start = 0, end = 0x10000):
 		mem.base_mem.__init__(self, start, end, 16, 3, True)
-		self.qchar= ("0", " ", "'", '"', 'a', 'b', 'c', '*')
+		self.qchar= ("0", " ", "'", '"', 'x', 'y', 'z', '*')
 		self.hex = False
 
 	def dfmt(self, d, w = True):
@@ -21,21 +21,27 @@ class mem_domus(mem.base_mem):
 		else:
 			return "%o" % d
 
-	def afmt(self, a):
+	def aqfmt(self, a, q):
 		if self.hex:
-			if a < 0x1000:
-				return "%04x " % a
-			elif a < 0x8000:
-				return "%04x'" % a
-			else:
-				return "%04x*" % a
+			fmt = "%04x"
 		else:
-			if a < 0x1000:
-				return "%06o " % a
-			elif a < 0x8000:
-				return "%06o'" % a
-			else:
-				return "%06o*" % a
+			fmt = "%06o"
+
+		if q == 3:
+			s = fmt % (a >> 1) + self.qchar[2] + "*2"
+			if a & 1:
+				s += "+1"
+		else:
+			s = fmt % a + self.qchar[q]
+		return s
+
+	def afmt(self, a):
+		if a < 0x1000:
+			return self.aqfmt(a, 1)
+		elif a < 0x8000:
+			return self.aqfmt(a, 2)
+		else:
+			return self.aqfmt(a, 7)
 
 	def qfmt(self, q):
 		return self.qchar[q]
@@ -75,9 +81,7 @@ class mem_domus(mem.base_mem):
 			d = p.m.rd(start)
 			s = ".XXX"
 			if q == 3:
-				s += "\t%o'*2" % (d >> 1)
-				if d & 1:
-					s += "+1"
+				s += "\t" + self.aqfmt(d, q)
 			l.append(s)
 			start += 1
 		return l

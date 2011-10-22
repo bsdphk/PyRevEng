@@ -5,7 +5,7 @@ import tree
 import mem
 
 class word(tree.tree):
-	def __init__(self, p, adr, fmt = "%d"):
+	def __init__(self, p, adr, fmt = None):
 		tree.tree.__init__(self, adr, adr + 1, "word")
 		p.t.add(adr, adr + 1, "word", True, self)
 		self.fmt = fmt
@@ -19,20 +19,16 @@ class word(tree.tree):
 		if x in p.label:
 			return ((".word\t" + p.label[x]),)
 		q = p.m.rdqual(t.start)
-		if q == 3:
-			return ((".word\t" + p.m.afmt(x/2) + "*2"),)
-		elif q == 2 or q == 7:
-			return ((".word\t" + p.m.afmt(x)),)
-		else:
-			return ((".word\t" + self.fmt) % x, )
+		return ((".word\t" + p.m.aqfmt(x, q)),)
 
 class dot_txt(tree.tree):
-	def __init__(self, p, start, end):
+	def __init__(self, p, start, end = None):
 		if end == None:
 			end = start
 			while True:
 				a = p.m.rd(end)
 				if a & 0xff == 0:
+					end += 1
 					break
 				if a >> 8 == 0:
 					break

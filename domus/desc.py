@@ -139,12 +139,17 @@ ProgDesc = (
 )
 
 def progdesc(p, adr, priv = None):
-	# 1B0 = has procdesc
-	# 1B1 = reentrant
-	# 1B5 = params
-	# 1B6 = paged
-	# 1B7 = reserve
-	# 1B15 = ??
+	# 1B0  = 0x8000 = has procdesc
+	# 1B1  = 0x4000 = reentrant
+	# 1B5  = params
+	# 1B6  = paged
+	# 1B7  = reserve
+	# 1B15 = 0x0001 = ??
+	# Examples:
+	# 	MUSIL = 0x8401
+	# 	DOMAC = 0x8401
+	# 	DOMUS = 0x8000
+	# 	SYSG =  0x8400
 	p.a['progdesc'] = adr
 	do_desc(p, adr, 0, "Program", ProgDesc)
 
