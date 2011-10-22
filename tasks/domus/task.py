@@ -27,10 +27,9 @@ assert sys.version_info[0] >= 3 or "Need" == "Python v3"
 
 #----------------------------------------------------------------------
 # Set up a search path to two levels below
-# XXX: There must be a better way than this gunk...
 
 import os
-sys.path.insert(0, "/".join(os.getcwd().split("/")[:-2]))
+sys.path.insert(0, os.path.abspath(os.path.join(".", "..", "..")))
 
 #----------------------------------------------------------------------
 # Stuff we need...
@@ -52,7 +51,7 @@ for tf in targets:
 	oi = load_file.build_index()
 
 	for obj in oi:
-		p = domus.do_file.load_obj(load_file, obj)
+		p = domus.do_file.load_obj(load_file, obj, True)
 		i = inter.inter(p)
 
 		p.c["domus"].pz_entries()

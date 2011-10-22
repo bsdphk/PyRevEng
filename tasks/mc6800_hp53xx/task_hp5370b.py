@@ -19,10 +19,9 @@ assert sys.version_info[0] >= 3 or "Need" == "Python v3"
 
 #----------------------------------------------------------------------
 # Set up a search path to two levels below
-# XXX: There must be a better way than this gunk...
 
 import os
-sys.path.insert(0, "/".join(os.getcwd().split("/")[:-2]))
+sys.path.insert(0, os.path.abspath(os.path.join(".", "..", "..")))
 
 #----------------------------------------------------------------------
 # Stuff we need...
