@@ -65,10 +65,10 @@ def find_file(filename, skip = 0):
 
 #---------------------------------------------------------------------------
 
-def load_obj(load_file, obj):
+def load_obj(load_file, obj, silent=True):
 
 	m = domus.mem.mem_domus()
-	load_file.load(m, obj, silent=True)
+	load_file.load(m, obj, silent=silent)
 	m.hex = True
 
 	p = pyreveng.pyreveng(m)

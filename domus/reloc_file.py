@@ -51,11 +51,17 @@ class reloc_file(object):
 				a += 1
 				a0 = a
 				continue
-			a += 1
 
-			rec_len = self.d[a] - 65536
+			rec_len = self.d[a + 1] - 65536
 			assert rec_len > -16 and rec_len < 0
-			a += 1
+
+			ss = 0
+			for i in range (0, 6-rec_len):
+				ss += self.d[a + i]
+			ss &= 0xffff
+			assert ss == 0
+
+			a += 2
 
 			# XXX: Check checksum
 
@@ -90,6 +96,7 @@ class reloc_file(object):
 		self.max_nrel = off - 1
 		self.min_zrel = offhi
 		self.max_zrel = offhi - 1
+		mem.load_order = list()
 		a,ae = self.index[obj]
 		while a < ae:
 			rec_typ = self.d[a]
@@ -102,10 +109,9 @@ class reloc_file(object):
 				s += " " + r
 				rl += r
 			s += " %04x" % self.d[a + 5]
-			s += " %04x" % self.d[a + 6]
 			y = list()
 			z = list()
-			for i in range(6,6 - rec_len):
+			for i in range(6, 6 - rec_len):
 				x = self.d[a + i]
 				z.append(int(rl[0]))
 				if rl[0] == "0":
@@ -129,6 +135,7 @@ class reloc_file(object):
 				rl = rl[1:]
 			if rec_typ == 2:
 				ax = y[0]
+				mem.load_order.append((ax, ax + len(y) - 1))
 				for i in range(1, len(y)):
 					if ax < offhi and ax > self.max_nrel:
 						self.max_nrel = ax
