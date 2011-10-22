@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import os
 import mem
 import cpus.nova
 import domus.syscall as domus_syscall
@@ -11,7 +12,7 @@ import domus.const as const
 class cpu(cpus.nova.nova):
 	def __init__(self, p):
 		cpus.nova.nova.__init__(self, p, "domus")
-		self.dir = __file__[:__file__.rfind('/')]
+		self.dir = os.path.dirname(__file__)
 		self.root.load(self.dir + "/domus_funcs.txt")
 		self.p.loadlabels(self.dir + "/domus_page_zero.txt")
 
