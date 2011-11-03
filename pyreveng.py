@@ -89,7 +89,11 @@ class pyreveng(object):
 			try:
 				c[1](self, c[0], c[2])
 			except:
-				print("FAILED %x" % c[0], c)	
+				print("FAILED %x\n\t" % c[0], c[1], "\n\t", c[2])	
+				try:
+					print(c[2].debug())
+				except:
+					pass
 				
 		return True
 

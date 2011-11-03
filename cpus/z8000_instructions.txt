@@ -111,8 +111,8 @@ DIVL	RQD,address		|0 1|0 1 1 0 1 0|0 0 0 0| RQd   |
 DIV	RRd,addr(Rs)		|0 1|0 1 1 0 1 1| Rs!=0 | RRd	|
 DIVL	RQd,addr(Rs)		|0 1|0 1 1 0 1 0| Rs!=0 | RQd	|
 
-DJNZ	r,dispu8		|1 1 1 1| r     |1| dispu8      |
-DBJNZ	r,dispu8		|1 1 1 1| r     |0| dispu8      |
+DJNZ	r,dispu7		|1 1 1 1| r     |1| dispu7      |
+DBJNZ	r,dispu7		|1 1 1 1| r     |0| dispu7      |
 
 EI	int			|0 1 1 1 1 1 0 0|0 0 0 0 0 1|int|
 
@@ -128,17 +128,17 @@ EXTSL	RQd			|1 0|1 1 0 0 0 1| RQd   |0 1 1 1|
 HALT	""			|0 1 1 1 1 0 1 0|0 0 0 0 0 0 0 0|
 
 IN	Rd,@Rs			|0 0|1 1 1 1 0|W| Rs!=0 | Rd    |
-IN	Rd,port			|0 0|1 1 1 0 1|W| Rd    |0 1 0|S| port				|
+IN	S,Rd,port		|0 0|1 1 1 0 1|W| Rd    |0 1 0|S| port				|
 
 INC	Rd,#n			|1 0|1 0 1 0 0|W| Rd    | n-1   |
 INC	@Rd,#n			|0 0|1 0 1 0 0|W| Rd!=0 | n-1   |
 INC	address,#n		|0 1|1 0 1 0 0|W|0 0 0 0| n-1   |
 INC	addr(Rd),#n		|0 1|1 0 1 0 0|W| Rd!=0 | n-1   |
 
-IND	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
-INDR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
-INI	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 0|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
-INIR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
+IND	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
+INDR	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
+INI	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 0|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
+INIR	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 0|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 
 IRET	""			|0 1 1 1 1 0 1 1|0 0 0 0 0 0 0 0|
 
@@ -151,12 +151,13 @@ JR	cc,disp8		|1 1 1 0| cc    | disp8		|
 LD	Rd,Rs			|1 0|1 0 0 0 0|W| Rs    | Rd    |
 LDL	RRd,RRs			|1 0|0 1 0 1 0 0| RRs   | RRd   |
 LD	Rd,@Rs			|0 0|1 0 0 0 0|W| Rs!=0 | Rd    |
-LDL	RRD,@Rs			|0 0|0 1 0 1 0 0| Rs!=0 | RRd   |
+LDL	RRd,@Rs			|0 0|0 1 0 1 0 0| Rs!=0 | RRd   |
 LD	Rd,address		|0 1|1 0 0 0 0|W|0 0 0 0| Rd    |
 LDL	RRd,address		|0 1|0 1 0 1 0 0|0 0 0 0| RRd	|
 LD	Rd,addr(Rs)		|0 1|1 0 0 0 0|W| Rs!=0 | Rd    |
 LDL	RRd,addr(Rs)		|0 1|0 1 0 1 0 0| Rs!=0 | RRd   |
 LD	Rd,Rs(#disp16)		|0 0|1 1 0 0 0|W| Rs!=0 | Rd    | disp16			|
+LDL	RRd,Rs(#disp16)		|0 0 1 1 0 1 0 1| Rs!=0 | RRd   | disp16			|
 LD	Rd,Rs(Rx)		|0 1|1 1 0 0 0|W| Rs!=0 | Rd    |0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LDL	RRd,Rs(Rx)		|0 1|1 1 0 1 0|1| Rs!=0 | RRd   |0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LD	@Rd,Rs			|0 0|1 0 1 1 1|W| Rd!=0 | Rs    |
@@ -173,20 +174,20 @@ LDL	Rd(Rx),RRs		|0 1|1 1 0 1 1 1| Rd!=0 | RRs	|0 0 0 0| Rx    |0 0 0 0 0 0 0 0|
 LD	Rd,#data		|0 0|1 0 0 0 0 1|0 0 0 0| Rd    |
 LDB	Rbd,#data		|0 0|1 0 0 0 0 0|0 0 0 0| Rbd   |
 LDB	Rbd,#byte		|1 1 0 0| Rbd   | byte          |
-LDL	RRD,#data		|0 0|0 1 0 1 0 0|0 0 0 0| RRd   |
+LDL	RRd,#data		|0 0|0 1 0 1 0 0|0 0 0 0| RRd   |
 LD	@Rd,#data		|0 0|0 0 1 1 0 1| Rd!=0 |0 1 0 1|
-LDB	#Rd,#data		|0 0|0 0 1 1 0 0| Rd!=0 |0 1 0 1|
+LDB	@Rd,#data		|0 0|0 0 1 1 0 0| Rd!=0 |0 1 0 1|
 LD	address,#data		|0 1|0 0 1 1 0 1|0 0 0 0|0 1 0 1|
 LDB	address,#data		|0 1|0 0 1 1 0 0|0 0 0 0|0 1 0 1|
 LD	addr(Rd),#data		|0 1|0 0 1 1 0 1| Rd!=0 |0 1 0 1|
 LDB	addr(Rd),#data		|0 1|0 0 1 1 0 0| Rd!=0 |0 1 0 1|
 
-LDA	Rd,address		|0 1|1 1 0 1 1 0|0 0 0 0| Rd    |
-LDA	Rd,addr(Rs)		|0 1|1 1 0 1 1 0| Rs!=0 | Rd    |
-LDA	Rd,Rs(#disp)		|0 0|1 1 0 1 0 0| Rs!=0 | Rd    | disp                          |
-LDA	Rd,Rs(Rx)		|0 1|1 1 0 1 0 0| Rs!=0	| Rd    |0 0 0 0| Rx    |0 0 0 0|0 0 0 0|
+LDA	Sd,address		|0 1|1 1 0 1 1 0|0 0 0 0| Sd    |
+LDA	Sd,addr(Rs)		|0 1|1 1 0 1 1 0| Rs!=0 | Sd    |
+LDA	Sd,Rs(#disp16)		|0 0|1 1 0 1 0 0| Rs!=0 | Sd    | disp16                        |
+LDA	Sd,Rs(Rx)		|0 1|1 1 0 1 0 0| Rs!=0	| Sd    |0 0 0 0| Rx    |0 0 0 0|0 0 0 0|
 
-LDAR	Rd,disp			|0 0 1 1 0 1 0 0|0 0 0 0| Rd    | disp   			|
+LDAR	Rd,disp16		|0 0 1 1 0 1 0 0|0 0 0 0| Rd    | disp16   			|
 
 LDCTL	FCW,Rs			|0 1 1 1 1 1 0 1| Rs    |1 0 1 0|
 LDCTL	REFRESH,Rs		|0 1 1 1 1 1 0 1| Rs    |1 0 1 1|
@@ -206,8 +207,10 @@ LDCTLB	FLAGS,Rbs		|1 0 0 0 1 1 0 0| Rbs   |1 0 0 1|
 LDCTLB	Rbd,FLAGS		|1 0 0 0 1 1 0 0| Rbd	|0 0 0 1|
 
 #				|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+LDD 	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |1 0 0 1|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 LDDR	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |1 0 0 1|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 LDI	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |0 0 0 1|0 0 0 0| r     | Rd!=0 |1 0 0 0|
+LDIR	@Rd,@Rs,r		|1 0 1 1 1 0 1|W| Rs!=0 |0 0 0 1|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 LDK	Rd,#nibble		|1 0|1 1 1 1 0 1| Rd    | nibble|
 LDM	Rd,@Rs,#n		|0 0|0 1 1 1 0 0| Rs!=0 |0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   |
 LDM	Rd,address,#n		|0 1|0 1 1 1 0 0|0 0 0 0|0 0 0 1|0 0 0 0| Rd    |0 0 0 0| n-1   |
@@ -248,12 +251,12 @@ ORB	Rbd,#data		|0 0|0 0 0 1 0 0|0 0 0 0| Rbd   |
 OR	Rd,@Rs			|0 0|0 0 0 1 0|W| Rs!=0 | Rd    |
 OR	Rd,address		|0 1|0 0 0 1 0|W|0 0 0 0| Rd    |
 OR	Rd,addr(Rs)		|0 1|0 0 0 1 0|W| Rs!=0 | Rd    |
-OTDR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
-OTIR	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
+OTDR	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
+OTIR	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |0 0 0 0|
 OUT	@Rd,Rs			|0 0 1 1 1 1 1|W| Rd!=0 | Rs    |
-OUT	port,Rs			|0 0 1 1 1 0 1|W| Rs    |0 1 1|S| port                          |
-OTD 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
-OTI 	@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
+OUT	S,port,Rs		|0 0 1 1 1 0 1|W| Rs    |0 1 1|S| port                          |
+OUTD 	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |1 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
+OUTI 	S,@Rd,@Rs,r		|0 0 1 1 1 0 1|W| Rs!=0 |0 0 1|S|0 0 0 0| r     | Rd!=0 |1 0 0 0|
 POP	Rd,@Rs			|1 0|0 1 0 1 1 1| Rs!=0 | Rd    |
 POPL	RRd,@Rs			|1 0|0 1 0 1 0 1| Rs!=0 | RRd   |
 POP	@Rd,@Rs			|0 0|0 1 0 1 1 1| Rs!=0 | Rd!=0 |
@@ -307,10 +310,10 @@ SET	addr(Rd),#b		|0 1|1 0 0 1 0|W| Rd!=0 | b     |
 SET	Rd,Rs			|0 0|1 0 0 1 0|W|0 0 0 0| Rs    |0 0 0 0| Rd    |0 0 0 0 0 0 0 0|
 SETFLG	flags			|1 0 0 0 1 1 0 1| flags |0 0 0 1|
 SLA	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |1 0 0 1| b                             |
-SLAB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |1 0 0 1|0 0 0 0 0 0 0 0| b             |
+SLAB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |1 0 0 1| b				|
 SLAL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |1 1 0 1| b                             |
 SLL	Rd,#b			|1 0|1 1 0 0 1 1| Rd    |0 0 0 1| b                             |
-SLLB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |0 0 0 1|0 0 0 0 0 0 0 0| b             |
+SLLB	Rbd,#b			|1 0|1 1 0 0 1 0| Rbd   |0 0 0 1| b		                |
 SLLL	RRd,#b			|1 0|1 1 0 0 1 1| RRd   |0 1 0 1| b                             |
 
 # NB: Right shifts are done by negative counts, we handle this in code

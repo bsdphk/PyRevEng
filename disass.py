@@ -204,6 +204,7 @@ class instruction(object):
 		self.model = None
 		self.status = "new"
 		self.cmt = ""
+		self.diag = None
 
 	def __repr__(self):
 		s = "<ins " + self.disass.name + " " + str(self.status)
@@ -233,21 +234,19 @@ class instruction(object):
 		s = s[:-1]
 
 		if len(self.flow_in) > 0:
-			#s += " FI<"
 			t = ""
 			for i in self.flow_in:
 				s += " <" + self.dflow(i)
 				t = " "
-			#s += ">"
 
 		if len(self.flow_out) > 0:
-			#s += " FO<"
 			t = ""
 			for i in self.flow_out:
 				s += " >" + self.dflow(i)
 				t = " "
-			#s += ">"
 
+		if self.diag != None:
+			s += " " + str(self.diag)
 		s += " >"
 		return s
 
@@ -256,6 +255,8 @@ class instruction(object):
 
 	def fail(self, reason):
 		print("FAIL: ", reason, "\n\t" + self.debug())
+		if self.diag != None:
+			print("\t", self.diag);
 		assert self.status == "prospective"
 		self.status = "fail"
 		self.reason = reason

@@ -60,11 +60,24 @@ class z8000(disass.assy):
 			print("Error @%04x: %04x %04x  not found %s" %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2), arg))
 			assert False
+		if self.segmented and arg[0] == "S":
+			arg = "R" + arg[1:]
+			wid = 32
+		elif arg[0] == "S":
+			arg = "R" + arg[1:]
+			wid = 16
+
+		if wid == 64:
+			if (v & 1) == 3:
+				print("Error @%04x: %04x %04x  RQ%d" %
+				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
+				# assert False
+			return "RQ%d" % v
 		if wid == 32:
 			if (v & 1) == 1:
 				print("Error @%04x: %04x %04x  RR%d" %
 				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
-				assert False
+				# assert False
 			return "RR%d" % v
 		if wid == 16:
 			return "R%d" % v
@@ -73,17 +86,24 @@ class z8000(disass.assy):
 		if wid == 8:
 			return "RH%d" % (v & 7)
 
-	def get_address(self, p, na):
+	def get_address(self, p, na, tail):
 		d1 = p.m.b16(na)
 		na += 2
-		i = "#0x%04x" % d1
-		if self.segmented and d1 & 0x8000:
-			d2 = p.m.b16(na)
+		if not self.segmented:
+			return(na, (d1, "%s" + tail))
+
+		if d1 & 0x8000:
+			assert (d1 & 0xff) == 0
+			d1 = (d1 & 0x7f00) << 8
+			d1 |= p.m.b16(na)
 			na += 2
-			i += ":0x%04x" % d2
 		else:
-			d2 = None
-		return (na, d1, d2, i)
+			d1 = (d1 & 0x7f00) << 8 | (d1 & 0x00ff)
+
+		f = "0x%02x:" % (d1 >> 16)
+		f += "0x%04x" % (d1 & 0xffff) + tail
+		i = (d1, "%s" + tail, f)
+		return (na,  i)
 
 	def do_disass(self, adr, ins):
 		assert ins.lo == adr
@@ -145,14 +165,15 @@ class z8000(disass.assy):
 			das = 16
 			sas = 16
 
-		if mne[:4] == "OTIR":
+		if mne[:4] == "OTIR" or mne[:3] == "OUT":
 			das = 16
-			i = self.rdarg(p, adr, c, "S")
-			assert i != None
-			if i == 1:
-				mne = "S" + mne
 
-		#print(">>> %04x" % adr, wid, sas, das, c)
+		if mne[:2] == "IN" or mne[:4] == "OUTI":
+			sas = 16
+
+		#print(">>> %04x" % adr, "w%d" % wid, "sa%d" % sas, "da%d" % das, c)
+		ins.diag = ">>> %04x" % adr + " w%d" % wid + \
+		    " sa%d" % sas + " da%d" % das + " %s" % str(c)
 
 		ol = list()
 		cc = None
@@ -160,12 +181,15 @@ class z8000(disass.assy):
 		dstadr = None
 		for i in c.spec[1].split(","):
 			y = i
+
 			if i in special_registers:
 				pass
 			elif i == '""':
 				continue
-			elif i == "Rd":
-				i = self.get_reg(p, adr, "Rd", c, wid)
+			elif i == "Rd" or i == "Sd":
+				i = self.get_reg(p, adr, i, c, wid)
+			elif i == "RQd":
+				i = self.get_reg(p, adr, "RQd", c, 64)
 			elif i == "RRd":
 				i = self.get_reg(p, adr, "RRd", c, 32)
 			elif i == "RRs":
@@ -190,6 +214,11 @@ class z8000(disass.assy):
 			elif i == "#nibble":
 				j = self.rdarg(p, adr, c, "nibble")
 				i = "0x%01x" % j
+			elif i == "S":
+				j = self.rdarg(p, adr, c, "S")
+				if j != 0:
+					mne = "S" + mne
+				continue
 			elif i == "flags":
 				j = self.rdarg(p, adr, c, "flags")
 				i = "<flags=%x>" % j
@@ -199,9 +228,9 @@ class z8000(disass.assy):
 			elif i == "#byte":
 				j = self.rdarg(p, adr, c, "byte")
 				i = "0x%02x" % j
-			elif i == "dispu8":
+			elif i == "dispu7":
 				# D[B]JNZ
-				j = self.rdarg(p, adr, c, "dispu8")
+				j = self.rdarg(p, adr, c, i)
 				dstadr = na - 2 * j
 				i = "0x%04x" % dstadr
 			elif i == "disp8":
@@ -209,12 +238,18 @@ class z8000(disass.assy):
 				if j > 127:
 					j -= 256
 				dstadr = na + 2 * j
-				i = "0x%04x" % dstadr
+				i = (dstadr, "%s")
 			elif i == "disp12":
 				j = self.rdarg(p, adr, c, "disp12")
 				if j > 2047:
 					j -= 4096
 				dstadr = na - 2 * j
+				i = "0x%04x" % dstadr
+			elif i == "disp16":
+				j = self.rdarg(p, adr, c, "disp16")
+				if j > 32767:
+					j -= 65536
+				dstadr = na + j
 				i = "0x%04x" % dstadr
 			elif i == "#S":
 				j = self.rdarg(p, adr, c, "S")
@@ -226,7 +261,7 @@ class z8000(disass.assy):
 				j = self.rdarg(p, adr, c, "b")
 				if mne[:2] == "SL" and j > 127:
 					mne = "SR" + mne[3:]
-					j = 256 - j
+					j = 65536 - j
 				i = "%d" % j
 			elif i == "#data" and wid == 8:
 				d = p.m.b16(na)
@@ -237,31 +272,33 @@ class z8000(disass.assy):
 					    p.m.b16(adr + 2)) +
 					    "8-bit #data not duplicated" +
 					    " 0x%04x" % d)
-					ins.fail("#data(8) not duplicated")
-					return
+					#ins.fail("#data(8) not duplicated")
+					#return
 				na += 2
 				i = "#0x%02x" % (d & 0xff)
 			elif i == "#data" and wid == 16:
 				d = p.m.b16(na)
 				na += 2
 				i = "#0x%04x" % d
+			elif i == "#data" and wid == 32:
+				d = p.m.b32(na)
+				na += 4
+				i = "#0x%08x" % d
 			elif i == "address":
-				(na, d1, d2, i) = self.get_address(p, na)
-				dstadr = d1
+				(na, i) = self.get_address(p, na, "")
+				dstadr = i[0]
 			elif i == "addr(Rs)":
 				j = self.get_reg(p, adr, "Rs", c, 16)
-				(na, d1, d2, i) = self.get_address(p, na)
-				i += "(%s)" % j
+				(na, i) = self.get_address(p, na, "(%s)" % j)
 			elif i == "addr(Rd)":
 				j = self.get_reg(p, adr, "Rd", c, 16)
-				(na, d1, d2, i) = self.get_address(p, na)
-				i += "(%s)" % j
+				(na, i) = self.get_address(p, na, "(%s)" % j)
 			elif i == "@Rs":
 				i = "@" + self.get_reg(p, adr, "Rs", c, sas)
 			elif i == "@Rd":
 				i = "@" + self.get_reg(p, adr, "Rd", c, das)
 			elif i == "Rs(#disp16)":
-				rs = self.get_reg(p, adr, "Rs", c, das)
+				rs = self.get_reg(p, adr, "Rs", c, sas)
 				d16 = self.rdarg(p, adr, c, "disp16")
 				i = "%s(#0x%04x)" % (rs, d16)
 			elif i == "Rd(#disp16)":
@@ -297,6 +334,9 @@ class z8000(disass.assy):
 				ins.flow( "cond", cc, dstadr)
 			if ncc != "F":
 				ins.flow( "cond", ncc, na)
+		if mne == "DJNZ":
+			ins.flow( "cond", "NZ", dstadr)
+			ins.flow( "cond", "Z", na)
 
 		if mne == "CALR":
 			ins.flow( "call", "T", dstadr)
