@@ -75,20 +75,34 @@ class render(object):
 		if start == end:
 			return
 		s = False
-		for j in range(start, end):
+		j = start
+		while j < end:
 			try:
 				x = self.m.rd(j)
 				if s == False:
 					s = j
+				j += 1
 			except:
 				if s != False:
 					self.__render_xxx(s, j, fo, lvl)
+				try:
+					jj = self.m.next_adr(j)
+					print("NA %x %x" % (j, jj))
+					j = jj
+				except:
+					j += 1
 				s = False
 		if s != False:
 			self.__render_xxx(s, end, fo, lvl)
 
 	# Render, recursively, one tree node
 	def __render(self, t, lvl, fo):
+
+		if t.fold and len(t.child) > 0:
+			print("WARN: tree.fold has %d children" % len(t.child))
+			print("\t", t)
+			t.fold = False
+			t.render = None
 
 		if t.render == None:
 			fo.write("%s-%s %s\n" % (
@@ -131,6 +145,16 @@ class render(object):
 				ff += lx + ":\n"
 				fo.write(ff)
 		c = t.cmt
+		if t.fold:
+			x = len(l)
+			if len(s) > x:
+				x = len(s)
+			if len(c) > x:
+				x = len(c)
+			if x + 1 < len(b):
+				b1 = b[0:x]
+				#b1.append(b[-1])
+				b = b1
 
 		self.__fmt(fo, b, l, s, c)
 
