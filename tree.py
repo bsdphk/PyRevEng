@@ -31,6 +31,7 @@ class tree(object):
 		self.descend = True
 		self.cmt = list()
 		self.blockcmt = ""
+		self.fold = False
 		if tag == "root":
 			self.nseq = 1
 
