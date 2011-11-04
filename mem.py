@@ -401,6 +401,122 @@ class byte_mem(base_mem):
 			start += self.bcols
 		return l
 
+class seg_mem(object):
+	def __init__(self, segmask, offmask):
+		assert (segmask & offmask) == 0
+
+		self.segmask = segmask
+		self.segshift = 0
+		while not (segmask & (1 << self.segshift)):
+			self.segshift += 1
+
+		self.offmask = offmask
+		self.offshift = 0
+		while not (offmask & (1 << self.offshift)):
+			self.offshift += 1
+
+		self.nonmask = ~(segmask | offmask)
+
+		print("SEGmem(%08x, %d, %08x, %d, %08x)" % (
+		    self.segmask, self.segshift,
+		    self.offmask, self.offshift,
+		    self.nonmask
+		))
+
+		self.segs = dict()
+		self.start= None
+		self.end= None
+
+		self.segfmt = "%02x:"
+
+	def seg_off(self, adr):
+		if adr & self.nonmask:
+			raise MemError(start,
+			    "Invalid segmented address 0x%x" % adr)
+		s = (adr & self.segmask) >> self.segshift
+		o = (adr & self.offmask) >> self.offshift
+		return (s,o)
+
+	def linadr(self, seg, off):
+		return (seg << self.segshift) | (off << self.offshift)
+
+
+	def next_adr(self, adr):
+		s = (adr & self.segmask) >> self.segshift
+		o = (adr & self.offmask) >> self.offshift
+		if s in self.segs:
+			try:
+				r = self.segs[s].next_adr(o)
+				return r
+			except:
+				pass
+		s += 1
+		return (s << self.segshift)
+
+
+	def afmt(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segfmt % s + self.segs[s].afmt(o)
+	
+
+	def add_seg(self, seg, m):
+		assert seg not in self.segs
+		assert m.end - 1 <= self.offmask
+		b = seg << self.segshift
+		if self.start == None or b < self.start:
+			self.start = b
+		if self.end == None or b > self.end:
+			self.end = b + m.end
+		self.segs[seg] = m
+
+	def rd(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segs[s].rd(o)
+
+	def w16(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segs[s].w16(o)
+
+	def b16(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segs[s].b16(o)
+
+	def b32(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segs[s].b32(o)
+
+	def w32(self, adr):
+		s,o = self.seg_off(adr)
+		return self.segs[s].w32(o)
+
+	def chkadr(self, adr):
+		try:
+			s,o = self.seg_off(adr)
+		except:
+			raise MemError(start, "Invalid location")
+		if not s in self.segs:
+			raise MemError(start, "Invalid location")
+		return self.segs[s].chkadr(o)
+
+	def ascii(self, adr, len):
+		s,o = self.seg_off(adr)
+		return self.segs[s].ascii(o, len)
+
+	def col1(self, p, start, end, lvl):
+		ss,so = self.seg_off(start)
+		es,eo = self.seg_off(end)
+		assert ss == es
+		c1 = self.segs[ss].col1(p, so, eo, lvl)
+		c11 = list()
+		for i in c1:
+			c11.append(self.segfmt % ss + i)
+		return c11
+
+	def col2(self, p, start, end, lvl):
+		ss,so = self.seg_off(start)
+		es,eo = self.seg_off(end)
+		assert ss == es
+		return self.segs[ss].col2(p, so, eo, lvl)
 
 if __name__ == "__main__":
 
