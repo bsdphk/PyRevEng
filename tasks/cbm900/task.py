@@ -27,15 +27,23 @@ import cpus.z8000
 
 #######################################################################
 # Set up the memory image
-m = mem.byte_mem(0, 0x008000, 0, True, "big-endian")
+m0 = mem.byte_mem(0, 0x008000, 0, True, "big-endian")
 
-m.fromfile("EPROM_C_900_boot-H_V_1.0.bin", 0, 2)
-m.fromfile("EPROM_C_900_boot-L_V_1.0.bin", 1, 2)
-m.bcols=8
+m0.fromfile("EPROM_C_900_boot-H_V_1.0.bin", 0, 2)
+m0.fromfile("EPROM_C_900_boot-L_V_1.0.bin", 1, 2)
+m0.bcols=8
+
+m1 = mem.byte_mem(0, 0x008000, 0, True, "big-endian")
+
+m = mem.seg_mem(0x7f000000, 0x0000ffff)
+m.add_seg(0, m0)
+m.add_seg(1, m1)
 
 #######################################################################
 # Create a pyreveng instance
 p = pyreveng.pyreveng(m)
+
+print("%x" % p.lo, "%x" % p.hi)
 
 #######################################################################
 # Instantiate a disassembler
@@ -54,6 +62,31 @@ x.lcmt("Reset PC")
 p.setlabel(p.m.b16(6), "RESET")
 cpu.disass(p.m.b16(6))
 cpu.disass(0)
+
+#######################################################################
+# The data segment is copied from the EPROM to Segment 1
+
+dseg_len = 0x1016
+dseg_src = 0x6800
+
+m1.setflags(0, dseg_len,
+    m1.can_read|m1.can_write,
+    m1.invalid|m1.undef)
+
+for a in range(0, dseg_len):
+	w = m0.rd(a + dseg_src)
+	m1.wr(a, w)
+
+x = p.t.add(m.linadr(0, dseg_src), m.linadr(0, dseg_src + dseg_len), "data_seg")
+x.render = "[...]"
+x.fold = True
+x.blockcmt = """-
+Data Segment Initializer data, moved to segment 1
+"""
+
+# XXX not sure how much this actually helps...
+x = p.t.add(m.linadr(0, m0.start), m.linadr(0, m0.end), "Seg#0")
+x = p.t.add(m.linadr(1, m1.start), m.linadr(1, m1.end), "Seg#1")
 
 #######################################################################
 #
@@ -89,17 +122,20 @@ if True:
 	cpu.disass(0x3ec6)
 	cpu.disass(0x3eca)
 
-if False:
-	const.txt(p, 0x0c76)
-	const.txt(p, 0x6876)
-	const.txt(p, 0x6885)
-	const.txt(p, 0x6892)
-	const.txt(p, 0x68ab)
-	const.txt(p, 0x68e6)
-	const.txt(p, 0x691f)
-	const.txt(p, 0x695a)
-	const.txt(p, 0x761e)
-	const.txt(p, 0x7629)
+if True:
+	x = const.txt(p, 0x0c76)
+	const.txt(p, 0x010002a4)
+	const.txt(p, 0x01000324)
+	const.txt(p, 0x0100033b)
+	const.txt(p, 0x01000352)
+	const.txt(p, 0x01000554)
+	const.txt(p, 0x0100056e)
+	const.txt(p, 0x0100057e)
+	const.txt(p, 0x01000592)
+	const.txt(p, 0x010005ba)
+	const.txt(p, 0x010005cb)
+	const.txt(p, 0x010005e0)
+	const.txt(p, 0x01000ea1)
 		
 #######################################################################
 #
@@ -110,23 +146,35 @@ p.setlabel(0x0214, "INW(adr)")
 
 cpu.disass(0x22b0)
 
-def chargen(adr):
-	const.byte(p,adr)
-	const.byte(p,adr + 1)
-	for j in range(2, 66, 2):
-		x = const.w16(p, adr + j)
-		y = p.m.b16(adr + j)
-		s = ""
-		for b in range(15, -1, -1):
-			if y & (1 << b):
-				s += "#"
-			else:
-				s += "."
-		x.lcmt(s)
+#######################################################################
+#
+
+x = p.t.add(0x4606, 0x6706, "Chargen")
+
+if False:
+	def chargen(adr):
+		const.byte(p,adr)
+		const.byte(p,adr + 1)
+		for j in range(2, 66, 2):
+			x = const.w16(p, adr + j)
+			y = p.m.b16(adr + j)
+			s = ""
+			for b in range(15, -1, -1):
+				if y & (1 << b):
+					s += "#"
+				else:
+					s += "."
+			x.lcmt(s)
 	
 
-for a in range(0x4606, 0x6700,66):
-	chargen(a)
+	for a in range(0x4606, 0x6700,66):
+		chargen(a)
+else:
+	x.fold = True
+	x.render = "[...]"
+	x.blockcmt = """-
+Hi-Res Character Generator
+"""
 
 ###############
 for a in range(0x3e90, 0x3ea0, 4):
@@ -180,17 +228,23 @@ for a in range(0x0008,0x0038, 8):
 
 ###############
 
-for a in range(0x6da0, 0x6db8, 12):
-	const.txtlen(p, a + 2, 2)
-	const.w32(p, a + 4)
-	cpu.disass(p.m.b32(a + 4))
-	const.w32(p, a + 8)
-	cpu.disass(p.m.b32(a + 8))
+if True:
+	for a in range(0x010005a0, 0x010005b8, 12):
+		const.txtlen(p, a + 2, 2)
+		const.w32(p, a + 4)
+		cpu.disass(p.m.b32(a + 4))
+		const.w32(p, a + 8)
+		cpu.disass(p.m.b32(a + 8))
 
 ###############
 
 x = p.t.add(0x7816,0x8000, "fill")
 x.render = "ZFILL"
+x.fold = True
+
+x = p.t.add(0x6706,0x6800, "fill")
+x.render = "ZFILL"
+x.fold = True
 
 
 #######################################################################
@@ -215,26 +269,37 @@ p.setlabel(0x3b28, "OutStr(char*)")
 
 def txtptr(a):
 	x = const.w32(p, a)
-	y = p.m.b16(a + 2)
-	y += 0x6800
-	w = const.txt(p, y)
+	w = const.txt(p, p.m.b32(a))
+	w.fold = True
 	x.lcmt('"' + w.txt + '"')
 
-for a in range(0x6e18, 0x6e58, 4):
+for a in range(0x01000006, 0x0100000e, 4):
 	txtptr(a)
-for a in range(0x6f66, 0x6fae, 4):
+for a in range(0x01000010, 0x0100003c, 4):
 	txtptr(a)
-for a in range(0x6fb4, 0x6fc4, 4):
+for a in range(0x01000618, 0x01000658, 4):
 	txtptr(a)
-for a in range(0x741a, 0x7426, 4):
+for a in range(0x01000766, 0x010007AE, 4):
+	txtptr(a)
+for a in range(0x010007b4, 0x010007c4, 4):
+	txtptr(a)
+for a in range(0x01000c1a, 0x01000c26, 4):
 	txtptr(a)
 
 #######################################################################
+# Disk-drive param settings
+txtptr(0x0100003e)
+txtptr(0x0100004c)
+txtptr(0x0100005a)
+txtptr(0x01000068)
+#######################################################################
 
-for a in range(0x6e58, 0x6f05, 6):
-	const.w16(p, a)
-	const.w16(p, a + 2)
-	const.w16(p, a + 4)
+if True:
+	for a in range(0x01000658, 0x01000705, 6):
+		const.txtlen(p, a, 6)
+		#const.w16(p, a)
+		#const.w16(p, a + 2)
+		#const.w16(p, a + 4)
 
 
 #######################################################################
@@ -260,16 +325,14 @@ def Hunt_OutStr(t, priv, lvl):
 		return
 	if p.m.b16(a - 8) != 0x1400:
 		return
-	x = p.m.b16(a - 6)
-	y = p.m.b16(a - 4)
-	if x != 0x0100:
-		return
+	ta = p.m.b32(a - 6)
 	try:
-		w = const.txt(p, 0x6800 + y)
+		w = const.txt(p, ta)
+		w.fold = True
 		t.lcmt('"' + w.txt + '"')
 	except:
-		print("%04x failed" % a)
-		print(t, "%04x:" % a, "%04x" % y )
+		print("%08x (%08x) failed" % (a, ta))
+	return
 
 p.t.recurse(Hunt_OutStr)
 
