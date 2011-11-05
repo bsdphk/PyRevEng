@@ -23,7 +23,7 @@ condition_codes = {
 	1:	"LT",	9:	"GE",
 	2:	"LE",	10:	"GT",
 	3:	"ULE",	11:	"UGT",
-	4:	"PE",	12:	"PO",
+	4:	"OV",	12:	"NOV",
 	5:	"MI",	13:	"PL",
 	6:	"Z",	14:	"NZ",
 	7:	"C",	15:	"NC"

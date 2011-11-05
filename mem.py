@@ -387,7 +387,7 @@ class byte_mem(base_mem):
 
 					s += " %02x" % x
 					t += ascii(x)
-			s += "  " + t + "|\t"
+			s += "  " + t + "| "
 			s += p.indent
 			l.append(s)
 			start += self.bcols

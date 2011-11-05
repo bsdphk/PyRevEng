@@ -2,9 +2,6 @@
 #
 # This is a demo-task which disassembles the CBM9000 boot EPROM
 #
-# XXX: BKP_Set: label is bogusly rendered
-# XXX: cond_codes wrong, see 0:08b0
-#
 
 #######################################################################
 # Check the python version

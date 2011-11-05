@@ -138,7 +138,7 @@ class render(object):
 		l = ()
 		if t.start in self.p.label:
 			lx = self.p.label[t.start]
-			if len(lx) + 1 < self.lw:
+			if len(lx) + 2 < self.lw:
 				l = (lx + ":",)
 			else:
 				ff = "".ljust(self.col1w)
@@ -179,6 +179,10 @@ class render(object):
 		xx = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 		for i in range (0,100):
 			a = int(random.random() * (end - start) + start)
+			try:
+				a = self.m.next_adr(a)
+			except:
+				pass
 			try:
 				self.m.rd(a)
 				xx = self.m.col1(self, a, a + 1, 0)[0]
