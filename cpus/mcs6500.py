@@ -118,7 +118,10 @@ class mcs6502(disass.assy):
 			da = ins.lo + 2 + p.m.s8(adr + 1)
 			ins.oper.append((da, "%s", "%04x" % da))
 			ins.flow("cond", ic[2:], da)
-			ins.flow("cond", "N" + ic[2:], adr + 2)
+			if da == adr:
+				ins.mne += "LOOP"
+			else:
+				ins.flow("cond", "N" + ic[2:], adr + 2)
 			ins.hi = ins.lo + 2
 		elif ic[0] == "A":
 			# Acc

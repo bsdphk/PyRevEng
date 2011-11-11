@@ -38,36 +38,51 @@ p = pyreveng.pyreveng(m0)
 
 cpu = cpus.mcs6500.mcs6502(p)
 
-for a in range(0xfffa, 0x10000, 2):
-	const.w16(p, a)
-	cpu.disass(p.m.l16(a))
-for a in range(0xfff3, 0xfff9, 3):
-	cpu.disass(a)
-	pass
-
-for a in range(0xff9a, 0xffa0, 2):
-	const.w16(p, a)
-	#cpu.disass(p.m.l16(a))
-for a in range(0xff93, 0xff9a, 3):
-	const.w16(p, a + 1)
-	#cpu.disass(a)
-	pass
-
-for a in range(0xe291, 0xe29d, 2):
-	da = p.m.l16(a)
-	const.w16(p, a)
+def vector(adr, txt):
+	da = p.m.l16(adr)
+	x = const.w16(p, adr)
+	x.lcmt(txt)
 	cpu.disass(da)
+	p.setlabel(da, txt)
 
-cpu.disass(0xe034)
-cpu.disass(0xe906)
-cpu.disass(0xe90c)
-cpu.disass(0xe90e)
+if True:
+	vector(0xfffa, "NMI")
+	vector(0xfffc, "RESET")
+	vector(0xfffe, "IRQ")
+	for a in range(0xfff3, 0xfff9, 3):
+		cpu.disass(a)
+		pass
 
-cpu.disass(0xe948)
+if False:
+	for a in range(0xff9a, 0xffa0, 2):
+		const.w16(p, a)
+		cpu.disass(p.m.l16(a))
+	for a in range(0xff93, 0xff9a, 3):
+		const.w16(p, a + 1)
+		cpu.disass(a)
+		pass
+
+if True:
+	for a in range(0xe291, 0xe29d, 2):
+		da = p.m.l16(a)
+		const.w16(p, a)
+		cpu.disass(da)
+
 const.byte(p, 0xe962, 6)
 const.byte(p, 0xe968, 5)
 
 if False:
+	# BVCLOOPs that might continue
+	cpu.disass(0xe2be)
+
+if False:
+	cpu.disass(0xe034)
+	cpu.disass(0xe906)
+	cpu.disass(0xe90c)
+	cpu.disass(0xe90e)
+
+	cpu.disass(0xe948)
+
 	cpu.disass(0xe96d)
 	cpu.disass(0xe972)
 	cpu.disass(0xe977)
@@ -84,8 +99,16 @@ if False:
 	cpu.disass(0xeb40)
 	cpu.disass(0xeb9f)
 	cpu.disass(0xebf1)
-	#cpu.disass(0xebff)
+	cpu.disass(0xebff)
+if False:
+	cpu.disass(0xeb86)
+	cpu.disass(0xeb9f)
+	cpu.disass(0xebe6)
+if False:
+	# Plausible
 	cpu.disass(0xec16)
+if False:
+	# contains infinite loop ?
 	cpu.disass(0xec19)
 
 while p.run():
@@ -106,8 +129,35 @@ const.byte(p, 0xe80a, 4)
 const.byte(p, 0xe28a, 4)
 #######################################################################
 
+x = p.t.find(0xe14d, "ins")
+x.blockcmt += """-
+Read cmd from host
+
+Format floppy, probably:
+	04 uu 00 00 01 00 08 04 00 00 00 00 ff 00 00 00
+
+"""
+
+#######################################################################
+
 p.setlabel(0xe048, "ram_err")
-p.setlabel(0xe7d3, "delay()")
+p.setlabel(0xe075, "good_ram")
+x = p.t.find(0xe048, "ins")
+x.blockcmt += """-
+RAM error, flash bit(s) (LED?) to tell the world
+
+"""
+p.setlabel(0xe13f, "clr20@4000_1")
+p.setlabel(0xe1e6, "goto(e291[Y])")
+p.setlabel(0xe1f7, "w30=swab(w2e)")
+p.setlabel(0xe200, "w2e=swab(w30)")
+p.setlabel(0xe323, "clr20@4002")
+p.setlabel(0xe62e, "set30@4002")
+p.setlabel(0xe7d3, "delay_6000()")
+p.setlabel(0xe244, "e244_#A>_shift1bit2hw")
+p.setlabel(0xe247, "e244_#A>_shift0bit2hw")
+p.setlabel(0xe264, "e264_#A>_>X=")
+p.setlabel(0xe278, "e278_#A0xf7")
 
 #######################################################################
 # Build code graph

@@ -281,18 +281,24 @@ if True:
 		cpu.disass(p.m.b32(a + 8))
 
 ###############
+# Floppy related (FD_Format)
 
-x = p.t.add(0x7816,0x8000, "fill")
-x.render = "ZFILL"
-x.fold = True
+for adr in range(0x01000420, 0x01000438, 6):
+	const.byte(p, adr, 6)
 
-x = p.t.add(0x6706,0x6800, "fill")
-x.render = "ZFILL"
-x.fold = True
+###############
+
+const.fill(p, lo = 0x7816, hi =0x8000, fmt="0x%02x")
+const.fill(p, lo = 0x6706, hi =0x6800, fmt="0x%02x")
+const.fill(p, lo = 0x01000706, fmt="0x%02x")
 
 
 #######################################################################
 # Names
+
+def setlcmt(adr, cmt):
+	x = p.t.find(adr, "ins")
+	x.lcmt(cmt)
 
 p.setlabel(0x020a, "INB(adr)")
 p.setlabel(0x021c, "OUTB(adr,data)")
@@ -302,13 +308,18 @@ p.setlabel(0x0274, "LDIRB(src,dst,len)")
 
 p.setlabel(0x074c, "DiskParam(char *)")
 p.setlabel(0x07d4, "ShowRam(void)")
-p.setlabel(0x08b0, "int HexDigit(char *)")
+p.setlabel(0x08b0, "int HexDigit(char)")
 p.setlabel(0x0900, "puts(char *)")
 p.setlabel(0x0998, "ShowMenu(void)")
 p.setlabel(0x09d8, "Floppy(char *)")
+p.setlabel(0x0a1c, "floppy_format")
 p.setlabel(0x0b26, "puthex(long val,int ndig)")
 p.setlabel(0x0ac0, "ParkDisk(char *)")
 p.setlabel(0x0fc2, "putchar(char)")
+
+p.setlabel(0x111e, "FD_cmd(void *)")
+
+p.setlabel(0x1420, "FD_Format([0..1])")
 
 p.setlabel(0x20b8, "Debugger(void)")
 p.setlabel(0x20e4, "AvidCHR(RL0,>R10)")
@@ -322,6 +333,20 @@ p.setlabel(0x2bb6, "Debugger_MainLoop()")
 
 
 p.setlabel(0x3b28, "OutStr(char*)")
+
+p.t.blockcmt += """-
+
+0x08:0000
+	WD controller ?
+	see wdread()
+0x08:0010
+	FD controller ?
+	see wdread()
+	see FD_Format()
+0x08:0400
+	WD parameters ?
+	see 0:13c8
+"""
 
 #######################################################################
 
@@ -350,6 +375,25 @@ txtptr(0x0100003e)
 txtptr(0x0100004c)
 txtptr(0x0100005a)
 txtptr(0x01000068)
+#######################################################################
+# Looks possibly keyboard related
+
+p.setlabel(0x01000ea8, "kbd_lcase")
+p.setlabel(0x01000f0c, "kbd_ucase")
+p.setlabel(0x01000f70, "kbd_bits")
+
+if True:
+	for a in range(0x01000c2e, 0x01000e1a, 6):
+		const.byte(p, a, 6)
+	for a in range(0x01000ea8, 0x01000fd4, 100):
+		const.byte(p, a, 14)
+		const.byte(p, a + 14, 14)
+		const.byte(p, a + 28, 15)
+		const.byte(p, a + 43, 15)
+		const.byte(p, a + 58, 15)
+		const.byte(p, a + 73, 15)
+		const.byte(p, a + 88, 12)
+
 #######################################################################
 
 if True:
@@ -393,6 +437,23 @@ def Hunt_OutStr(t, priv, lvl):
 	return
 
 p.t.recurse(Hunt_OutStr)
+
+#######################################################################
+# Markup
+
+p.setlabel(0x11a6, "wdread([0..3])")
+setlcmt(0x11ee, "Floppy Command Buffer")
+setlcmt(0x11fa, "WD1003 Command Buffer")
+setlcmt(0x1200, "Clear command buffer")
+setlcmt(0x1216, "Fill in command")
+
+
+p.setlabel(0x134a, "InitDrives(?)")
+p.setlabel(0x1548, "HD_Park(?)")
+
+
+p.setlabel(0x01000438, "hard_disk_type")
+const.w16(p, 0x01000438);
 
 #######################################################################
 # Build code graph
