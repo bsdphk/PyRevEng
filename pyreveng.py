@@ -86,6 +86,9 @@ class pyreveng(object):
 		while len(self.__tlist) > 0:
 			c = self.__tlist[0]
 			del self.__tlist[0]
+			if True:
+				c[1](self, c[0], c[2])
+				return True
 			try:
 				c[1](self, c[0], c[2])
 			except:

@@ -93,13 +93,8 @@ while p.run():
 
 cpu.to_tree()
 
-x = p.t.add(0xec27,0xff93, "FILL")
-x.render = "ZFILL"
-x.fold = True
-
-x = p.t.add(0xffa0,0xfff3, "FILL")
-x.render = "ZFILL"
-x.fold = True
+const.fill(p, mid=0xfe6d)
+const.fill(p, mid=0xffc0)
 
 #######################################################################
 for a in range(0xe7bf, 0xe7d3, 4):

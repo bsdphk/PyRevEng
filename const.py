@@ -111,3 +111,40 @@ class txt(tree.tree):
 	def rfunc(self, p, t):
 		s = ".TXT\t'" + self.txt + "'" + self.term
 		return (s,)
+
+class fill(tree.tree):
+	def __init__(self, p, lo = None, mid = None, hi = None, fmt = None, rd = None):
+		if rd == None:
+			rd = p.m.rd
+		if fmt == None:
+			fmt = p.m.dpct
+		if lo == None:
+			if mid != None:
+				lo = mid
+			elif hi != None:
+				lo = hi
+			else:
+				print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
+				return
+			x = rd(lo)
+			while x == rd(lo - 1):
+				lo -= 1
+		if hi == None:
+			if mid != None:
+				hi = mid
+			elif lo != None:
+				hi = lo
+			else:
+				print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
+				return
+			x = rd(hi)
+			while x == rd(hi):
+				hi += 1
+		if lo == None or hi == None:
+			print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
+			return
+		tree.tree.__init__(self, lo, hi, "fill")
+		x = p.t.add(self.start, self.end, self.tag, True, self)
+		x.render = ".Fill\t" + \
+		    fmt % rd(lo) + "[" + fmt % (hi-lo) + "]"
+		x.fold = True
