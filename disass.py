@@ -223,10 +223,9 @@ class instruction(object):
 		return s
 
 	def lcmt(self, s):
-		if s[-1] == "\n":
-			self.cmt += s
-		else:
-			self.cmt += s + "\n"
+		if len(self.cmt) > 0:
+			self.cmt += "\n"
+		self.cmt += s
 
 	def debug(self):
 		s = self.__repr__()

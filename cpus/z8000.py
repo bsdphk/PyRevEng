@@ -94,13 +94,13 @@ class z8000(disass.assy):
 
 		if d1 & 0x8000:
 			assert (d1 & 0xff) == 0
-			d1 = (d1 & 0x7f00) << 8
+			d1 = (d1 & 0x7f00) << 16
 			d1 |= p.m.b16(na)
 			na += 2
 		else:
-			d1 = (d1 & 0x7f00) << 8 | (d1 & 0x00ff)
+			d1 = (d1 & 0x7f00) << 16 | (d1 & 0x00ff)
 
-		f = "0x%02x:" % (d1 >> 16)
+		f = "0x%02x:" % (d1 >> 24)
 		f += "0x%04x" % (d1 & 0xffff) + tail
 		i = (d1, "%s" + tail, f)
 		return (na,  i)
@@ -260,7 +260,7 @@ class z8000(disass.assy):
 			elif i == "#b":
 				j = self.rdarg(p, adr, c, "b")
 				if mne[:2] == "SL" and j > 127:
-					mne = "SR" + mne[3:]
+					mne = "SR" + mne[2:]
 					j = 65536 - j
 				i = "%d" % j
 			elif i == "#data" and wid == 8:
@@ -283,7 +283,7 @@ class z8000(disass.assy):
 			elif i == "#data" and wid == 32:
 				d = p.m.b32(na)
 				na += 4
-				i = "#0x%08x" % d
+				i = (d, "#%s", "#0x%08x" % d)
 			elif i == "address":
 				(na, i) = self.get_address(p, na, "")
 				dstadr = i[0]

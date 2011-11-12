@@ -64,7 +64,52 @@ cpu.disass(p.m.b16(6))
 cpu.disass(0)
 
 #######################################################################
+# non-stack calls LDA RR10,0x??:0x????
+
+def rr10_call(adr):
+	# Turn a jump into a call
+	x = cpu.disass(adr)
+	while p.run():
+		pass
+
+	y = x.flow_out
+	assert len(y) == 1
+	y = y[0]
+	assert y[0] == "cond"
+	assert y[1] == "T"
+	assert type(y[2]) == int
+	x.flow_out = [("call", "T", y[2]),]
+	cpu.disass(x.hi)
+
+if True:
+	rr10_call(0x0c08)
+	rr10_call(0x01ba)
+	rr10_call(0x0c3e)
+	rr10_call(0x0e98)
+	rr10_call(0x0ea8)
+	rr10_call(0x0eda)
+	rr10_call(0x0eea)
+
+# Other call/return skulduggery
+if True:
+	cpu.disass(0x20bc)
+	cpu.disass(0x3ec6)
+
+#######################################################################
+# MMU stuff
+
+p.setlabel(0x0090, "size_ram")
+p.setlabel(0x00ca, "ram_sized")
+p.setlabel(0x00f4, "copy_dot_data")
+p.setlabel(0x023a, "SetMMU(int seg, int base1, int base2)")
+
+#######################################################################
 # The data segment is copied from the EPROM to Segment 1
+
+while p.run():
+	pass
+
+cpu.ins[0x00f4].lcmt("Copy .data to segment 1")
 
 dseg_len = 0x1016
 dseg_src = 0x6800
@@ -108,22 +153,9 @@ p.setlabel(0x2040, "TrapHandler")
 
 #######################################################################
 # More hints...
-
-if True:
-	# non-stack calls LDA RR10,0x??:0x????
-	cpu.disass(0x0c0a)
-	cpu.disass(0x01c0)
-	cpu.disass(0x0c44)
-	cpu.disass(0x0e9e)
-	cpu.disass(0x0eae)
-	cpu.disass(0x0ee0)
-	cpu.disass(0x0ef0)
-	cpu.disass(0x20bc)
-	cpu.disass(0x3ec6)
-	cpu.disass(0x3eca)
-
 if True:
 	x = const.txt(p, 0x0c76)
+	x = const.txt(p, 0x0cb1)
 	const.txt(p, 0x010002a4)
 	const.txt(p, 0x01000324)
 	const.txt(p, 0x0100033b)
@@ -138,6 +170,28 @@ if True:
 	const.txt(p, 0x01000ea1)
 		
 #######################################################################
+# 0:0bc8 related
+
+x = p.t.add(0x0c4a, 0xc76, "tbl")
+x.blockcmt = """-
+Initialization for some I/O chip
+See routine @ 0x0bc8
+Doesn't look like 6845 or SCC, could be Hi-Res
+"""
+
+i = p.m.b16(0xc74)
+a = 0xc4a
+while i > 0:
+	j = i
+	if j > 2:
+		j = 2
+	const.byte(p, a, j)
+	a += j
+	i -= j
+
+const.w16(p, 0x0c74)
+
+#######################################################################
 #
 
 # Looks unref  INW(adr)
@@ -147,11 +201,16 @@ p.setlabel(0x0214, "INW(adr)")
 cpu.disass(0x22b0)
 
 #######################################################################
-#
+# Hi-Res chargen
 
-x = p.t.add(0x4606, 0x6706, "Chargen")
+x = p.t.add(0x45fe, 0x6706, "Chargen")
+x.blockcmt = """-
+Hi-Res Character Generator
+"""
+p.setlabel(0x45fe, "CHARGEN")
 
 if False:
+	const.byte(p, 0x45fe, 8)
 	def chargen(adr):
 		const.byte(p,adr)
 		const.byte(p,adr + 1)
@@ -172,9 +231,6 @@ if False:
 else:
 	x.fold = True
 	x.render = "[...]"
-	x.blockcmt = """-
-Hi-Res Character Generator
-"""
 
 ###############
 for a in range(0x3e90, 0x3ea0, 4):
@@ -271,14 +327,130 @@ for a in range(0x0008,0x0038, 8):
 	v = v[1:]
 
 ###############
+# hd/fd function pointer table
 
 if True:
-	for a in range(0x010005a0, 0x010005b8, 12):
-		const.txtlen(p, a + 2, 2)
-		const.w32(p, a + 4)
-		cpu.disass(p.m.b32(a + 4))
-		const.w32(p, a + 8)
-		cpu.disass(p.m.b32(a + 8))
+	p.setlabel(0x01000006, "fd_boot_string")
+	p.setlabel(0x0100000a, "hd_boot_string")
+	p.setlabel(0x010005a2, "hd_fd_table")
+	p.setlabel(0x010005ba, "hd_fd_table_end")
+	p.setlabel(0x0100123a, "wdread_drv")
+	p.setlabel(0x0100123c, "wdread_ptr")
+	p.setlabel(0x1768, "char *Boot(char *)")
+	for a in range(0x010005a2, 0x010005ba, 12):
+		const.txtlen(p, a, 2)
+		const.w32(p, a + 2)
+		cpu.disass(p.m.b32(a + 2))
+		const.w32(p, a + 6)
+		cpu.disass(p.m.b32(a + 6))
+	while p.run():
+		pass
+
+	# Calls through hd/fd table @ 01:05a2
+	#
+	cpu.ins[0x1920].flow("call", "X", 0x10ce)
+	cpu.ins[0x1ebc].flow("call", "X", 0x11a6)
+	cpu.ins[0x1f46].flow("call", "X", 0x11a6)
+	cpu.ins[0x201c].flow("call", "X", 0x11a6)
+
+###############
+
+if True:
+	p.setlabel(0x0ccc, "Detect_HiRes")
+	p.setlabel(0x0ce4, "Found_HiRes")
+	p.setlabel(0x0cf0, "Detect_LoRes")
+	p.setlabel(0x0d06, "Found_LoRes")
+	p.setlabel(0x0d1c, "MMU_Video_Setup")
+	p.setlabel(0x0d96, "No_Video")
+	p.setlabel(0x0d56, "Hello_HiRes")
+	p.setlabel(0x0d7a, "Hello_LoRes")
+	p.setlabel(0x0d9c, "Hello_Serial")
+
+
+
+###############
+# RAM test
+
+if True:
+	p.setlabel(0x0db8, "RAM_check")
+	p.setlabel(0x0e28, "ram_error");
+	p.setlabel(0x0e74, "hires_ram_err");
+	p.setlabel(0x0eb6, "lores_ram_err");
+	p.setlabel(0x0f0a, "serial_ram_err");
+
+###############
+# HiRes putchar function
+
+if True:
+	p.setlabel(0x20cc, "HiResPutChar(char *)")
+	p.setlabel(0x010017ff, "is_hires")
+	const.w32(p, 0x01000614)
+	p.setlabel(0x01000614, "screen_ptr")
+	p.setlabel(0x20e4, "hires_putc(RL0,>R10)")
+	p.setlabel(0x20ee, "hires_clear")
+	p.setlabel(0x216a, "hires_stamp_char")
+	p.setlabel(0x21fc, "hires_scroll")
+	p.setlabel(0x21b6, "hires_NL")
+	p.setlabel(0x2244, "hires_CR")
+	p.setlabel(0x225e, "hires_FF")
+	p.setlabel(0x226c, "hires_BS")
+
+###############
+# LoRes putchar function
+
+if True:
+	p.setlabel(0x420c, "LoResPutChar(char *)")
+	p.setlabel(0x01001800, "is_lores")
+	p.setlabel(0x4224, "lores_putc(RL0,>R10)")
+	p.setlabel(0x422c, "lores_setup")
+	p.setlabel(0x4276, "lores_dochar")
+	p.setlabel(0x42b6, "lores_NL")
+	p.setlabel(0x42ee, "lores_CR")
+	p.setlabel(0x431e, "lores_FF")
+	p.setlabel(0x4326, "lores_BS")
+	p.setlabel(0x4296, "lores_stamp_char")
+	p.setlabel(0x42c2, "lores_scroll")
+	p.setlabel(0x4304, "lores_cursor")
+
+	x = p.t.add(0x434a, 0x436c, "tbl")
+	x.blockcmt = """-
+	Init data for Low-Res Video chip (6845/46505)
+	"""
+
+	hd6845reg = (
+		"Horizontal Total",
+		"Horizontal Displayed",
+		"Horizontal Sync Position",
+		"Sync Width",
+		"Vertical Total",
+		"Vertical Total Adjust",
+		"Vertical Displayed",
+		"Vertical Sync Position",
+		"Interlace & Skew",
+		"Maximum Raster Address",
+		"Cursor Start Raster",
+		"Cursor End Raster",
+		"Start Address (H)",
+		"Start Address (L)",
+		"Cursor (H)",
+		"Cursor (L)",
+		"Light Pen (H)",
+		"Light Pen (L)",
+	)
+	i = p.m.b16(0x436a)
+	a = 0x434a
+	while i > 0:
+		j = i
+		if j > 2:
+			j = 2
+		x = const.byte(p, a, j)
+		y = p.m.rd(a)
+		if y < len(hd6845reg):
+			x.lcmt(hd6845reg[y])
+		a += j
+		i -= j
+
+	const.w16(p, 0x436a)
 
 ###############
 # Floppy related (FD_Format)
@@ -295,6 +467,10 @@ const.fill(p, lo = 0x01000706, fmt="0x%02x")
 
 #######################################################################
 # Names
+
+p.setlabel(0x01001562, "input_buffer")
+p.setlabel(0x092c, "readline(char *)")
+p.setlabel(0x104a, "int getchar()")
 
 def setlcmt(adr, cmt):
 	x = p.t.find(adr, "ins")
@@ -322,12 +498,6 @@ p.setlabel(0x111e, "FD_cmd(void *)")
 p.setlabel(0x1420, "FD_Format([0..1])")
 
 p.setlabel(0x20b8, "Debugger(void)")
-p.setlabel(0x20e4, "AvidCHR(RL0,>R10)")
-p.setlabel(0x4224, "BvidCHR(RL0,>R10)")
-p.setlabel(0x21b6, "is_NL")
-p.setlabel(0x2244, "is_CR")
-p.setlabel(0x225e, "is_FF")
-p.setlabel(0x226c, "is_BS")
 p.setlabel(0x231e, "Debugger_Menu()")
 p.setlabel(0x2bb6, "Debugger_MainLoop()")
 
@@ -410,6 +580,44 @@ if True:
 while p.run():
 	pass
 
+#######################################################################
+# Comment up SOUTB for 8010 MMU
+
+r8010 = {
+0x00:	"R/W: Mode Register",
+0x01:	"R/W: Segment Address",
+0x02:	"R/O: Violation Type",
+0x03:	"R/O: Violation Segment Number",
+0x04:	"R/O: Violation Offset High",
+0x05:	"R/O: Bus Status",
+0x06:	"R/O: Instruction Segment Number",
+0x07:	"R/O: Instruction Offset High",
+0x08:	"R/W: Base Field",
+0x09:	"R/W: Limit Field",
+0x0a:	"R/W: Attribute Field",
+0x0b:	"R/W: Desciptor Field",
+0x0c:	"R/W: Base Field, SAR++",
+0x0d:	"R/W: Limit Field, SAR++",
+0x0e:	"R/W: Attribute Field, SAR++",
+0x0f:	"R/W: Descriptor (Bh,Bl,L,A), SAR++",
+0x11:	"R/W: Reset Violation Type",
+0x13:	"R/W: Reset SWW in VTR",
+0x14:	"R/W: Reset FATL in VTR",
+0x15:	"W/O: Set all CPU-Inhibit Attrbute Flags",
+0x16:	"W/O: Set all DMA-Inhibit Attrbute Flags",
+0x20:	"R/W: Descriptor Selector Counter",
+}
+
+for i in cpu.ins:
+	j = cpu.ins[i]
+	if j.mne == "SOUTB" or j.mne == "SINB":
+		assert p.m.rd(j.lo) == 0x3a
+		r = p.m.rd(j.lo + 2)
+		if r in r8010:
+			j.lcmt("MMU8010: " + r8010[r])
+
+
+#######################################################################
 cpu.to_tree()
 
 #######################################################################
@@ -447,6 +655,9 @@ setlcmt(0x11fa, "WD1003 Command Buffer")
 setlcmt(0x1200, "Clear command buffer")
 setlcmt(0x1216, "Fill in command")
 
+p.setlabel(0x286, "bzero(void *, int)")
+p.setlabel(0x582, "mainmenu()")
+p.setlabel(0x6e4, "long hex2int(char *)")
 
 p.setlabel(0x134a, "InitDrives(?)")
 p.setlabel(0x1548, "HD_Park(?)")
@@ -461,6 +672,15 @@ const.w16(p, 0x01000438);
 if True:
 	p.g = topology.topology(p)
 	p.g.build_bb()
+
+p.g.findflow(0x0472, 0x047e).offpage = True
+p.g.findflow(0x0466, 0x0582).offpage = True
+p.g.findflow(0x0472, 0x0582).offpage = True
+p.g.findflow(0x0da2, 0x0db8).offpage = True
+p.g.findflow(0x0d96, 0x0db8).offpage = True
+
+
+if True:
 	p.g.segment()
 	p.g.setlabels(p)
 	p.g.dump_dot()
