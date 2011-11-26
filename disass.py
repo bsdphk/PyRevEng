@@ -269,7 +269,7 @@ class instruction(object):
 		self.flow_out.append((mode, cc, dst))
 
 	def fail(self, reason):
-		if not self.is_clone:
+		if not self.disass.is_clone:
 			print("FAIL: ", reason, "\n\t" + self.debug())
 			if self.diag != None:
 				print("\t", self.diag);

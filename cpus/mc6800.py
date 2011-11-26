@@ -87,7 +87,7 @@ class mc6800(disass.assy):
 		c = inscode[iw]
 		l = int(c[0])
 		if l == 0:
-			print("UNKNOWN %04x: %02x %s" % (adr,iw, c))
+			ins.fail("unknown")
 			return
 
 		ins.hi = adr + l

@@ -25,6 +25,7 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 	ref = len(cpu.ins)
 	best = ref
 	cand = None
+	bdict = dict()
 
 	for g in p.t.gaps():
 		g = list(g)
@@ -46,17 +47,25 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			if cpu.bm.tst(i):
 				i += 1
 				continue
+			if i in bdict:
+				i = bdict[i].hi
+				continue
+			ccpu = cpu.clone()
 			try:
-				ccpu = cpu.clone()
 				ccpu.disass(i)
 				while p.run():
 					pass
-				this = len(ccpu.ins)
-				if ccpu.fails == 0 and this > best:
-					best = this
-					cand = i
 			except:
-				pass
+				ccpu.fails = None
+
+			this = len(ccpu.ins)
+			if ccpu.fails == 0 and this > best:
+				print("Best so far: ", p.m.afmt(i), this - ref)
+				sys.stdout.flush()
+				best = this
+				cand = i
+				bdict = ccpu.ins
+			del ccpu
 			i += 1
 	if cand == None:
 		return (None, 0)
@@ -78,6 +87,9 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 			break
 		x = cpu.disass(i)
 		x.lcmt("<==== Brute Force Discovery #%d" % n)
+		while p.run():
+			pass;
+
 		n += 1
 		if max != None and n >= max:
 			break

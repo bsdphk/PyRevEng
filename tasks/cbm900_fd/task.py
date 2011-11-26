@@ -388,7 +388,8 @@ while p.run():
 	pass
 
 import explore
-explore.brute_force(p, cpu, 0xe000, 0x10000)
+import cProfile
+cProfile.run('explore.brute_force(p, cpu, 0xe000, 0x10000)')
 
 while p.run():
 	pass

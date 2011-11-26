@@ -130,8 +130,8 @@ Data Segment Initializer data, moved to segment 1
 """
 
 # XXX not sure how much this actually helps...
-x = p.t.add(m.linadr(0, m0.start), m.linadr(0, m0.end), "Seg#0")
-x = p.t.add(m.linadr(1, m1.start), m.linadr(1, m1.end), "Seg#1")
+#x = p.t.add(m.linadr(0, m0.start), m.linadr(0, m0.end), "Seg#0")
+#x = p.t.add(m.linadr(1, m1.start), m.linadr(1, m1.end), "Seg#1")
 
 #######################################################################
 #
@@ -616,6 +616,11 @@ for i in cpu.ins:
 		if r in r8010:
 			j.lcmt("MMU8010: " + r8010[r])
 
+
+#######################################################################
+if False:
+	import explore
+	explore.brute_force(p, cpu, 0x0000, 0x4000)
 
 #######################################################################
 cpu.to_tree()

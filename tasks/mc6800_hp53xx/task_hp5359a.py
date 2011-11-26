@@ -372,11 +372,12 @@ p.setlabel(0x7c03, "UpdateNumber(B)")
 cpu.to_tree()
 
 #----------------------------------------------------------------------
-fo = open("/tmp/_", "w")
-for i in cpu.ins:
-	fo.write(cpu.ins[i].debug() + "\n")
-fo.close()
-exit(0)
+if False:
+	fo = open("/tmp/_", "w")
+	for i in cpu.ins:
+		fo.write(cpu.ins[i].debug() + "\n")
+	fo.close()
+	exit(0)
 #----------------------------------------------------------------------
 
 p.g = topology.topology(p)

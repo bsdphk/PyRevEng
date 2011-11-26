@@ -63,7 +63,7 @@ cpu = cpus.mc6800.mc6800(p)
 cpu.vectors(0x8000)
 
 #----------------------------------------------------------------------
-hp53xx.eprom(p, cpu.disass, 0x6000, 0x8000, 0x400)
+#hp53xx.eprom(p, cpu.disass, 0x6000, 0x8000, 0x400)
 
 #----------------------------------------------------------------------
 #hp53xx.nmi_debugger(p, p.m.w16(0x7ffc))
@@ -746,7 +746,7 @@ if True:
 	p.g.add_flow("NMI", p.m.b16(0x7ffc))
 	p.g.add_flow("RST", p.m.b16(0x7ffe))
 
-if True:
+if False:
 	p.g.findflow(0x7b38,0x7bc6).offpage = True
 	p.g.findflow(0x795b,0x795e).offpage = True
 	p.g.findflow(0x7d57,0x7d5b).offpage = True
