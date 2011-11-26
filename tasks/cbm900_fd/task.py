@@ -131,17 +131,47 @@ Derived memory map:
     HOSTADR:
 	0004-0005	Host address	(0004=0x00, 0005=0x08)
 
+	0007				TMP
 	0009				Current drive 0/1
+
+	000a				WriteProt status, Drive 0
+	000b				WriteProt status, Drive 1
+
+	000c				Cur_Cyl, Drive 0
+	000d				Cur_Cyl, Drive 1
 
 	000e		______ss	Drive 0
 			      ss	Stepper-phase
 	000f		______ss	Drive 1 (as 0x000e)
+
+	0016				Cylinder
+	0017				StepsNeeded
+	0018				Sector(?)
+	0019				Nsect
+	001e				Floppy Region
 
 	0029		_dd_____	CMDx
 			 dd		Drive number
 			    xxxx
 -
 """
+
+p.setlabel(0x07, "zTMP")
+p.setlabel(0x0a, "dSTATUS")
+p.setlabel(0x0c, "dCYLINDER")
+p.setlabel(0x0e, "dSTEPPHASE")
+p.setlabel(0x09, "zCURDRV")
+p.setlabel(0x16, "zCYLINDER")
+p.setlabel(0x17, "zSTEPS")
+p.setlabel(0x18, "zSECTOR")
+p.setlabel(0x19, "zNSECT")
+p.setlabel(0x1e, "zREGION")
+p.setlabel(0x28, "cCMD")
+p.setlabel(0x29, "cUNIT")
+p.setlabel(0x2a, "cBLK_H")
+p.setlabel(0x2b, "cBLK_L")
+p.setlabel(0x2c, "cBLK_N")
+
 #######################################################################
 cpu = cpus.mcs6500.mcs6502(p)
 
@@ -169,11 +199,70 @@ if False:
 		cpu.disass(a)
 		pass
 
+#######################################################################
 if True:
-	for a in range(0xe291, 0xe29d, 2):
+	while p.run():
+		pass
+
+	x = p.t.add(0xe28a, 0xe29d, "consts")
+	x.blockcmt = """-
+Command byte dispatch table
+"""
+	x = const.byte(p, 0xe28a)
+	x.lcmt("Number of commands in table")
+
+	y = cpu.disass(0xe1e6)
+
+	fd_cmds = dict()
+	fd_cmds[4] = "FORMAT"
+
+	for x in range(0,6):
+		b = 0xe28b + x
+		a = 0xe291 + 2 * x
 		da = p.m.l16(a)
-		const.w16(p, a)
+		z = const.w16(p, a)
+		cmd = p.m.rd(b)
+		if cmd in fd_cmds:
+			z.lcmt("Command %s" % fd_cmds[cmd])
+			p.setlabel(da, "CMD_%s" %  fd_cmds[cmd])
+		else:
+			z.lcmt("Command %02x" % cmd)
+			p.setlabel(da, "CMD_%02x" % cmd)
 		cpu.disass(da)
+		y.flow("cond","?",da)
+
+		x = const.byte(p,b)
+		if cmd in fd_cmds:
+			x.lcmt("Command %s" % fd_cmds[cmd])
+
+#######################################################################
+
+if True:
+	y = p.t.add(0xe7bf, 0xe7d3, "tbl")
+	y.blockcmt="""-
+Table of floppy regions
+"""
+	p.setlabel(0xe7bf, "SECREGH")
+	x = const.byte(p, 0xe7bf, 4)
+	x.lcmt("# sect/region (H)")
+
+	p.setlabel(0xe7c3, "SECREGL")
+	x = const.byte(p, 0xe7c3, 4)
+	x.lcmt("# sect/region (L)")
+
+	p.setlabel(0xe7c7, "REGCYL")
+	x = const.byte(p, 0xe7c7, 4)
+	x.lcmt("# Region starts after cylinder")
+
+	p.setlabel(0xe7cb, "SECCYL")
+	x = const.byte(p, 0xe7cb, 4)
+	x.lcmt("# sect/cylinder")
+
+	p.setlabel(0xe7cf, "SECTRK")
+	x = const.byte(p, 0xe7cf, 4)
+	x.lcmt("# sect/track")
+
+#######################################################################
 
 const.byte(p, 0xe962, 6)
 const.byte(p, 0xe968, 5)
@@ -227,8 +316,9 @@ const.fill(p, mid=0xfe6d)
 const.fill(p, mid=0xffc0)
 
 #######################################################################
-for a in range(0xe7bf, 0xe7d3, 4):
-	const.byte(p, a, 4)
+if False:
+	for a in range(0xe7bf, 0xe7d3, 4):
+		const.byte(p, a, 4)
 
 const.byte(p, 0xe675, 4)
 const.byte(p, 0xe679, 4)
@@ -240,8 +330,6 @@ Stepper phase table: 0101,0110,1010,1001
 """
 #######################################################################
 
-const.byte(p, 0xe28a, 4)
-#######################################################################
 
 x = p.t.find(0xe14d, "ins")
 x.blockcmt += """-
@@ -249,6 +337,15 @@ Read cmd from host
 
 Format floppy, probably:
 	04 uu 00 00 01 00 08 04 00 00 00 00 ff 00 00 00
+	-- -- ----- --
+	 |  |   |    |
+	 |  |   |    +-- Number of blocks
+	 |  |   |
+	 |  |   +-- Block number
+	 |  |
+	 |  +-- Unit/Drive number: mask: 0x30 
+	 |
+	 +--- CMD byte
 
 """
 
@@ -263,7 +360,7 @@ RAM error, flash bit(s) (LED?) to tell the world
 """
 p.setlabel(0xe13f, "MotorsOff()")
 p.setlabel(0xe197, "Error(A)")
-p.setlabel(0xe1e6, "goto(e291[Y])")
+p.setlabel(0xe1e6, "goto(e291[Y-1])")
 p.setlabel(0xe1f7, "w30=swab(w2e)")
 p.setlabel(0xe200, "w2e=swab(w30)")
 p.setlabel(0xe244, "DMA_Rd_Addr(HOSTADR)")
@@ -271,8 +368,28 @@ p.setlabel(0xe247, "DMA_Wr_Addr(HOSTADR)")
 p.setlabel(0xe264, "A=DMA_Single(X)")
 p.setlabel(0xe278, "DMA_Start()")
 p.setlabel(0xe323, "WriteGateOff()")
+if True:
+	p.setlabel(0xe471, ".FmtSector")
+	p.setlabel(0xe494, ".WriteGAP1")
+	p.setlabel(0xe4a7, ".WriteDATA")
 p.setlabel(0xe62e, "WriteEraseGateOn()")
 p.setlabel(0xe637, "recal-ish(X)")
+p.setlabel(0xe67d, "WriteSync()")
+p.setlabel(0xe6ab, "StartDrive()")
+if True:
+	p.setlabel(0xe6be, ".StartMotor")
+	p.setlabel(0xe6c9, ".StopOtherMotor")
+	p.setlabel(0xe6dd, ".FindRegion")
+	p.setlabel(0xe708, ".FindCylinder")
+	p.setlabel(0xe71a, ".FindHead")
+	p.setlabel(0xe724, ".HeadLower")
+	p.setlabel(0xe72c, ".HeadUpper")
+	p.setlabel(0xe733, ".Nblocks")
+	p.setlabel(0xe748, ".CfgRegion")
+	p.setlabel(0xe752, ".StepToCyl")
+	p.setlabel(0xe795, ".StepDoneQ")
+	p.setlabel(0xe799, ".OnCyl")
+p.setlabel(0xe7a2, "UpdateWriteProt()")
 p.setlabel(0xe7d3, "delay_6000()")
 p.setlabel(0xe7e0, "StartMotor(X)")
 p.setlabel(0xe7f9, "StepDrive(X)")

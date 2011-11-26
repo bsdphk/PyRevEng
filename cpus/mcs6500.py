@@ -22,7 +22,7 @@ inscode = (
 
 	"",	"nSTA",	"",	"",	"zSTY",	"zSTA",	"zSTX",	"",	"_DEY",	"",	"_TXA",	"",	"aSTY",	"aSTA",	"aSTX",	"",
 	"rBCC",	"mSTA",	"",	"",	"XSTY",	"XSTA",	"XSTY",	"",	"_TYA",	"ySTA",	"_TXS",	"",	"",	"xSTA",	"",	"",
-	"iLDY",	"nLDA",	"iLDX",	"",	"zLDY",	"zLDA",	"zLDX",	"",	"_TAY",	"iLDA",	"_TAX",	"",	"aLDX",	"aLDA",	"aLDX",	"",
+	"iLDY",	"nLDA",	"iLDX",	"",	"zLDY",	"zLDA",	"zLDX",	"",	"_TAY",	"iLDA",	"_TAX",	"",	"aLDY",	"aLDA",	"aLDX",	"",
 	"rBCS",	"mLDA",	"",	"",	"XLDY",	"XLDA",	"YLDA",	"",	"_CLV",	"yLDA",	"_TSX",	"",	"",	"xLDA",	"yLDX",	"",
 
 	"iCPY",	"nCMP",	"",	"",	"zCPY",	"zCMP",	"zDEC",	"",	"_INY",	"iCMP",	"_DEX",	"",	"aCPY",	"aCMP",	"aDEC",	"",
@@ -59,20 +59,21 @@ class mcs6502(disass.assy):
 		if ic[0] == "z":
 			# Page Zero address
 			ins.mne = ic[1:]
-			ins.oper.append("%02x" % p.m.rd(adr + 1))
+			da = p.m.rd(adr + 1)
+			ins.oper.append((da, "%s", "%02x" % da))
 			ins.hi = ins.lo + 2
 		elif ic[0] == "X":
 			# PZ,X
 			da = p.m.rd(adr + 1)
 			ins.mne = ic[1:]
-			ins.oper.append("%02x" % da)
+			ins.oper.append((da, "%s", "%02x" % da))
 			ins.oper.append("X")
 			ins.hi = ins.lo + 2
 		elif ic[0] == "Y":
 			# PZ,Y
 			da = p.m.rd(adr + 1)
 			ins.mne = ic[1:]
-			ins.oper.append("%02x" % da)
+			ins.oper.append((da, "%s", "%02x" % da))
 			ins.oper.append("Y")
 			ins.hi = ins.lo + 2
 		elif ic[0] == "i":
@@ -90,14 +91,14 @@ class mcs6502(disass.assy):
 			# Absolute,X
 			da = p.m.l16(adr + 1)
 			ins.mne = ic[1:]
-			ins.oper.append("%04x" % da)
+			ins.oper.append((da, "%s", "%04x" % da))
 			ins.oper.append("X")
 			ins.hi = ins.lo + 3
 		elif ic[0] == "y":
 			# Absolute,Y
 			da = p.m.l16(adr + 1)
 			ins.mne = ic[1:]
-			ins.oper.append("%04x" % da)
+			ins.oper.append((da, "%s", "%04x" % da))
 			ins.oper.append("Y")
 			ins.hi = ins.lo + 3
 		elif ic[0] == "n":
