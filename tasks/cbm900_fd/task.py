@@ -376,65 +376,19 @@ while p.run():
 	pass
 
 if True:
-	for i in ( 0xea33, 0xea39, 0xea36, 0xe993, 0xe948, 0xe034, 0xe96d,
-	    0xe972, 0xe977, 0xe989, 0xe98e, 0xe906, 0xea9c, 0xeab1, 0xff93,
-	    0xff96, 0xff99, 0xe90c):
+	for i in (
+	    0xff93, 0xff96, 0xff99,
+	    0xea33, 0xea36, 0xea39,
+	    0xeab4,
+	):
 		x = cpu.disass(i)
 		x.lcmt("<===== BRUTE FORCE DISCOVERY")
 
 while p.run():
 	pass
 
-if True:
-	def cost_func(t):
-		s = 0
-		la = t.start
-		for i in t.child:
-			s += i.start - la
-			la = i.end
-		s += t.end - la
-		return s
-
-	import copy
-
-	while p.run():
-		pass
-
-	ta = 0
-
-	pp = copy.deepcopy(p)
-	pp.c['mcs6502'].to_tree()
-	bc=cost_func(pp.t)
-	br=bc
-
-	for g in p.t.gaps():
-		print("GAP", "%04x" % g[0], "%04x" % g[1])
-		i = g[0]
-		if i < 0xe000:
-			i = 0xe000
-		while i < g[1]:
-			if i in cpu.ins:
-				i = cpu.ins[i].hi
-				continue
-			try:
-				pp = copy.deepcopy(p)
-				ccpu = pp.c['mcs6502']
-				ccpu.disass(i)
-				while pp.run():
-					pass
-				ccpu.to_tree()
-				tc = cost_func(pp.t)
-				if tc < bc:
-					bc = tc
-					ta = i
-				print("%04x" % i, tc, tc-br, "--", "%04x" % ta, bc-br)
-			except:
-				pass
-			i += 1
-
-	print("BEST SHOT: %04x" % ta, bc, bc-br)
-
-	cpu.disass(ta)
+import explore
+explore.brute_force(p, cpu, 0xe000, 0x10000)
 
 while p.run():
 	pass
@@ -455,7 +409,8 @@ Read cmd from host
 p.setlabel(0xe048, "ram_err")
 p.setlabel(0xe075, "good_ram")
 x = p.t.find(0xe048, "ins")
-x.blockcmt += """-
+if x != None:
+	x.blockcmt += """-
 RAM error, flash bit(s) (LED?) to tell the world
 
 """
