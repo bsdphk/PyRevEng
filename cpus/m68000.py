@@ -59,17 +59,18 @@ class m68000(disass.assy):
 			print("NB: ", arg, "not found in", c)
 		return x
 
-	def extword(self, ins, idx):
+	def extword(self, ins, idx, ver = False):
 		adr = ins.lo
 		p = self.p
 		ev = p.m.b16(ins.hi)
 		ins.hi += 2
 		if ev & 256:
-			print(("Error @%04x: %04x %04x " +
-			    "Long extension word in EA.6 %04x") %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2),
-			    ev))
-			print("\t", self.last_c)
+			if ver:
+				print(("Error @%04x: %04x %04x " +
+				    "Long extension word in EA.6 %04x") %
+				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
+				    ev))
+				print("\t", self.last_c)
 			return None
 		#print("EA6: Ev: %04x" % ev)
 		da = ev >> 15
@@ -154,16 +155,17 @@ class m68000(disass.assy):
 			ea="#0x%08x" % v
 			ins.hi += 4
 		else:
-			print(("Error @%04x: %04x %04x " +
-			    "EA.%d.%d w%d missing") %
-			    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
-			    eam, ear, wid))
-			print("\t", self.last_c)
+			if False:
+				print(("Error @%04x: %04x %04x " +
+				    "EA.%d.%d w%d missing") %
+				    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
+				    eam, ear, wid))
+				print("\t", self.last_c)
 			return (None, None)
 		#print("\team=", eam, "ear=", ear, "wid=%d" % wid, "ins.hi=%x" % ins.hi,"->", ea, v)
 		return (ea, v)
 		
-	def check_valid_ea(self, ins, c, ver = True):
+	def check_valid_ea(self, ins, c, ver = False):
 		# Figure out Effective Address
 		eabit = int(c.spec[2],16)
 		if eabit == 0:
@@ -172,11 +174,12 @@ class m68000(disass.assy):
 		adr = ins.lo
 
 		if eabit & 0xe080:
-			print("Error @%04x: %04x %04x " +
-			    "EAbits illegal (%04x)" %
-			    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
-			    eabit))
-			print("\t", c)
+			if ver:
+				print("Error @%04x: %04x %04x " +
+				    "EAbits illegal (%04x)" %
+				    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
+				    eabit))
+				print("\t", c)
 			return (False, None, None)
 
 		eam = self.rdarg(adr, c, "eam")
@@ -251,8 +254,6 @@ class m68000(disass.assy):
 			ins.fail("no memory")
 			return
 		if c == None:
-			print("Error @%04x: %04x %04x no instruction found" %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
 			ins.fail("no instruction")
 			return
 		#print("]]} @%04x" % adr, c)
@@ -281,13 +282,13 @@ class m68000(disass.assy):
 				wid = 32
 				mne = mne[:-1] + "L"
 			else:
-				print(("Error @%04x: %04x %04x " +
-				    "Wrong 'sz' field") %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2)),
-				    y)
-				print("\t", c)
-				print(self.root.allfind(p, adr, p.m.b16))
-				ins.fail("wrong sz field")
+				#print(("Error @%04x: %04x %04x " +
+				#    "Wrong 'sz' field") %
+				#    (adr, p.m.b16(adr), p.m.b16(adr + 2)),
+				#    y)
+				#print("\t", c)
+				#print(self.root.allfind(p, adr, p.m.b16))
+				ins.fail("wrong sz field", c)
 				return 
 		
 		else:
@@ -313,12 +314,12 @@ class m68000(disass.assy):
 				y = None
 			elif i == "ea":
 				if ea == None:
-					print(("Error @%04x: %04x %04x " +
-					    "expected EA") %
-					    (adr, p.m.b16(adr), p.m.b16(adr + 2)
-					    ))
-					print("\t", c)
-					ins.fail("wrong ea")
+					ins.fail("wrong ea",
+					    "@" + p.m.afmt(adr) +
+					    ": " + p.m.dfmt(p.m.b16(adr)) + 
+					    " " + p.m.dfmt(p.m.b16(adr + 2)) +
+					    " " + str(c)
+					)
 					return
 				y = ea
 			elif i == "An" or i == "Ax" or i == "Ay":

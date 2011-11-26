@@ -72,8 +72,10 @@ class pyreveng(object):
 	def todo(self, adr, func, priv = None):
 		assert type(adr) == int
 		if adr < self.lo or adr > self.hi:
-			print("WARNING: Ignoring todo at " +
-			    self.m.afmt(adr), func, priv)
+			if False:
+				print("WARNING: Ignoring todo at " +
+				    self.m.afmt(adr), func, priv)
+			return
 		try:
 			self.m.chkadr(adr)
 		except:
