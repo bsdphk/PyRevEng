@@ -138,8 +138,11 @@ class fill(tree.tree):
 				print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
 				return
 			x = rd(hi)
-			while x == rd(hi):
-				hi += 1
+			try:
+				while x == rd(hi):
+					hi += 1
+			except:
+				pass
 		if lo == None or hi == None:
 			print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
 			return
