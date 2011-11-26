@@ -260,20 +260,22 @@ class instruction(object):
 				s += " >" + self.dflow(i)
 				t = " "
 
-		if self.diag != None:
-			s += " " + str(self.diag)
+		if self.reason != None:
+			s += " " + str(self.reason)
 		s += " >"
 		return s
 
 	def flow(self, mode, cc, dst):
 		self.flow_out.append((mode, cc, dst))
 
-	def fail(self, reason):
-		if not self.disass.is_clone:
-			print("FAIL: ", reason, "\n\t" + self.debug())
-			if self.diag != None:
-				print("\t", self.diag);
+	def fail(self, reason, diag = None):
 		assert self.status == "prospective"
 		self.status = "fail"
 		self.reason = reason
+		if diag != None:
+			self.diag = diag
+		if not self.disass.is_clone:
+			print("FAIL: ",  self.debug())
+			if self.diag != None:
+				print("\t", self.diag);
 		self.disass.fails += 1
