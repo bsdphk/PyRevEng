@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import sys
 import bitmap
+import copy
 
 class disass(object):
 	"""Some kind of execution or interpretation unit.
@@ -18,6 +19,18 @@ class disass(object):
 		self.bm = bitmap.bitmap()
 		self.ins = dict()
 		p.c[name] = self
+		self.fails = 0
+		self.is_clone = False
+
+	def clone(self):
+		"""Make a clone for exploratory purposes
+		"""
+		this = copy.copy(self)
+		this.ins = copy.copy(this.ins)
+		this.bm = copy.deepcopy(this.bm)
+		this.fails = 0
+		this.is_clone = True
+		return this
 
 	def disass(self, adr, priv=None):
 		"""Schedule the address for disassembly
@@ -85,6 +98,9 @@ class disass(object):
 
 		if ins.hi > ins.lo + 1 and \
 		    self.bm.mtst(ins.lo + 1, ins.hi) != False:
+			self.fails += 1
+			if self.is_clone:
+				return
 			print("ERROR: Overlapping instructions:")
 			l = list()
 			ins.status = "overlap"
@@ -253,9 +269,11 @@ class instruction(object):
 		self.flow_out.append((mode, cc, dst))
 
 	def fail(self, reason):
-		print("FAIL: ", reason, "\n\t" + self.debug())
-		if self.diag != None:
-			print("\t", self.diag);
+		if not self.is_clone:
+			print("FAIL: ", reason, "\n\t" + self.debug())
+			if self.diag != None:
+				print("\t", self.diag);
 		assert self.status == "prospective"
 		self.status = "fail"
 		self.reason = reason
+		self.disass.fails += 1
