@@ -121,7 +121,7 @@ class disass(object):
 			j.flow_in.append((i[0], i[1], ins.lo))
 
 	def to_tree(self):
-		print("Inserting", self.name, "instructions in tree")
+		# print("Inserting", self.name, "instructions in tree")
 		for i in self.ins:
 			ins = self.ins[i]
 			if ins.status != "OK":

@@ -121,6 +121,48 @@ Memory map:
 
 p36: On-disk format:
 
+	1.7.1 ID FIELD
+			SYNC    SECTOR  TRACK   GAP1
+	BITS		40	10	10	120
+
+	SYNC		40 bits of 1's for synchronization
+	SECTOR		Sector (0-15) with bit 4 as parity (even)
+	TRACK		Track (0-79) with bit 7 as parity (even)
+	GAP1		Time required to turn on write gate
+
+Real world On-disk format:
+
+	SYNC		4 bytes
+	AM_ID		1 byte (=0x08)
+	CYLINDER	1 byte
+	SECTOR		1 byte
+	CHECKSUM	1 byte (=EOR(AM_ID, CYLINDER, SECTOR))
+	GAP1		14 bytes (=0x00)
+
+p36: On-disk format:
+
+	1.7.2 DATA FIELD
+			SYNC    AM	DATA  	CHECKSUM   GAP2
+	BITS		40	10	5120	10	   120
+
+	SYNC		40 bits of 1's for synchronization
+	AM		Addres mark = hex 88
+	DATA		512 bytes of data
+	CHECKSUM	Exclusive OR of data bytes and checksum = 0
+	GAP2		Variable determined by drive speed.
+
+Real world On-disk format:
+
+	SYNC		4 bytes
+	AM_DATA		1 byte (=0x07)
+	DATA		512 bytes
+	CHECKSUM	1 byte (=EOR(AM_DATA, DATA))
+	GAP2		X bytes (=0x00)
+
+p36: On-disk format:
+	
+	1.7.4 GCR DATA RATES/FORMATTED CAPACITY
+
 	Track Region	Bit Time	Sect/track	Sect/reg
 	1-39		2.16		16		624
 	40-53		2.33		15		210
@@ -128,7 +170,7 @@ p36: On-disk format:
 	65-80		2.66		13		208
 
 Derived memory map:
-    HOSTADR:
+    CMDADR:
 	0004-0005	Host address	(0004=0x00, 0005=0x08)
 
 	0007				TMP
@@ -136,6 +178,8 @@ Derived memory map:
 
 	000a				WriteProt status, Drive 0
 	000b				WriteProt status, Drive 1
+			W_______	Write Protected
+			_CC_____	WP Changed
 
 	000c				Cur_Cyl, Drive 0
 	000d				Cur_Cyl, Drive 1
@@ -148,29 +192,72 @@ Derived memory map:
 	0017				StepsNeeded
 	0018				Sector(?)
 	0019				Nsect
+	001a				Retry
+	001b				Retries left
 	001e				Floppy Region
 
-	0029		_dd_____	CMDx
+	0024				Address Mark for ID field
+	0025				Address Mark for DATA field
+
+	Format floppy, probably:
+		04 uu 00 00 01 00 08 04 00 00 00 00 ff 00 00 00
+		-- -- ----- --
+		 |  |   |    |
+		 |  |   |    +-- Number of blocks
+		 |  |   |
+		 |  |   +-- Block number
+		 |  |
+		 |  +-- Unit/Drive number: mask: 0x30 
+		 |
+		 +--- CMD byte
+
+	0028				cCMD
+	0029		_dd_____	cUNIT
 			 dd		Drive number
 			    xxxx
+	002a				cBLK_H
+	002b				cBLK_L
+	002c				cBLK_N
+	002d
+	002e				cDMAADR_1
+	002f				cDMAADR_2
 -
 """
 
+p.setlabel(0x04, "CMDADR_1")
+p.setlabel(0x05, "CMDADR_2")
 p.setlabel(0x07, "zTMP")
 p.setlabel(0x0a, "dSTATUS")
 p.setlabel(0x0c, "dCYLINDER")
 p.setlabel(0x0e, "dSTEPPHASE")
 p.setlabel(0x09, "zCURDRV")
+p.setlabel(0x14, "zTMO_L")
+p.setlabel(0x15, "zTMO_H")
 p.setlabel(0x16, "zCYLINDER")
 p.setlabel(0x17, "zSTEPS")
 p.setlabel(0x18, "zSECTOR")
 p.setlabel(0x19, "zNSECT")
+p.setlabel(0x1a, "zRETRY")
+p.setlabel(0x1b, "zTRIES_LEFT")
 p.setlabel(0x1e, "zREGION")
+p.setlabel(0x20, "zGAP2LEN")
+p.setlabel(0x24, "cAM_ID")
+p.setlabel(0x25, "cAM_DATA")
 p.setlabel(0x28, "cCMD")
 p.setlabel(0x29, "cUNIT")
 p.setlabel(0x2a, "cBLK_H")
 p.setlabel(0x2b, "cBLK_L")
 p.setlabel(0x2c, "cBLK_N")
+p.setlabel(0x2e, "cDMAADR_1")
+p.setlabel(0x2f, "cDMAADR_2")
+
+p.setlabel(0x31, "DMAADR_1_SAVE")
+p.setlabel(0x30, "DMAADR_2_SAVE")
+
+#######################################################################
+
+const.fill(p, mid=0xfe6d)
+const.fill(p, mid=0xffc0)
 
 #######################################################################
 cpu = cpus.mcs6500.mcs6502(p)
@@ -183,7 +270,7 @@ def vector(adr, txt):
 	p.setlabel(da, txt)
 
 if True:
-	vector(0xfffa, "NMI")
+	#vector(0xfffa, "NMI")
 	vector(0xfffc, "RESET")
 	vector(0xfffe, "IRQ")
 	for a in range(0xfff3, 0xfff9, 3):
@@ -215,6 +302,11 @@ Command byte dispatch table
 
 	fd_cmds = dict()
 	fd_cmds[4] = "FORMAT"
+	fd_cmds[8] = "READ"
+	fd_cmds[10] = "WRITE"
+	fd_cmds[0x0f] = "MOVCMD"
+	fd_cmds[0xde] = "GOTO"
+	fd_cmds[0xe3] = "FILL"
 
 	for x in range(0,6):
 		b = 0xe28b + x
@@ -264,62 +356,6 @@ Table of floppy regions
 
 #######################################################################
 
-const.byte(p, 0xe962, 6)
-const.byte(p, 0xe968, 5)
-
-if False:
-	# BVCLOOPs that might continue
-	cpu.disass(0xe2be)
-
-if False:
-	cpu.disass(0xe034)
-	cpu.disass(0xe906)
-	cpu.disass(0xe90c)
-	cpu.disass(0xe90e)
-
-	cpu.disass(0xe948)
-
-	cpu.disass(0xe96d)
-	cpu.disass(0xe972)
-	cpu.disass(0xe977)
-	cpu.disass(0xe97c)
-	cpu.disass(0xe989)
-	cpu.disass(0xe98e)
-	cpu.disass(0xe993)
-	# cpu.disass(0xea33)
-	cpu.disass(0xeab1)
-	cpu.disass(0xeafb)
-	#cpu.disass(0xeb0d)
-	#cpu.disass(0xeb10)
-	cpu.disass(0xeb13)
-	cpu.disass(0xeb40)
-	cpu.disass(0xeb9f)
-	cpu.disass(0xebf1)
-	cpu.disass(0xebff)
-if False:
-	cpu.disass(0xeb86)
-	cpu.disass(0xeb9f)
-	cpu.disass(0xebe6)
-if False:
-	# Plausible
-	cpu.disass(0xec16)
-if False:
-	# contains infinite loop ?
-	cpu.disass(0xec19)
-
-while p.run():
-	pass
-
-cpu.to_tree()
-
-const.fill(p, mid=0xfe6d)
-const.fill(p, mid=0xffc0)
-
-#######################################################################
-if False:
-	for a in range(0xe7bf, 0xe7d3, 4):
-		const.byte(p, a, 4)
-
 const.byte(p, 0xe675, 4)
 const.byte(p, 0xe679, 4)
 
@@ -330,22 +366,87 @@ Stepper phase table: 0101,0110,1010,1001
 """
 #######################################################################
 
+const.byte(p, 0xe962, 5)
+const.byte(p, 0xe967, 1)
+const.byte(p, 0xe968, 5)
+const.w16(p, 0xff9c, 1)
+const.w16(p, 0xff9e, 1)
+
+while p.run():
+	pass
+
+if True:
+	for i in ( 0xea33, 0xea39, 0xea36, 0xe993, 0xe948, 0xe034, 0xe96d,
+	    0xe972, 0xe977, 0xe989, 0xe98e, 0xe906, 0xea9c, 0xeab1, 0xff93,
+	    0xff96, 0xff99, 0xe90c):
+		x = cpu.disass(i)
+		x.lcmt("<===== BRUTE FORCE DISCOVERY")
+
+while p.run():
+	pass
+
+if True:
+	def cost_func(t):
+		s = 0
+		la = t.start
+		for i in t.child:
+			s += i.start - la
+			la = i.end
+		s += t.end - la
+		return s
+
+	import copy
+
+	while p.run():
+		pass
+
+	ta = 0
+
+	pp = copy.deepcopy(p)
+	pp.c['mcs6502'].to_tree()
+	bc=cost_func(pp.t)
+	br=bc
+
+	for g in p.t.gaps():
+		print("GAP", "%04x" % g[0], "%04x" % g[1])
+		i = g[0]
+		if i < 0xe000:
+			i = 0xe000
+		while i < g[1]:
+			if i in cpu.ins:
+				i = cpu.ins[i].hi
+				continue
+			try:
+				pp = copy.deepcopy(p)
+				ccpu = pp.c['mcs6502']
+				ccpu.disass(i)
+				while pp.run():
+					pass
+				ccpu.to_tree()
+				tc = cost_func(pp.t)
+				if tc < bc:
+					bc = tc
+					ta = i
+				print("%04x" % i, tc, tc-br, "--", "%04x" % ta, bc-br)
+			except:
+				pass
+			i += 1
+
+	print("BEST SHOT: %04x" % ta, bc, bc-br)
+
+	cpu.disass(ta)
+
+while p.run():
+	pass
+
+cpu.to_tree()
+
+#######################################################################
+
 
 x = p.t.find(0xe14d, "ins")
 x.blockcmt += """-
 Read cmd from host
-
-Format floppy, probably:
-	04 uu 00 00 01 00 08 04 00 00 00 00 ff 00 00 00
-	-- -- ----- --
-	 |  |   |    |
-	 |  |   |    +-- Number of blocks
-	 |  |   |
-	 |  |   +-- Block number
-	 |  |
-	 |  +-- Unit/Drive number: mask: 0x30 
-	 |
-	 +--- CMD byte
 
 """
 
@@ -358,22 +459,58 @@ x.blockcmt += """-
 RAM error, flash bit(s) (LED?) to tell the world
 
 """
+p.setlabel(0xe0f7, "IdleLoop")
+p.setlabel(0xe0fd, "IdleMotor")
 p.setlabel(0xe13f, "MotorsOff()")
-p.setlabel(0xe197, "Error(A)")
+p.setlabel(0xe191, "Error_0x75")
+p.setlabel(0xe195, "Error_0x80")
+p.setlabel(0xe197, "Error_A")
 p.setlabel(0xe1e6, "goto(e291[Y-1])")
-p.setlabel(0xe1f7, "w30=swab(w2e)")
-p.setlabel(0xe200, "w2e=swab(w30)")
-p.setlabel(0xe244, "DMA_Rd_Addr(HOSTADR)")
-p.setlabel(0xe247, "DMA_Wr_Addr(HOSTADR)")
+p.setlabel(0xe1f7, "SaveDMAadr")
+p.setlabel(0xe200, "RestoreDMAadr")
+p.setlabel(0xe210, "ConfigDMAadr")
+p.setlabel(0xe244, "DMA_Rd_Addr(CMDADR)")
+p.setlabel(0xe247, "DMA_Wr_Addr(CMDADR)")
 p.setlabel(0xe264, "A=DMA_Single(X)")
 p.setlabel(0xe278, "DMA_Start()")
+if True:
+	p.setlabel(0xe2af, ".ReadSect")
+	p.setlabel(0xe2af, ".ReadTry")
+p.setlabel(0xe30d, "NextSector()")
 p.setlabel(0xe323, "WriteGateOff()")
 if True:
 	p.setlabel(0xe471, ".FmtSector")
 	p.setlabel(0xe494, ".WriteGAP1")
 	p.setlabel(0xe4a7, ".WriteDATA")
+	p.setlabel(0xe4ca, ".WriteGAP2")
 p.setlabel(0xe62e, "WriteEraseGateOn()")
-p.setlabel(0xe637, "recal-ish(X)")
+p.setlabel(0xe563, "WriteEraseGateOff()")
+p.setlabel(0xe588, "CalibrateSpeed()")
+if True:
+	x = p.t.find(0xe588, "ins")
+	x.blockcmt="""-
+From p36:
+ 1.7.3  GAP 2 DETERMINATION
+        During format gap 2 must allow for 2% speed variation at the end of
+ each sector, so that fast running drives will not write over the beginning
+ of the next sector.  This 2% is for drives thar are running at the correct
+ speed, so this figure must be adjusted for the drive speed at the  time of
+ format.  Compensating for motor speed error in format will allow gap  2 to
+ be 2% vs. 4% if the format speed is not known.  This will generate another
+ 2%  of disk  space for  storage and  will check  the drive  for an  out of
+ specification speed.  The format will perform a speed check to  by writing
+ 38*256 bytes of GCR 0 (210.773ms  or 105%)  followed by  4 bytes  of sync.
+ The gcr 0 bytes are then counted until sync is found.  This number  is the
+ total number of bytes that can be written on track 1 at the current speed.
+ A minimum gap 2 of 12 bytes is  selected for  a drive  that is  running 2%
+ fast and this is incremented  by 1  byte for  every 16  bytes/track extra.
+ The same procedure is followed for all four of the density regions.
+
+"""
+p.setlabel(0xe5e0, ".Error_0x74")
+p.setlabel(0xe609, "CheckWriteProt()")
+p.setlabel(0xe617, "CheckMediaChange()")
+p.setlabel(0xe637, "Recalibrate()")
 p.setlabel(0xe67d, "WriteSync()")
 p.setlabel(0xe6ab, "StartDrive()")
 if True:
@@ -389,11 +526,16 @@ if True:
 	p.setlabel(0xe752, ".StepToCyl")
 	p.setlabel(0xe795, ".StepDoneQ")
 	p.setlabel(0xe799, ".OnCyl")
-p.setlabel(0xe7a2, "UpdateWriteProt()")
+p.setlabel(0xe7a2, "UpdateDriveStatus()")
 p.setlabel(0xe7d3, "delay_6000()")
 p.setlabel(0xe7e0, "StartMotor(X)")
 p.setlabel(0xe7f9, "StepDrive(X)")
-p.setlabel(0x0004, "HOSTADR")
+p.setlabel(0xe82b, "FindSector()")
+if True:
+	p.setlabel(0xe80e, ".TryAgain")
+	p.setlabel(0xe826, ".Error_0x94")
+	p.setlabel(0xe869, ".SeekMistake")
+p.setlabel(0xe885, "WaitSync()")
 
 #######################################################################
 # Build code graph
