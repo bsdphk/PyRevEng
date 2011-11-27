@@ -250,12 +250,8 @@ class cdp1802(disass.assy):
 
 		p = self.p
 
-		try:
-			iw = p.m.rd(adr)
-			nw = p.m.rd(adr + 1)
-		except:
-			ins.fail("no mem")
-			return
+		iw = p.m.rd(adr)
+		nw = p.m.rd(adr + 1)
 
 		#print("cdp1802.disass(0x%x, " % adr, "%02x" % iw, ")")
 		ireg = iw & 0xf0

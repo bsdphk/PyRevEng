@@ -57,7 +57,6 @@ class disass(object):
 		"""
 
 		assert type(adr) == int
-		self.p.m.chkadr(adr)
 
 		if adr in self.ins:
 			return self.ins[adr]
