@@ -52,10 +52,7 @@ class z8000(disass.assy):
 		elif arg + "!=0" in c.flds:
 			v = self.rdarg(p, adr, c, arg + "!=0")
 			if v == 0:
-				print("Error @%04x: %04x %04x  %s == 0" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
-				    arg + "!=0"), c.flds[arg + "!=0"])
-				return None
+				raise disass.DisassError("'%s!=0' == 0" % arg, c)
 		else:
 			print("Error @%04x: %04x %04x  not found %s" %
 			    (adr, p.m.b16(adr), p.m.b16(adr + 2), arg))
@@ -115,11 +112,8 @@ class z8000(disass.assy):
 		ins.hi = ins.lo + 1
 
 		#print(">>> @%04x" % adr)
-		try:
-			c = self.root.find(p, adr, p.m.b16)
-		except:
-			ins.fail("no memory")
-			return
+		c = self.root.find(p, adr, p.m.b16)
+
 		if c == None:
 			ins.fail("no instruction")
 			return
