@@ -77,18 +77,12 @@ class mc6800(disass.assy):
 
 		p = self.p
 
-		try:
-			iw = p.m.rd(adr)
-		except:
-			print("FETCH failed:", adr)
-			ins.fail("no mem")
-			return
+		iw = p.m.rd(adr)
 
 		c = inscode[iw]
 		l = int(c[0])
 		if l == 0:
-			ins.fail("unknown")
-			return
+			raise disass.DisassError("no instruction")
 
 		ins.hi = adr + l
 		if False:
@@ -158,8 +152,7 @@ class mc6800(disass.assy):
 			pass
 		else:
 			print("UNIMPL %04x: %02x %s" % (adr,iw, c))
-			ins.fail("bad arg")
-			return
+			raise disass.DisassError("bug", c)
 
 	def __vector(self, adr, nm):
 		x = const.w16(self.p, adr)
