@@ -38,8 +38,9 @@ class disass(object):
 		p.c[name] = self
 		self.fails = 0
 		self.is_clone = False
+		self.follow_calls = True
 
-	def clone(self):
+	def clone(self, follow_calls = True):
 		"""Make a clone for exploratory purposes
 		"""
 		this = copy.copy(self)
@@ -47,6 +48,7 @@ class disass(object):
 		this.bm = copy.deepcopy(this.bm)
 		this.fails = 0
 		this.is_clone = True
+		this.follow_calls = follow_calls
 		return this
 
 	def disass(self, adr, priv=None):
@@ -168,6 +170,8 @@ class disass(object):
 		for i in ins.flow_out:
 			if i[0] == "call":
 				j = self.disass(ins.hi)
+				if not self.follow_calls:
+					continue
 			if type(i[2]) != int:
 				continue
 			try:

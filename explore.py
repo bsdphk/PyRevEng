@@ -11,7 +11,7 @@ assert sys.version_info[0] >= 3 or "Need" == "Python v3"
 
 #----------------------------------------------------------------------
 
-def gain(p, cpu, adr):
+def gain(p, cpu, adr, follow_calls = True):
 	"""
 	How many instructions would we gain by starting disassembly at adr ?
 	"""
@@ -19,7 +19,7 @@ def gain(p, cpu, adr):
 	while p.run():
 		pass;
 
-	ccpu = cpu.clone()
+	ccpu = cpu.clone(follow_calls)
 
 	ccpu.disass(adr)
 	while p.run():
@@ -95,11 +95,15 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			if i in bdict:
 				i = bdict[i].hi
 				continue
-			this = gain(p, cpu, i)
+			xx = True
+			this = gain(p, cpu, i, xx)
+			if this == None:
+				xx = False
+				this = gain(p, cpu, i, xx)
 			if this != None:
 				l = len(this)
 				if l > 0:
-					lx.append((i,l))
+					lx.append((i,l, xx))
 				if  l > best:
 					print("Best so far: ", p.m.afmt(i), l)
 					sys.stdout.flush()
@@ -142,7 +146,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 		cand = None
 		ly = list()
 		for j in lx:
-			i,n = j
+			i,n,k = j
 			if n <= best:
 				ly.append(j)
 				continue
@@ -152,7 +156,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 			l = len(this)
 			if l <= 0:
 				continue
-			ly.append((i,l))
+			ly.append((i,l, None))
 			if l > best:
 				best = l
 				cand = i

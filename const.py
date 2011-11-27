@@ -59,9 +59,28 @@ class w32(tree.tree):
 			d = ", "
 		return (s,)
 
-class txtlen(tree.tree):
-	def __init__(self, p, adr, len):
+class ltxt(tree.tree):
+	def __init__(self, p, adr, align=2):
+		l = p.m.rd(adr)
+		len = l + 1
+		len += align - 1
+		len &= ~(align -1)
 		tree.tree.__init__(self, adr, adr + len, "const")
+		p.t.add(self.start, self.end, self.tag, True, self)
+
+		self.render = self.rfunc
+		self.l = l
+		self.txt = p.m.ascii(adr + 1, l)
+
+	def rfunc(self, p, t):
+		s = ".LTXT\t%d,'" % self.l + self.txt + "'"
+		return (s,)
+
+class txtlen(tree.tree):
+	def __init__(self, p, adr, len, align=1):
+		llen = len + align - 1
+		llen &= ~(align -1)
+		tree.tree.__init__(self, adr, adr + llen, "const")
 		p.t.add(self.start, self.end, self.tag, True, self)
 
 		self.render = self.rfunc
