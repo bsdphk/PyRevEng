@@ -7,6 +7,23 @@ import sys
 import bitmap
 import copy
 
+import mem
+
+#######################################################################
+#
+# We report trouble as these exceptions
+#
+
+class DisassError(Exception):
+        def __init__(self, reason, diag):
+                self.reason = reason
+                self.diag = diag
+                self.value = (str(self.reason),)
+        def __str__(self):
+                return repr(self.value)
+
+#######################################################################
+
 class disass(object):
 	"""Some kind of execution or interpretation unit.
 
@@ -59,7 +76,12 @@ class disass(object):
 		assert p == self.p
 		assert ins.status == "prospective"
 		assert self.fails != None
-		self.do_disass(adr, ins)
+		try:
+			self.do_disass(adr, ins)
+		except mem.MemError as bug:
+			ins.fail("no mem", str(bug))
+		except DisassError as bug:
+			ins.fail(bug.reason, bug.diag)
 		assert self.fails != None
 		self.finish_ins(ins)
 
