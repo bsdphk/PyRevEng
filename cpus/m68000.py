@@ -247,16 +247,7 @@ class m68000(disass.assy):
 		assert ins.status == "prospective"
 
 		p = self.p
-		#print(">>> @%04x" % adr)
-		try:
-			c = self.root.find(p, adr, p.m.b16)
-		except:
-			ins.fail("no memory")
-			return
-		if c == None:
-			ins.fail("no instruction")
-			return
-		#print("]]} @%04x" % adr, c)
+		c = self.root.find(p, adr, p.m.b16)
 
 		# We have a specification in 'c'
 		self.last_c = c
