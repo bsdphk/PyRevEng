@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import instree
 import disass
+import const
 
 #######################################################################
 def reglist_word(w, p, l):
@@ -43,6 +44,47 @@ condition_codes = (
 	"VC", "VS", "PL", "MI", "GE", "LT", "GT", "LE"
 )
 
+m68kvecs = {}
+m68kvecs[0] = "Reset ISP"
+m68kvecs[1] = "Reset PC"
+m68kvecs[2] = "Bus Error"
+m68kvecs[3] = "Address Error"
+m68kvecs[4] = "Illegal Instruction"
+m68kvecs[5] = "Zero Divide"
+m68kvecs[6] = "CHK instr"
+m68kvecs[7] = "TRAPV instr"
+m68kvecs[8] = "Priv violation"
+m68kvecs[9] = "Trace"
+m68kvecs[10] = "Line 1010 Emulator"
+m68kvecs[11] = "Line 1111 Emulator"
+m68kvecs[12] = "Unasgn Trap 12"
+m68kvecs[13] = "Coproc proto violation"
+m68kvecs[14] = "Format error"
+m68kvecs[15] = "Uninit Irq"
+m68kvecs[24] = "Spurious Irq"
+m68kvecs[25] = "Lev 1 IRQ"
+m68kvecs[26] = "Lev 2 IRQ"
+m68kvecs[27] = "Lev 3 IRQ"
+m68kvecs[28] = "Lev 4 IRQ"
+m68kvecs[29] = "Lev 5 IRQ"
+m68kvecs[30] = "Lev 6 IRQ"
+m68kvecs[31] = "Lev 7 IRQ"
+a = 32
+while (a < 48):
+	m68kvecs[a] = "TRAP#%d" % (a - 32)
+	a = a + 1
+m68kvecs[48] = "FP Unordered"
+m68kvecs[49] = "FP Inexact"
+m68kvecs[50] = "FP Div Zero"
+m68kvecs[51] = "FP Underflow"
+m68kvecs[52] = "FP Oper Error"
+m68kvecs[53] = "FP Overflow"
+m68kvecs[54] = "FP Sig NaN"
+m68kvecs[55] = "FP Unimpl"
+m68kvecs[56] = "MMU Conf"
+m68kvecs[57] = "MMU Illegal Op"
+m68kvecs[58] = "MMU Access Violation"
+
 class m68000(disass.assy):
 
 	def __init__(self, p, name = "m68000"):
@@ -52,6 +94,14 @@ class m68000(disass.assy):
 		    filename = __file__[:-3] + "_instructions.txt"
 		)
 		#self.root.print()
+
+	def vectors(self, hi):
+		for a in range(0, hi):
+			x = const.w32(self.p, a * 4)
+			if a in m68kvecs:
+				x.lcmt(m68kvecs[a])
+			if a > 0:
+				self.disass(self.p.m.w32(a * 4))
 
 	def rdarg(self, adr, c, arg, fail_ok = False):
 		x = c.get_field(self.p, adr, self.p.m.b16, 2, arg)
@@ -421,6 +471,8 @@ class m68000(disass.assy):
 			ins.flow("cond", "T", dstadr)
 		elif mne == "JMP":
 			ins.flow("cond", "T", dstadr)
+		elif mne == "RTE":
+			ins.flow("ret", "T", dstadr)
 		elif mne == "RTS":
 			ins.flow("ret", "T", dstadr)
 		elif mne == "BSR":
