@@ -86,7 +86,6 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			i += 1
 	if cand == None:
 		return (None, 0, None)
-	print(p.m.afmt(cand), "is best place to start, develops %d" % (best - ref), cpu.name, "instructions, tested", len(lx))
 	return (cand, best - ref, lx)
 
 #----------------------------------------------------------------------
@@ -104,6 +103,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 		return
 
 	while True:
+		print("Doing", p.m.afmt(cand), "gain", j, "list", len(lx))
 		x = cpu.disass(cand)
 		x.lcmt("<==== Brute Force Discovery #%d" % n)
 		while p.run():
@@ -113,7 +113,6 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 			break
 
 		ref = len(cpu.ins)
-		print("Iter", n, "ref", ref, "len", len(lx))
 		best = ref
 		cand = None
 		ly = list()
@@ -124,12 +123,13 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 			l = len(this)
 			if l <= ref:
 				continue
-			ly.append(l)
+			ly.append(i)
 			if l > best:
-				print("Best so far: ", p.m.afmt(i), l - ref)
+				#print("Best so far: ", p.m.afmt(i), l - ref)
 				best = l
 				cand = i
 		if cand == None:
 			break
 		lx = ly
+		j = best - ref
 			
