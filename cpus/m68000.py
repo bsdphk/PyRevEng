@@ -59,7 +59,7 @@ class m68000(disass.assy):
 			print("NB: ", arg, "not found in", c)
 		return x
 
-	def extword(self, ins, idx, ver = False):
+	def extword(self, ins, idx, ver = True):
 		adr = ins.lo
 		p = self.p
 		ev = p.m.b16(ins.hi)
@@ -291,6 +291,23 @@ class m68000(disass.assy):
 		dstadr = None
 		ea = None
 
+		speclist = c.spec[1].split(",")
+
+		if speclist[0] == "#data":
+			if wid == 8:
+				idata = "#0x%02x" % (p.m.b16(ins.hi) & 0xff)
+				ins.hi += 2
+			elif wid == 16:
+				idata = "#0x%04x" % p.m.b16(ins.hi)
+				ins.hi += 2
+			elif wid == 32:
+				idata = "#0x%08x" % p.m.b32(ins.hi)
+				ins.hi += 4
+			else:
+				raise disass.DisassError("wrong wid #data")
+		else:
+			idata = None
+
 		(junk, eam, ear) = self.check_valid_ea(ins, c)
 
 		if junk == True:
@@ -298,8 +315,11 @@ class m68000(disass.assy):
 			if ea == None:
 				ins.fail("wrong ea")
 				return
+		else:
+			ea = None
+			dstadr = None
 
-		for i in c.spec[1].split(","):
+		for i in speclist:
 			y = None
 			if i == '""':
 				y = None
@@ -321,15 +341,8 @@ class m68000(disass.assy):
 				y = "-(A%d)" % self.rdarg(adr, c, i[2:-1])
 			elif i == "(Ax)+" or i == "Ax" or i == "(Ay)+":
 				y = "(A%d)+" % self.rdarg(adr, c, i[1:-2])
-			elif i == "#data" and wid == 8:
-				y = "#0x%02x" % (p.m.b16(ins.hi) & 0xff)
-				ins.hi += 2
-			elif i == "#data" and wid == 16:
-				y = "#0x%04x" % p.m.b16(ins.hi)
-				ins.hi += 2
-			elif i == "#data" and wid == 32:
-				y = "#0x%08x" % p.m.b32(ins.hi)
-				ins.hi += 4
+			elif i == "#data":
+				y = idata
 			elif i == "#rot":
 				j = self.rdarg(adr, c, i)
 				if j == 0:
@@ -401,7 +414,10 @@ class m68000(disass.assy):
 
 		if mne == "TRAP":
 			ins.flow("call.TRAP", "T", None)
-		if mne == "BRA":
+		elif mne[:2] == "DB":
+			ins.flow("cond", "NZ", dstadr)
+			ins.flow("cond", "Z", ins.hi)
+		elif mne == "BRA":
 			ins.flow("cond", "T", dstadr)
 		elif mne == "JMP":
 			ins.flow("cond", "T", dstadr)

@@ -84,7 +84,7 @@ CMP.L		ea,Dn		1f7f	|1 0 1 1| Dn  |0|1 0| eam | ear |
 CMPA.W		ea,An		1f7f	|1 0 1 1| An  |0 1 1| eam | ear |
 CMPA.L		ea,An		1f7f	|1 0 1 1| An  |1 1 1| eam | ear |
 # 183/4-79
-CMPI.Z		#data,ea	037d	|0 0 0 0|1 1 0 0| sz| eam | ear |
+CMPI.Z		#data,ea	0f7d	|0 0 0 0|1 1 0 0| sz| eam | ear |
 # 185/4-81
 # Collision with CMPA.L
 CMPM.B		(Ay)+,(Ax)+	0000	|1 0 1 1| Ax  |1|0 0|0 0 1| Ay  |
