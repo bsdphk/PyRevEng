@@ -15,7 +15,7 @@ import mem
 #
 
 class DisassError(Exception):
-        def __init__(self, reason, diag):
+        def __init__(self, reason, diag = None):
                 self.reason = reason
                 self.diag = diag
                 self.value = (str(self.reason),)
