@@ -41,7 +41,6 @@ class z8000(disass.assy):
 		    width = 16,
 		    filename = __file__[:-3] + "_instructions.txt"
 		)
-		#self.root.print()
 
 	def rdarg(self, p, adr, c, arg):
 		return c.get_field(p, adr, p.m.b16, 2, arg)
@@ -52,11 +51,10 @@ class z8000(disass.assy):
 		elif arg + "!=0" in c.flds:
 			v = self.rdarg(p, adr, c, arg + "!=0")
 			if v == 0:
-				raise disass.DisassError("'%s!=0' == 0" % arg, c)
+				raise disass.DisassError(
+				    "'%s!=0' == 0" % arg, c)
 		else:
-			print("Error @%04x: %04x %04x  not found %s" %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2), arg))
-			assert False
+			raise disass.DisassError("Not found: '%s'" % arg, c)
 		if self.segmented and arg[0] == "S":
 			arg = "R" + arg[1:]
 			wid = 32
@@ -66,15 +64,11 @@ class z8000(disass.assy):
 
 		if wid == 64:
 			if (v & 1) == 3:
-				print("Error @%04x: %04x %04x  RQ%d" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
-				# assert False
+				raise disass.DisassError("RQ%d" % v, c)
 			return "RQ%d" % v
 		if wid == 32:
 			if (v & 1) == 1:
-				print("Error @%04x: %04x %04x  RR%d" %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2), v))
-				# assert False
+				raise disass.DisassError("RR%d" % v, c)
 			return "RR%d" % v
 		if wid == 16:
 			return "R%d" % v
@@ -115,11 +109,8 @@ class z8000(disass.assy):
 		c = self.root.find(p, adr, p.m.b16)
 
 		if c == None:
-			ins.fail("no instruction")
-			return
-			print("Error @%04x: %04x %04x no instruction found" %
-			    (adr, p.m.b16(adr), p.m.b16(adr + 2)))
-			return None
+			raise disass.DisassError(
+			    "no instruction")
 
 		#print("]]} @%04x" % adr, c)
 
@@ -260,14 +251,9 @@ class z8000(disass.assy):
 			elif i == "#data" and wid == 8:
 				d = p.m.b16(na)
 				if (d >> 8) != (d & 0xff):
-					print(
-					    "Warning: @%04x %04x %04x: " %
-					    (adr, p.m.b16(adr),
-					    p.m.b16(adr + 2)) +
-					    "8-bit #data not duplicated" +
-					    " 0x%04x" % d)
-					#ins.fail("#data(8) not duplicated")
-					#return
+					raise disass.DisassError(
+					    "#8bit not duplicated",
+					     "0x%04x" % d)
 				na += 2
 				i = "#0x%02x" % (d & 0xff)
 			elif i == "#data" and wid == 16:
@@ -319,8 +305,6 @@ class z8000(disass.assy):
 				print(y, "???", i)
 				ins.fail('Unhandled arg')
 				return
-			if y != i and False:
-				print(y, "-->", i)
 			ol.append(i)
 			
 		if mne[0] == "J":
