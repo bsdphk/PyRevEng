@@ -618,7 +618,7 @@ for i in cpu.ins:
 
 
 #######################################################################
-if False:
+if True:
 	import explore
 	explore.brute_force(p, cpu, 0x0000, 0x4000)
 
