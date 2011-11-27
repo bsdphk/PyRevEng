@@ -136,7 +136,7 @@ class base_mem(object):
 	def chkadr(self, start, end=None):
 		if start < self.start:
 			raise MemError(start, "Invalid location")
-		if start > self.end:
+		if start >= self.end:
 			raise MemError(start, "Invalid location")
 		if end == None:
 			return
