@@ -40,6 +40,7 @@ class disass(object):
 		"""
 
 		assert type(adr) == int
+		self.p.m.chkadr(adr)
 
 		if adr in self.ins:
 			return self.ins[adr]
@@ -57,7 +58,9 @@ class disass(object):
 	def xxdo_disass(self, p, adr, ins):
 		assert p == self.p
 		assert ins.status == "prospective"
+		assert self.fails != None
 		self.do_disass(adr, ins)
+		assert self.fails != None
 		self.finish_ins(ins)
 
 	def is_ins(self, adr):
@@ -133,8 +136,12 @@ class disass(object):
 				j = self.disass(ins.hi)
 			if type(i[2]) != int:
 				continue
-			j = self.disass(i[2])
-			j.flow_in.append((i[0], i[1], ins.lo))
+			try:
+				self.p.m.chkadr(i[2])
+				j = self.disass(i[2])
+				j.flow_in.append((i[0], i[1], ins.lo))
+			except:
+				pass
 
 	def to_tree(self):
 		# print("Inserting", self.name, "instructions in tree")
