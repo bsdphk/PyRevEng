@@ -143,7 +143,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 		ly = list()
 		for j in lx:
 			i,n = j
-			if n < best:
+			if n <= best:
 				ly.append(j)
 				continue
 			this = gain(p, cpu, i)
