@@ -56,6 +56,8 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 	"""
 	Try to find the instruction that causes most other instructions
 	to be disassembled. 
+
+	Returns a list of (adr, #ins) tupples.
 	"""
 
 	while p.run():
@@ -82,7 +84,7 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 		i = g[0]
 		while i < g[1]:
 			if i >> 12 != lp:
-				print("..." + p.m.afmt(i))
+				print("..." + p.m.afmt(i), "cands:", len(lx))
 				lp = i >> 12
 			if i in cpu.ins:
 				i = cpu.ins[i].hi
@@ -97,7 +99,7 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			if this != None:
 				l = len(this)
 				if l > 0:
-					lx.append(i)
+					lx.append((i,l))
 				if  l > best:
 					print("Best so far: ", p.m.afmt(i), l)
 					sys.stdout.flush()
@@ -105,9 +107,8 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 					cand = i
 					bdict =this
 			i += 1
-	if cand == None:
-		return (None, 0, None)
-	return (cand, best, lx)
+	lx = sorted(lx, key=lambda x: -x[1])
+	return lx
 
 #----------------------------------------------------------------------
 #
@@ -119,9 +120,12 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 	"""
 	n = 0
 
-	cand, j, lx = best_place_to_start(p, cpu, lo, hi)
-	if j == 0:
+	lx = best_place_to_start(p, cpu, lo, hi)
+	if len(lx) == 0:
 		return
+
+	cand = lx[0][0]
+	j = lx[0][1]
 
 	while True:
 		print("Doing", p.m.afmt(cand), "gain", j, "list", len(lx))
@@ -133,19 +137,23 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 		if max != None and n >= max:
 			break
 
+		lx = sorted(lx, key=lambda x: -x[1])
 		best = 0
 		cand = None
 		ly = list()
-		for i in lx:
+		for j in lx:
+			i,n = j
+			if n < best:
+				ly.append(j)
+				continue
 			this = gain(p, cpu, i)
 			if this == None:
 				continue
 			l = len(this)
 			if l <= 0:
 				continue
-			ly.append(i)
+			ly.append((i,l))
 			if l > best:
-				print("Best so far: ", p.m.afmt(i), l)
 				best = l
 				cand = i
 		if cand == None:
