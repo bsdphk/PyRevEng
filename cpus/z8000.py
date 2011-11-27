@@ -108,11 +108,8 @@ class z8000(disass.assy):
 		#print(">>> @%04x" % adr)
 		c = self.root.find(p, adr, p.m.b16)
 
-		if c == None:
-			raise disass.DisassError(
-			    "no instruction")
-
-		#print("]]} @%04x" % adr, c)
+		assert c != None
+		
 
 		# We have a specification in 'c'
 		self.last_c = c

@@ -3,6 +3,8 @@
 
 from __future__ import print_function
 
+from disass import DisassError
+
 #######################################################################
 # Parse a "([01x] )*[01x]" string into a mask + bits
 
@@ -273,8 +275,10 @@ class instree(object):
 			b = func(adr + i)
 			r = r.find(b)
 			if type(r) != insbranch:
-				return r
-		return None
+				break
+		if r == None:
+			raise DisassError("no matching ins")
+		return r
 
 	# This finds all non-overlapping candidates.
 	# such as mask=0xf002 and mask=0xf001
