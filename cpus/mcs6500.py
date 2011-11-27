@@ -48,7 +48,6 @@ class mcs6502(disass.assy):
 		try:
 			iw = p.m.rd(adr)
 		except:
-			print("FETCH failed:", adr)
 			ins.fail("no mem")
 			return
 
