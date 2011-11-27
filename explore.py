@@ -13,6 +13,27 @@ assert sys.version_info[0] >= 3 or "Need" == "Python v3"
 # XXX: we could return a list of candidates sorted by gain and then
 # XXX: pass it in for next iteration of brute-force
 
+def gain(p, cpu, adr):
+	while p.run():
+		pass;
+
+	ccpu = cpu.clone()
+	#try:
+	if True:
+		ccpu.disass(adr)
+		while p.run(): pass
+	#except:
+	else:
+		print("FAIL", ccpu)
+		ccpu.fails = None
+
+	assert cpu.fails != None
+
+	if ccpu.fails != 0:
+		return None
+
+	return ccpu.ins
+
 def best_place_to_start(p, cpu, lo=None, hi=None):
 	"""
 	Try to find the instruction that causes most other instructions
@@ -27,6 +48,7 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 	cand = None
 	bdict = dict()
 
+	lx = list()
 	for g in p.t.gaps():
 		g = list(g)
 		if lo != None:
@@ -50,27 +72,22 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			if i in bdict:
 				i = bdict[i].hi
 				continue
-			ccpu = cpu.clone()
-			try:
-				ccpu.disass(i)
-				while p.run():
-					pass
-			except:
-				ccpu.fails = None
-
-			this = len(ccpu.ins)
-			if ccpu.fails == 0 and this > best:
-				print("Best so far: ", p.m.afmt(i), this - ref)
-				sys.stdout.flush()
-				best = this
-				cand = i
-				bdict = ccpu.ins
-			del ccpu
+			this = gain(p, cpu, i)
+			if this != None:
+				l = len(this)
+				if l > ref:
+					lx.append(i)
+				if  l > best:
+					print("Best so far: ", p.m.afmt(i), l - ref)
+					sys.stdout.flush()
+					best = l
+					cand = i
+					bdict =this
 			i += 1
 	if cand == None:
-		return (None, 0)
-	print(p.m.afmt(cand), "is best place to start, develops %d" % (best - ref), cpu.name, "instructions")
-	return (cand, best - ref)
+		return (None, 0, None)
+	print(p.m.afmt(cand), "is best place to start, develops %d" % (best - ref), cpu.name, "instructions, tested", len(lx))
+	return (cand, best - ref, lx)
 
 #----------------------------------------------------------------------
 #
@@ -81,15 +98,38 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 	possible.  Pivot instructions are marked with a lcmt.
 	"""
 	n = 0
+
+	cand, j,lx = best_place_to_start(p, cpu, lo, hi)
+	if j == 0:
+		return
+
 	while True:
-		i, j = best_place_to_start(p, cpu, lo, hi)
-		if j == 0:
-			break
-		x = cpu.disass(i)
+		x = cpu.disass(cand)
 		x.lcmt("<==== Brute Force Discovery #%d" % n)
 		while p.run():
 			pass;
-
 		n += 1
 		if max != None and n >= max:
 			break
+
+		ref = len(cpu.ins)
+		print("Iter", n, "ref", ref, "len", len(lx))
+		best = ref
+		cand = None
+		ly = list()
+		for i in lx:
+			this = gain(p, cpu, i)
+			if this == None:
+				continue
+			l = len(this)
+			if l <= ref:
+				continue
+			ly.append(l)
+			if l > best:
+				print("Best so far: ", p.m.afmt(i), l - ref)
+				best = l
+				cand = i
+		if cand == None:
+			break
+		lx = ly
+			
