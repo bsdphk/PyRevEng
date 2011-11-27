@@ -10,29 +10,47 @@ import sys
 assert sys.version_info[0] >= 3 or "Need" == "Python v3"
 
 #----------------------------------------------------------------------
-# XXX: we could return a list of candidates sorted by gain and then
-# XXX: pass it in for next iteration of brute-force
 
 def gain(p, cpu, adr):
+	"""
+	How many instructions would we gain by starting disassembly at adr ?
+	"""
+
 	while p.run():
 		pass;
 
 	ccpu = cpu.clone()
-	#try:
-	if True:
-		ccpu.disass(adr)
-		while p.run(): pass
-	#except:
-	else:
-		print("FAIL", ccpu)
-		ccpu.fails = None
+
+	ccpu.disass(adr)
+	while p.run():
+		pass
 
 	assert cpu.fails != None
+
+	dx = dict()
+	for i in ccpu.ins:
+
+		# We only care for new stuff
+		if i in cpu.ins:
+			continue
+
+		j = ccpu.ins[i]
+
+		# If they are OK, we return them
+		if j.status == "OK":
+			dx[i] = j
+			continue
+
+		# If they failed, propagate up
+		if j.status == "fail":
+			j.disass = cpu
+			cpu.ins[i] = j
+			continue
 
 	if ccpu.fails != 0:
 		return None
 
-	return ccpu.ins
+	return dx
 
 def best_place_to_start(p, cpu, lo=None, hi=None):
 	"""
@@ -43,11 +61,11 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 	while p.run():
 		pass;
 
-	ref = len(cpu.ins)
-	best = ref
+	best = 0
 	cand = None
 	bdict = dict()
 
+	lp = 0
 	lx = list()
 	for g in p.t.gaps():
 		g = list(g)
@@ -63,6 +81,9 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 				g[1] = hi
 		i = g[0]
 		while i < g[1]:
+			if i >> 12 != lp:
+				print("..." + p.m.afmt(i))
+				lp = i >> 12
 			if i in cpu.ins:
 				i = cpu.ins[i].hi
 				continue
@@ -75,10 +96,10 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			this = gain(p, cpu, i)
 			if this != None:
 				l = len(this)
-				if l > ref:
+				if l > 0:
 					lx.append(i)
 				if  l > best:
-					print("Best so far: ", p.m.afmt(i), l - ref)
+					print("Best so far: ", p.m.afmt(i), l)
 					sys.stdout.flush()
 					best = l
 					cand = i
@@ -86,7 +107,7 @@ def best_place_to_start(p, cpu, lo=None, hi=None):
 			i += 1
 	if cand == None:
 		return (None, 0, None)
-	return (cand, best - ref, lx)
+	return (cand, best, lx)
 
 #----------------------------------------------------------------------
 #
@@ -98,7 +119,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 	"""
 	n = 0
 
-	cand, j,lx = best_place_to_start(p, cpu, lo, hi)
+	cand, j, lx = best_place_to_start(p, cpu, lo, hi)
 	if j == 0:
 		return
 
@@ -112,8 +133,7 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 		if max != None and n >= max:
 			break
 
-		ref = len(cpu.ins)
-		best = ref
+		best = 0
 		cand = None
 		ly = list()
 		for i in lx:
@@ -121,15 +141,15 @@ def brute_force(p, cpu, lo=None, hi=None, max = None):
 			if this == None:
 				continue
 			l = len(this)
-			if l <= ref:
+			if l <= 0:
 				continue
 			ly.append(i)
 			if l > best:
-				#print("Best so far: ", p.m.afmt(i), l - ref)
+				print("Best so far: ", p.m.afmt(i), l)
 				best = l
 				cand = i
 		if cand == None:
 			break
 		lx = ly
-		j = best - ref
+		j = best
 			

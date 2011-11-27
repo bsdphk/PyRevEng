@@ -59,12 +59,22 @@ class disass(object):
 		assert type(adr) == int
 
 		if adr in self.ins:
-			return self.ins[adr]
+			i = self.ins[adr]
+			if i.status == "OK":
+				return i
+			elif i.status == "new":
+				return i
+			elif i.status == "prospective":
+				return i
+			elif self.is_clone:
+				self.fails += 1
+			return i
 
 		ins = instruction(self, adr)
 		self.ins[adr] = ins
 		if self.bm.tst(adr):
 			ins.status = "overlap"
+			self.fails += 1
 		else:
 			ins.status = "prospective"
 			self.bm.set(adr)
@@ -75,6 +85,9 @@ class disass(object):
 		assert p == self.p
 		assert ins.status == "prospective"
 		assert self.fails != None
+		if self.fails > 0 and self.is_clone:
+			ins.fail("cascade")
+			return
 		try:
 			self.do_disass(adr, ins)
 		except mem.MemError as bug:
