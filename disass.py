@@ -39,6 +39,7 @@ class disass(object):
 		self.fails = 0
 		self.is_clone = False
 		self.follow_calls = True
+		self.special_dst = dict()
 
 	def clone(self, follow_calls = True):
 		"""Make a clone for exploratory purposes
@@ -168,8 +169,22 @@ class disass(object):
 			j = self.disass(ins.hi)
 
 		for i in ins.flow_out:
+			if type(i[2]) != int:
+				continue
+			if not i[2] in self.special_dst:
+				continue
+			self.special_dst[i[2]](ins, i[2])
+
+		has_cond = False
+		for i in ins.flow_out:
+			if i[0] == "cond":
+				has_cond = True
+				break
+
+		for i in ins.flow_out:
 			if i[0] == "call":
-				j = self.disass(ins.hi)
+				if not has_cond:
+					j = self.disass(ins.hi)
 				if not self.follow_calls:
 					continue
 			if type(i[2]) != int:
