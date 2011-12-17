@@ -123,21 +123,21 @@ class bb(object):
 			nmx = nm
 		if dot == None:
 			if nm != None:
-				dot = 'shape=plaintext, label="'
+				dot = 'shape=record, label="{'
 			elif self.trampoline:
-				dot = 'shape=box,color=grey, label="'
+				dot = 'shape=record,color=grey, label="{'
 			else:
-				dot = 'shape=box, label="'
+				dot = 'shape=record, label="{'
 			ll = self.label
 			if self.label != None:
 				ll = ll.lower()
-				dot += self.label + "\\n"
+				dot += self.label + "|"
 			dot += '%04x-%04x' % (self.lo, self.hi)
 			if self.segment != None and  \
 			   self.segment.label != None and \
 			   self.segment.label.lower() != ll:
-				dot += '\\n{' + self.segment.label + '}'
-			dot += '"'
+				dot += '|{' + self.segment.label + '}'
+			dot += '}"'
 		fo.write(nmx + ' [' + dot + ']\n')
 
 class segment(object):
@@ -162,7 +162,7 @@ class segment(object):
 				j.dot_in(fo)
 
 	def dot_fmt(self, fo):
-		fo.write('Segment [shape=parallelogram,label="%04x-%04x\\n%s"]\n' % (self.lo, self.hi, str(self.label)))
+		fo.write('Segment [shape=parallelogram,label="%04x-%04x|%s"]\n' % (self.lo, self.hi, str(self.label)))
 		for b in self.bbs:
 			b.dot_fmt(fo)
 			for j in b.flow_out:
