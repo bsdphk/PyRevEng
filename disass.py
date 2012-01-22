@@ -86,6 +86,8 @@ class disass(object):
 
 	def xxdo_disass(self, p, adr, ins):
 		assert p == self.p
+		if ins.status != "prospective":
+			print(ins)
 		assert ins.status == "prospective"
 		assert self.fails != None
 		if self.fails > 0 and self.is_clone:

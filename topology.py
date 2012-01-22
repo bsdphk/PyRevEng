@@ -45,25 +45,38 @@ class flow(object):
 		assert self.fm != None or self.to != None
 
 
-	def dot_fmt(self, fo, fm, to):
+	def dot_fmt(self, p, fo, fm, to):
 		dot = self.dot
 
-		if dot == None and self.tp == "call":
-			dot = "color=blue"
+		if self.tp == "ret":
+			return
+		if self.tp == "call":
+			return
 
 		if fm:
-			fmn = "BB%x" % self.fm.lo
+			if self.fm.trampoline:
+				fmn = "BB%x" % self.fm.lo
+			else:
+				fmn = "BB%x:out" % self.fm.lo
 		else:
 			fmn = "FLF%x" % id(self)
 			if self.fm != None:
-				self.fm.dot_fmt(fo, fmn)
+				self.fm.dot_fmt(p, fo, fmn)
 
 		if to:
-			ton = "BB%x" % self.to.lo
+			if self.to.trampoline:
+				ton = "BB%x" % self.to.lo
+			else:
+				ton = "BB%x:in" % self.to.lo
 		else:
-			ton = "FLT%x" % id(self)
 			if self.to != None:
-				self.to.dot_fmt(fo, ton)
+				ton = "FLT%x" % self.to.lo
+				if self.to.label != None:
+					fo.write(ton + " [shape=hexagon,label=\"%x\\n%s\"]\n" % (self.to.lo, self.to.label))
+				else:
+					fo.write(ton + " [shape=hexagon,label=\"%x\"]\n" % (self.to.lo))
+			else:
+				ton = "FLT%x" % id(self)
 
 		if self.to == None and self.anondot != None:
 			fo.write(ton + ' [' + self.anondot + ']\n')
@@ -79,19 +92,23 @@ class flow(object):
 			fo.write(fmn + ' [color=red]\n')
 
 		fo.write(fmn + ' -> ' + ton)
+		l = list()
+		if self.condition != "T":
+			l.append('label=\"' + self.condition + '\"')
 		if dot != None:
-			fo.write(' [' + dot + ']')
+			l.append(dot)
+		fo.write(' [' + ",".join(l) + ']')
 		fo.write("\n")
 
-	def dot_out(self, fo):
+	def dot_out(self, p, fo):
 		if self.offpage or self.to == None:
-			self.dot_fmt(fo, True, False)
+			self.dot_fmt(p, fo, True, False)
 		else:
-			self.dot_fmt(fo, True, True)
+			self.dot_fmt(p, fo, True, True)
 
-	def dot_in(self, fo):
+	def dot_in(self, p, fo):
 		if self.offpage or self.fm == None:
-			self.dot_fmt(fo, False, True)
+			self.dot_fmt(p, fo, False, True)
 
 
 class bb(object):
@@ -114,30 +131,25 @@ class bb(object):
 		self.trampoline = False
 		self.segment = None
 		self.dot = None
+		self.ins = list()
 
-	def dot_fmt(self, fo, nm=None):
+	def dot_fmt(self, p, fo, nm=None):
 		dot = self.dot
 		if nm == None:
 			nmx = "BB%x" % self.lo
 		else:
 			nmx = nm
+		if dot == None and self.trampoline:
+			dot = 'shape=plaintext,label="%04x-%04x"' % (self.lo, self.hi)
 		if dot == None:
-			if nm != None:
-				dot = 'shape=record, label="{'
-			elif self.trampoline:
-				dot = 'shape=record,color=grey, label="{'
-			else:
-				dot = 'shape=record, label="{'
-			ll = self.label
+			dot = 'shape=record, fontname="Courier", label="{'
 			if self.label != None:
-				ll = ll.lower()
 				dot += self.label + "|"
-			dot += '%04x-%04x' % (self.lo, self.hi)
-			if self.segment != None and  \
-			   self.segment.label != None and \
-			   self.segment.label.lower() != ll:
-				dot += '|{' + self.segment.label + '}'
-			dot += '}"'
+			dot += '<in>%04x-%04x|' % (self.lo, self.hi)
+			for i in self.ins:
+				for j in i.render(p, i):
+					dot += j.expandtabs() + '\\l'
+			dot += '|<out>}"'
 		fo.write(nmx + ' [' + dot + ']\n')
 
 class segment(object):
@@ -154,28 +166,28 @@ class segment(object):
 		self.hi = None
 		self.trampoline = False
 
-	def dot_fmt2(self, fo):
+	def dot_fmt2(self, p, fo):
 		for b in self.bbs:
-			b.dot_fmt(fo)
+			b.dot_fmt(p, fo)
 			for j in b.flow_in:
 				assert j.to != None
-				j.dot_in(fo)
+				j.dot_in(p, fo)
 
-	def dot_fmt(self, fo):
+	def dot_fmt(self, p, fo):
 		fo.write('Segment [shape=parallelogram,label="%04x-%04x|%s"]\n' % (self.lo, self.hi, str(self.label)))
 		for b in self.bbs:
-			b.dot_fmt(fo)
+			b.dot_fmt(p, fo)
 			for j in b.flow_out:
 				assert j.fm != None
-				j.dot_out(fo)
+				j.dot_out(p, fo)
 			for j in b.flow_in:
 				assert j.to != None
 				if j.offpage and j.fm.segment.trampoline and j.fm.segment != self and True:
 					#print("ALSO seg %04x (%04x)" % (j.fm.segment.lo, self.lo))
-					j.fm.segment.dot_fmt2(fo)
-					j.dot_fmt(fo, True, True)
+					j.fm.segment.dot_fmt2(p, fo)
+					j.dot_fmt(p, fo, True, True)
 				else:
-					j.dot_in(fo)
+					j.dot_in(p, fo)
 
 class topology(object):
 	# Properties
@@ -226,6 +238,7 @@ class topology(object):
 				print("NOTE: %x was not in tree" % i)
 				continue
 			self.bbs[i] = bb(i)
+			#self.bbs[i].ins.append(self.idx[i])
 
 		for i in self.bbs.keys():
 			b = self.bbs[i]
@@ -284,6 +297,11 @@ class topology(object):
 				nxt = hi
 				hi = self.idx[nxt].end
 			b.hi = hi
+			ax = b.lo
+			while ax < b.hi:
+				tx = self.p.t.find(ax, "ins")
+				b.ins.append(tx)
+				ax = tx.end
 
 	##################################################################
 
@@ -491,19 +509,21 @@ class topology(object):
 	##################################################################
 	# DOT graph output
 
-	def dump_dot(self, filename = "/tmp/_.dot", digraph=None, tramp=False):
+	def dump_dot(self, filename = "/tmp/_.dot", digraph=None, tramp=False, target=None):
 		if digraph == None:
 			digraph='size="7.00, 10.80"\nconcentrate=true\ncenter=true\n'
 		fo = open(filename, "w")
 		for gg in self.segments:
 			if gg.trampoline and not tramp:
 				continue
+			if target != None and target != gg.lo:
+				continue
 			fo.write("digraph {\n" + digraph + "\n" + gg.digraph + "\n")
 
 			h = self.p.hint(gg.lo)
 			if 'dot-page' in h:
 				fo.write(h['dot-page'] + "\n")
-			gg.dot_fmt(fo)
+			gg.dot_fmt(self.p, fo)
 			fo.write("}\n")
 		xxx = False
 		for i in self.bbs:
@@ -513,11 +533,11 @@ class topology(object):
 			if not xxx:
 				fo.write("digraph {\n" + digraph + "\n")
 				xxx = True
-			b.dot_fmt(fo)
+			b.dot_fmt(self.p, fo)
 			for j in b.flow_out:
-				j.dot_out(fo, b)
+				j.dot_out(p, fo, b)
 			for j in b.flow_in:
-				j.dot_in(fo, b)
+				j.dot_in(p, fo, b)
 		if xxx:
 			fo.write("}\n")
 		fo.close()
