@@ -1,8 +1,8 @@
 # ARM "Thumb2" instruction set
 #
 # Taken from:
-#	ARM Architecture Reference Manual
-#	ARM DDI 0100I
+#	ARM Architecture Reference Manual / ARM DDI 0100I
+#	ARM Architecture Reference Manual Thumb-2 Supplement / ARM DDI 0308D
 #
 # Conventions:
 #	H1 		= H
@@ -10,8 +10,30 @@
 #	#<immed_8>*4	= imm8l
 #	#<immed_7>*2	= imm7w
 #
-#			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
+#			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
 #			---------------------------------
+# These are also in v5+Thumb
 BKPT	imm8		|1 0 1 1 1 1 1 0| imm8		|
 BLX	bl_tgt		|1 1 1 1 0| off11_a		|1 1 1 0 1| off11_b		|
 #			---------------------------------
+ADC	Sc,Rd,Rn,imm	|1 1 1 1 0|i|0|1 0 1 0|S| Rn	|0|imm3 | Rd  | imm8		|
+ADC	Sc,W,Rd,Rn,Rm,r |1 1 1 0 1|0 1|1 0 1 0|S| Rn	|0|imm3 | Rd  |im2|tpe| Rm	|
+ADD	Sc,W,Rd,Rn,imm	|1 1 1 1 0|i|0|1 0 0 0|S| Rn	|0|imm3 | Rd  | imm8		|
+ADDW	c,Rd,Rn,imm12	|1 1 1 1 0|i|1|0 0 0 0|0| Rn	|0|imm3 | Rd  | imm8		|
+ADD	Sc,W,Rd,Rn,Rm,r	|1 1 1 0 1|0 1|1 0 0 0|S| Rn	|0|imm3	| Rd  |im2|tpe| Rm      |
+ADD	Sc,W,Rd,SP,imm	|1 1 1 1 0|i|0|1 0 0 0|S|1 1 0 1|0|imm3 | Rd  | imm8		|
+ADDW	c,Rd,SP,imm	|1 1 1 1 0|i|1|0 0 0 0|0|1 1 0 1|0|imm3 | Rd  | imm8		|
+ADD	Sc,W,Rd,Sp,Rm,r	|1 1 1 0 1 0 1 1 0 0 0|S|1 1 0 1|0|imm3 | Rd  |im2|tpe| Rm      |
+ADR	c,W,Rd,dstb	|1 1 1 1 0|i|1 0 1 0 1|0|1 1 1 1|0|imm3 | Rd  | imm8		|
+ADR	c,W,Rd,dsta	|1 1 1 1 0|i|1 0 0 0 0|0|1 1 1 1|0|imm3 | Rd  | imm8		|
+AND	Sc,Rd,Rn,imm	|1 1 1 1 0|i|0 0 0 0 0|S| Rn    |0|imm3 | Rd  | imm8		|
+AND	Sc,W,Rd,Rn,Rm,r	|1 1 1 0 1|0 1|0 0 0 0|S| Rn	|0|imm3	| Rd  |im2|tpe| Rm	|
+ASR	Sc,W,Rd,Rm,imm5	|1 1 1 0 1|0 1|0 0 1 0|S|1 1 1 1|0|imm3 | Rd  |im2|1 0| Rm	|
+ASR	Sc,W,Rd,Rn,Rm	|1 1 1 1 1|0 1 0|0|1 0|S| Rn    |1 1 1 1| Rd  |0|0 0 0| Rm	|
+B	c,W,dst		|1 1 1 1 0|S| cond  | imm6	|1 0|j|0|J| imm11		|
+B	c,W,dst		|1 1 1 1 0|S| imm10		|1 0|j|1|J| imm11		|
+BFC	c,Rd,lsb,wid	|1 1 1 1 0|0|1 1|0 1 1|0|1 1 1 1|0|imm3 | Rd  |im2|0| msb	|
+BFI	c,Rd,Rn,lsb,wid	|1 1 1 1 0|0|1 1|0 1 1|0| Rn	|0|imm3 | Rd  |im2|0| msb	|
+BIC	Sc,Rd,Rn,im	|1 1 1 1 0|i|9 9 9 9 1|S| Rn	|0|imm3 | Rd  | imm8		|
+BIC	Sc,W,Rd,Rn,Rm,r	|1 1 1 0 1|0 1|0 0 0 1|S| Rn	|0|imm3 | Rd  |im2|tpe| Rm	|
+# ... ARM DDI 0308D p.4-50
