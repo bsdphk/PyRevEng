@@ -1,0 +1,77 @@
+# ARM "Thumb" instruction set
+#
+# Taken from:
+#	ARM Architecture Reference Manual
+#	ARM DDI 0100E
+#
+#
+# Conventions:
+#	H1 		= H
+#	H2 		= h
+#	#<immed_8>*4	= imm8l
+#	#<immed_7>*2	= imm7w
+#
+#			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
+#			---------------------------------
+ADC	Rd,Rm		|0 1 0 0 0 0|0 1 0 1| Rm  | Rd  |
+ADD	Rd,Rn,imm3	|0 0 0 1 1 1 0| imm3| Rn  | Rd  |
+ADD	Rd,imm8		|0 0 1 1 0| Rd  | imm8		|
+ADD	Rd,Rn,Rm	|0 0 0 1 1 0 0| Rm  | Rn  | Rd  |
+ADD	Rd,Rm		|0 1 0 0 0 1 0 0|H|h| Rm  | Rd  |
+ADD	Rd,PC,imm8l	|1 0 1 0 0| Rd  | imm8l		|
+ADD	Rd,SP,imm8l	|1 0 1 0 1| Rd	| imm8l		|
+ADD	SP,imm7l	|1 0 1 1 0 0 0 0 0| imm7l	|
+AND	Rd,Rm		|0 1 0 0 0 0|0 0 0 0| Rm  | Rd  |
+ASR	Rd,Rm,imm5	|0 0 0 1 0| imm5    | Rm  | Rd  |
+ASR	Rd,Rs		|0 1 0 0 0 0|0 1 0 0| Rs  | Rd  |
+B	simm8,cond	|1 1 0 1| cond  | simm8		|
+B	simm11		|1 1 1 0 0| simm11		|
+BIC	Rd,Rm		|0 1 0 0 0 0|1 1 1 0| Rm  | Rd  |
+BL	bl_tgt		|1 1 1 1 0| off11_a		|1 1 1 1 1| off11_b		|
+BX	Rmh		|0 1 0 0 0 1 1 1 0|h| Rm  |0 0 0|
+CMN	Rn,Rm		|0 1 0 0 0 0|1 0 1 1| Rm  | Rd  |
+CMP	Rn,imm8		|0 0 1 0 1| Rn  | imm8		|
+CMP	Rn,Rm		|0 1 0 0 0 0|1 0 1 0| Rm  | Rn  |
+CMP	Rn,Rm		|0 1 0 0 0 1 0 1|H|h| Rmh | RnH |
+EOR	Rd,Rm		|0 1 0 0 0 0|0 0 0 1| Rm  | Rd  |
+LDMIA	Rn!,regs	|1 1 0 0 1| Rn  | regs		|
+LDR	Rd,[Rn+imm5l*4]	|0 1 1 0 1| imm5l   | Rn  | Rd  |
+LDR	Rd,[Rn+Rm]	|0 1 0 1 1 0 0| Rm  | Rn  | Rd  |
+LDR	Rd,[PC+imm8l*4] |0 1 0 0 1| Rd  | imm8l		|
+LDR	Rd,[SP+imm8l*4]	|1 0 0 1 1| Rd  | imm8l		|
+LDRB	Rd,[Rn+imm5]	|0 1 1 1 1| imm5    | Rn  | Rd  |
+LDRB	Rd,[Rn+Rm]	|0 1 0 1 1 1 0| Rm  | Rn  | Rd  |
+LDRH	Rd,[Rn+imm5w*2]	|1 0 0 0 1| imm5w   | Rn  | Rd  |
+LDRH	Rd,[Rn+Rm]	|0 1 0 1 1 0 1| Rm  | Rn  | Rd  |
+LDRSB	Rd,[Rn+Rm]	|0 1 0 1 0 1 1| Rm  | Rn  | Rd  |
+LDRSH	Rd,[Rn+Rm]	|0 1 0 1 1 1 1| Rm  | Rn  | Rd  |
+LSL	Rd,Rm,imm5	|0 0 0 0 0| imm5    | Rm  | Rd  |
+LSL	Rd,Rs		|0 1 0 0 0 0|0 0 1 0| Rs  | Rd  |
+LSR	Rd,Rm,imm5	|0 0 0 0 1| imm5    | Rm  | Rd  |
+LSR	Rd,Rs		|0 1 0 0 0 0|0 0 1 1| Rs  | Rd  |
+MOV	Rd,imm8		|0 0 1 0 0| Rd  | imm8		|
+MOV	Rd,Rn		|0 0 0 1 1 1 0|0 0 0| Rn  | Rd  |
+MOV	RdH,Rmh		|0 1 0 0 0 1 1 0|H|h| Rm  | Rd  |
+MUL	Rd,Rm		|0 1 0 0 0 0|1 1 0 1| Rm  | Rd  |
+MVN	Rd,Rm		|0 1 0 0 0 0|1 1 1 1| Rm  | Rd  |
+NEG	Rd,Rm		|0 1 0 0 0 0|1 0 0 1| Rm  | Rd  |
+ORR	Rd,Rm		|0 1 0 0 0 0|1 1 0 0| Rm  | Rd  |
+POP	regs		|1 0 1 1 1 1 0|R| regs		|
+PUSH	regs		|1 0 1 1 0 1 0|R| regs		|
+ROR	Rd,Rs		|0 1 0 0 0 0|0 1 1 1| Rs  | Rd  |
+SBC	Rd,Rm		|0 1 0 0 0 0|0 1 1 0| Rm  | Rd  |
+STMIA	Rn!,regs	|1 1 0 0 0| Rn  | regs		|
+STR	Rd,[Rn+imm5l*4]	|0 1 1 0 0| imm5l   | Rn  | Rd  |
+STR	Rd,[Rn+Rm]	|0 1 0 1 0 0 0| Rm  | Rn  | Rd  |
+STR	Rd,[SP+imm8l*4]	|1 0 0 1 0| Rd  | imm8l		|
+STRB	Rd,[Rn+imm5]	|0 1 1 1 0| imm5    | Rn  | Rd  |
+STRB	Rd,[Rn+Rm]	|0 1 0 1 0 1 0| Rm  | Rn  | Rd  |
+STRH	Rd,[Rn+imm5w*2]	|1 0 0 0 0| imm5w   | Rn  | Rd  |
+STRH	Rd,[Rn+Rm]	|0 1 0 1 0 0 1| Rm  | Rn  | Rd  |
+SUB	Rd,Rn,imm3	|0 0 0 1 1 1 1| imm3| Rn  | Rd  |
+SUB	Rd,imm8		|0 0 1 1 1| Rd  | imm8		|
+SUB	Rd,Rn,Rm	|0 0 0 1 1 0 1| Rm  | Rn  | Rd  |
+SUB	SP,imm7l	|1 0 1 1 0 0 0 0 1| imm7l	|
+SWI	imm8		|1 1 0 1 1 1 1 1| imm8		|
+TST	Rn,Rm		|0 1 0 0 0 0|1 0 0 0| Rm  | Rn  |
+

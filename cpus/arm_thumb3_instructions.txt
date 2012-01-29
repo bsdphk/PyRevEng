@@ -1,0 +1,26 @@
+# ARM "Thumb3" instruction set
+#
+# Taken from:
+#	ARM Architecture Reference Manual
+#	ARM DDI 0100I
+#
+# Conventions:
+#	H1 		= H
+#	H2 		= h
+#	#<immed_8>*4	= imm8l
+#	#<immed_7>*2	= imm7w
+#
+#			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
+#			---------------------------------
+CPS	eff,ifl		|1 0 1 1|0|1|1|0|0|1|1|i|0|A|I|F|
+# See note p.A7-41
+#CPY	Rd,Rm		|0 1 0 0 0 1 1 0|H|h| Rm  | Rd  |
+REV	Rd,Rn		|1 0 1 1 1 0 1 0|0|0| Rn  | Rd	|
+REV16	Rd,Rn		|1 0 1 1|1 0 1 0|0 1| Rn  | Rd  |
+REVSH	Rd,Rn		|1 0 1 1|1 0 1 0|1 1| Rn  | Rd  |
+SETEND	E		|1 0 1 1|0 1 1 0 0 1 0 1|E|0 0 0|
+SXTB	Rd,Rm		|1 0 1 1|0 0 1 0|0 1| Rm  | Rd  |
+SXTH	Rd,Rm		|1 0 1 1|0 0 1 0|0 0| Rm  | Rd  |
+UXTB	Rd,Rm		|1 0 1 1|0 0 1 0|1 1| Rm  | Rd  |
+UXTH	Rd,Rm		|1 0 1 1|0 0 1 0|1 0| Rm  | Rd  |
+#			---------------------------------

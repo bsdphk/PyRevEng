@@ -1,0 +1,17 @@
+# ARM "Thumb2" instruction set
+#
+# Taken from:
+#	ARM Architecture Reference Manual
+#	ARM DDI 0100I
+#
+# Conventions:
+#	H1 		= H
+#	H2 		= h
+#	#<immed_8>*4	= imm8l
+#	#<immed_7>*2	= imm7w
+#
+#			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
+#			---------------------------------
+BKPT	imm8		|1 0 1 1 1 1 1 0| imm8		|
+BLX	bl_tgt		|1 1 1 1 0| off11_a		|1 1 1 0 1| off11_b		|
+#			---------------------------------
