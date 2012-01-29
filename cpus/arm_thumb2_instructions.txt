@@ -12,10 +12,21 @@
 #
 #			|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|X.X.X.X.X.X.X.X.X.X.X.X.X.X.X.X|
 #			---------------------------------
-# These are also in v5+Thumb
+# These are in v5+Thumb
 BKPT	imm8		|1 0 1 1 1 1 1 0| imm8		|
 BLX	bl_tgt		|1 1 1 1 0| off11_a		|1 1 1 0 1| off11_b		|
 #			---------------------------------
+# These are in v6k+Thumb
+#			---------------------------------
+CLREX	c		|1 1 1 1 0|0|1 1 1|0 1|1|1 1 1 1|1 0|0|0|1 1 1 1|0 0 1 0|1 1 1 1|
+#			---------------------------------
+# These are in v7+Thumb
+#			---------------------------------
+DMB	c		|1 1 1 1 0|0|1 1 1|0 1|1|1 1 1 1|1 0|0|0|1 1 1 1|0 1 0 1| opt	|
+DSB	c		|1 1 1 1 0|0|1 1 1|0 1|1|1 1 1 1|1 0|0|0|1 1 1 1|0 1 0 0| opt	|
+ISB	c		|1 1 1 1 0|0|1 1 1|0 1|1|1 1 1 1|1 0|0|0|1 1 1 1|0 1 1 0| opt	|
+#			---------------------------------
+# These are true "Thumb2"
 ADC	Sc,Rd,Rn,imm	|1 1 1 1 0|i|0|1 0 1 0|S| Rn	|0|imm3 | Rd  | imm8		|
 ADC	Sc,W,Rd,Rn,Rm,r |1 1 1 0 1|0 1|1 0 1 0|S| Rn	|0|imm3 | Rd  |im2|tpe| Rm	|
 ADD	Sc,W,Rd,Rn,imm	|1 1 1 1 0|i|0|1 0 0 0|S| Rn	|0|imm3 | Rd  | imm8		|
@@ -36,4 +47,28 @@ BFC	c,Rd,lsb,wid	|1 1 1 1 0|0|1 1|0 1 1|0|1 1 1 1|0|imm3 | Rd  |im2|0| msb	|
 BFI	c,Rd,Rn,lsb,wid	|1 1 1 1 0|0|1 1|0 1 1|0| Rn	|0|imm3 | Rd  |im2|0| msb	|
 BIC	Sc,Rd,Rn,im	|1 1 1 1 0|i|9 9 9 9 1|S| Rn	|0|imm3 | Rd  | imm8		|
 BIC	Sc,W,Rd,Rn,Rm,r	|1 1 1 0 1|0 1|0 0 0 1|S| Rn	|0|imm3 | Rd  |im2|tpe| Rm	|
-# ... ARM DDI 0308D p.4-50
+BL	c,bl_tgt2	|1 1 1 1 0|S| imm10		|1 1|J|1|j| imm11		|
+BLX	c,bl_tgt2	|1 1 1 1 0|S| imm10h		|1 1|J|0|j| imm10l	      |0|
+BXJ	c,Rm		|1 1 1 1 0|0|1 1 1 1|0 0| Rm	|1 0|0|0|1 1 1 1|0 0 0 0 0 0 0 0|
+CBNZ	Rn,dst		|1 0 1 1|1|0|i|1| imm5    | Rn  |
+CBZ	Rn,dst		|1 0 1 1|0|0|1|1| imm5	  | Rn  |
+CDP	coproc		|1 1 1|C|1 1 1 0| opc1  | CRn	| Crd   | coproc| opc2|0| CRm   |
+CLZ	c,Rd,Rm		|1 1 1 1 1|0 1 0|1|0 1 1| Rm2	|1 1 1 1| Rd    |1|0 0 0| Rm	|
+CMN	Rn,immi38	|1 1 1 1 0|i|0|1 0 0 0|1| Rn	|0|imm3 |1 1 1 1| imm8		|
+CMN	c,W,Rn,Rm,r	|1 1 1 0 1|0 1|1 0 0 0|1| Rn	|0|imm3 |1 1 1 1|im2|tpe| Rm    |
+CMP	c,W,Rn,inti38	|1 1 1 1 0|i|0|1 1 0 1|1| Rn	|0|imm3 |1 1 1 1| imm 8		|
+CMP	c,W,Rn,Rm,r	|1 1 1 0 1|0 1|1 1 0 1|1| Rn	|0|imm3 |1 1 1 1|im2|tpe| Rm	|
+CPS	eff,ifl		|1 0 1 1|0 1 1 0|0 1 1|i|0|A|I|F|
+CPS	eff,W,ifl,mod	|1 1 1 1 0|0|1 1 1 0|1 0|1 1 1 1|1 0|0|0|0|imd|M|A|I|F| mode	|
+DBG	c,opt		|1 1 1 1 0|0|1 1 1|0 1|0|1 1 1 1|1 0|0|0|0|0 0 0|1 1 1 1| opt	|
+EOR	Sc,Rd,Rn,inti38	|1 1 1 1 0|i|0|0 1 0 0|S| Rn    |0|imm3 | Rd    | imm8		|
+EOR	Sc,W,Rd,Rn,Rm,r	|1 1 1 0 1|0 1|0 1 0 0|S| Rn	|0|imm3 | Rd	|im2|tpe| Rm	|
+IT	X,Y,Z,1cond	|1 0 1 1|1 1 1 1| 1cond | mask  |
+LDC	coproc		|1 1 1|C|1 1 0|P|U|N|W|1| Rn    | CRd   | coproc| imm8		|
+LDMDB	Rn!,regs	|1 1 1 0 1|0 0|1 0 0|W|1| Rn    |P|M|0| regs			|
+LDMIA	c,W,Rn!,regs	|1 1 1 0 1|0 0|0 1 0|W|1| Rn	|P|M|0| regs			|
+LDR	c,W,Rt,[Rn+i12]	|1 1 1 1 1|0 0|0|1|1 0|1| Rn	| Rt    | imm12			|
+LDR	c,Rt,[Rn+imm8]	|1 1 1 1 1|0 0|0|0|1 0|1| Rn	| Rt	|1|P|U|W| imm8		|
+LDR	c,W,Rt,[PC+i12]	|1 1 1 1 1|0 0|0|U|1 0|1|1 1 1 1| Rt	| imm12			|
+LDR	c,W,Rt,[Rn+RmL]	|1 1 1 1 1|0 0|0|0|1 0|1| Rn	| Rt	|0|0 0 0 0 0|sh | Rm	|
+# ... ARM DDI0308D 4-106
