@@ -54,7 +54,8 @@ Memory map:
 	0000		6508 I/O port data direction register
 
 	0001		6508 I/O port
-					(p13: only b7 used, to send INTEN)
+					p13: only b7 used: INTEN
+					Code uses other bits as well
 
 	0002-003f	6508 RAM
 
