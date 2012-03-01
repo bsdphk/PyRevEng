@@ -1,0 +1,111 @@
+# MCS48 CPU instructions
+
+ADD	A,Rr			|0 1 1 0|1| Rr  |
+ADD	A,@Rr			|0 1 1 0|0 0 0|r|
+ADD	A,data			|0 0 0 0|0 0 1 1| data		|
+
+ADDC	A,Rr			|0 1 1 1|1| Rr  |
+ADDC	A,@Rr			|0 1 1 1|0 0 0|r|
+ADDC	A,data			|0 0 0 1|0 0 1 1| data		|
+
+ANL	A,Rr			|0 1 0 1|1| Rr  |
+ANL	A,@Rr			|0 1 0 1|0 0 0|r|
+ANL	A,data			|0 1 0 1|0 0 1 1| data		|
+
+ANL	BUS,data		|1 0 0 1|1 0 0 0| data		|
+ANL	Pp,data			|1 0 0 1|1 0|Pp | data		|
+
+ANLD	Pp,A			|1 0 0 1|1 1|Pp | data		|
+
+CALL	addr			| ahi |1|0 1 0 0| alow		|
+
+CLR	A			|0 0 1 0|0 1 1 1|
+CLR	C			|1 0 0 1|0 1 1 1|
+CLR	F0			|1 0 0 0|0 1 0 1|
+CLR	F1			|1 0 1 0|0 1 0 1|
+CPL	A			|0 0 1 1|0 1 1 1|
+CPL	C			|1 0 1 0|0 1 1 1|
+CPL	F0			|1 0 0 1|0 1 0 1|
+CPL	F1			|1 0 1 1|0 1 0 1|
+
+DA	A			|0 1 0 1|0 1 1 1|
+
+DEC	A			|0 0 0 0|0 1 1 1|
+DEC	Rr			|1 1 0 0|1| Rr	|
+DIS	I			|0 0 0 1|0 1 0 1|
+DIS	TCNTI			|0 0 1 1|0 1 0 1|
+
+DJNZ	Rr,addr			|1 1 1 0|1| Rr	| addr		|
+
+EN	I			|0 0 0 0|0 1 0 1|
+
+EN	TCNTI			|0 0 1 0|0 1 0 1|
+ENT0	CLK			|0 1 1 1|0 1 0 1|
+IN	A,Pp			|0 0 0 0|1 0|Pp |
+INC	A			|0 0 0 1|0 1 1 1|
+INC	Rr			|0 0 0 1|1| Rr  |
+INC	@Rr			|0 0 0 1|0 0 0|r|
+
+IN	A,BUS			|0 0 0 0|1 0 0 0|
+JB	b,addr			|b    |1|0 0 1 0| addr		|
+JC	addr			|1 1 1 1|0 1 1 0| addr		|
+JF0	addr			|0 1 1 1|0 1 1 0|
+JMP	addr			| ahi |0|0 1 0 0| alow		|
+JMP	@A			|1 0 1 1|0 0 1 1|
+JNC	addr			|1 1 1 0|0 1 1 0| addr		|
+JNI	addr			|1 0 0 0|0 1 1 0| addr		|
+JNT0	addr			|0 0 1 0|0 1 1 0| addr		|
+JNT1	addr			|0 1 0 0|0 1 1 0| addr		|
+
+JNZ	addr			|1 0 0 1|0 1 1 0| addr		|
+JTF	addr			|0 0 0 1|0 1 1 0| addr		|
+JT0	addr			|0 0 1 1|0 1 1 0| addr		|
+JT1	addr			|0 1 0 1|0 1 1 0| addr		|
+JZ	addr			|1 1 0 0|0 1 1 0| addr		|
+
+MOV	A,data			|0 0 1 0|0 0 1 1| data		|
+MOV	A,PSW			|1 1 0 0|0 1 1 1|
+MOV	A,Rr			|1 1 1 1|1| Rr  |
+MOV	A,@Rr			|1 1 1 1|0 0 0|r|
+MOV	A,T			|0 1 0 0|0 0 1 0|
+MOV	PSW,A			|1 1 0 1|0 1 1 1|
+MOV	Rr,A			|1 0 1 0|1| Rr	|
+MOV	Rr,data			|1 0 1 1|1| Rr	| data		|
+MOV	@Rr,A			|1 0 1 0|0 0 0|r|
+MOV	@Rr,data		|1 0 1 1|0 0 0|r| data		|
+MOV	T,A			|0 1 1 0|0 0 1 0|
+MOVD	A,Pp			|0 0 0 0|1 1| Pp|
+MOVD	Pp,A			|0 0 1 1|1 1| Pp|
+MOVP	A,@A			|1 0 1 0|0 0 1 1|
+MOVP3	A,@A			|1 1 1 0|0 0 1 1|
+MOVX	A,@Rr			|1 0 0 0|0 0 0|r|
+MOVX	@Rr,A			|1 0 0 1|0 0 0|r|
+NOP	-			|0 0 0 0|0 0 0 0|
+ORL	A,Rr			|0 1 0 0|1| Rr	|
+ORL	A,@Rr			|0 1 0 0|0 0 0|r|
+ORL	A,data			|0 1 0 0|0 0 1 1| data		|
+ORL	BUS,data		|1 0 0 0|1 0 0 0| data		|
+ORL	Pp,data			|1 0 0 0|1 0| Pp| data		|
+
+ORLD	Pp,A			|1 0 0 0|1 1| Pp|
+OUTL	BUS,A			|0 0 0 0|0 0 1 0|
+OUTL	Pp,A			|0 0 1 1|1 0| Pp|
+
+RET	-			|1 0 0 0|0 0 1 1|
+RETR	-			|1 0 0 1|0 0 1 1|
+
+RL	A			|1 1 1 0|0 1 1 1|
+RLC	A			|1 1 1 1|0 1 1 1|
+RR	A			|0 1 1 1|0 1 1 1|
+RRC	A			|0 1 1 0|0 1 1 1|
+
+STOP	TCNT			|0 1 1 0|0 1 0 1|
+STRT	TCNT			|0 1 0 0|0 1 0 1|
+STRT	T			|0 1 0 1|0 1 0 1|
+SWAP	A			|0 1 0 0|0 1 1 1|
+XCH	A,Rr			|0 0 1 0|1| Rr	|
+XCH	A,@Rr			|0 0 1 0|0 0 0|r|
+XCHD	A,@Rr			|0 0 1 1|0 0 0|r|
+XRL	A,Rr			|1 1 0 1|1| Rr	|
+XRL	A,@Rr			|1 1 0 1|0 0 0|r|
+XRL	A,data			|1 1 0 1|0 0 1 1| data		|
