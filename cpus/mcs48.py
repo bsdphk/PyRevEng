@@ -38,12 +38,12 @@ class mcs48(disass.assy):
 				hi = c.get_field(p, adr, p.m.rd, 1, "ahi")
 				lo = c.get_field(p, adr, p.m.rd, 1, "alow")
 				da = (hi << 8) | lo
-				ins.oper.append("0x%03x" % da)
+				ins.oper.append((da, "%s", "0x%03x" % da))
 			elif i == "addr":
 				j = c.get_field(p, adr, p.m.rd, 1, i)
 				da = adr & ~0xff
 				da |= j
-				ins.oper.append("0x%03x" % da)
+				ins.oper.append((da, "%s", "0x%03x" % da))
 			elif i == "@A":
 				ins.oper.append(i)
 				da = None
@@ -74,6 +74,8 @@ class mcs48(disass.assy):
 				ins.oper.append(i)
 		if ins.mne == "JMP":
 			ins.flow("cond", "T", da)
+		elif ins.mne == "JMPP":
+			ins.flow("cond", "?", None)
 		elif ins.mne == "CALL":
 			ins.flow("call", "T", da)
 		elif ins.mne[0] == "J":
