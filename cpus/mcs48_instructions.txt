@@ -17,7 +17,7 @@ ANL	Pp,data			|1 0 0 1|1 0|Pp | data		|
 
 ANLD	Pp,A			|1 0 0 1|1 1|Pp | data		|
 
-CALL	addr			| ahi |1|0 1 0 0| alow		|
+CALL	laddr			| ahi |1|0 1 0 0| alow		|
 
 CLR	A			|0 0 1 0|0 1 1 1|
 CLR	C			|1 0 0 1|0 1 1 1|
@@ -38,8 +38,8 @@ DIS	TCNTI			|0 0 1 1|0 1 0 1|
 DJNZ	Rr,addr			|1 1 1 0|1| Rr	| addr		|
 
 EN	I			|0 0 0 0|0 1 0 1|
-
 EN	TCNTI			|0 0 1 0|0 1 0 1|
+
 ENT0	CLK			|0 1 1 1|0 1 0 1|
 IN	A,Pp			|0 0 0 0|1 0|Pp |
 INC	A			|0 0 0 1|0 1 1 1|
@@ -49,9 +49,10 @@ INC	@Rr			|0 0 0 1|0 0 0|r|
 IN	A,BUS			|0 0 0 0|1 0 0 0|
 JB	b,addr			|b    |1|0 0 1 0| addr		|
 JC	addr			|1 1 1 1|0 1 1 0| addr		|
-JF0	addr			|0 1 1 1|0 1 1 0|
-JMP	addr			| ahi |0|0 1 0 0| alow		|
-JMP	@A			|1 0 1 1|0 0 1 1|
+JF0	addr			|1 0 1 1|0 1 1 0| addr		|
+JF1	addr			|0 1 1 1|0 1 1 0| addr		|
+JMP	laddr			| ahi |0|0 1 0 0| alow		|
+JMPP	@A			|1 0 1 1|0 0 1 1|
 JNC	addr			|1 1 1 0|0 1 1 0| addr		|
 JNI	addr			|1 0 0 0|0 1 1 0| addr		|
 JNT0	addr			|0 0 1 0|0 1 1 0| addr		|
@@ -109,3 +110,8 @@ XCHD	A,@Rr			|0 0 1 1|0 0 0|r|
 XRL	A,Rr			|1 1 0 1|1| Rr	|
 XRL	A,@Rr			|1 1 0 1|0 0 0|r|
 XRL	A,data			|1 1 0 1|0 0 1 1| data		|
+
+SEL	MB0			|1 1 1 0|0 1 0 1|
+SEL	MB1			|1 1 1 1|0 1 0 1|
+SEL	RB0			|1 1 0 0|0 1 0 1|
+SEL	RB1			|1 1 0 1|0 1 0 1|
