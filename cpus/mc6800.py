@@ -44,7 +44,7 @@ inscode = (
 	"2xSUBA","2xCMPA","2xSBCA","0-???", "2xANDA","2xBITA","2xLDAA","2xSTAA",
 	"2xEORA","2xADCA","2xORAA","2xADDA","2xCPX", "2XJSR", "2xLDS", "2xSTS",
 
-	"3eSUBA","3eCMPA","2eSBCA","0-???", "3eANDA","3eBITA","3eLDAA","3eSTAA",
+	"3eSUBA","3eCMPA","3eSBCA","0-???", "3eANDA","3eBITA","3eLDAA","3eSTAA",
 	"3eEORA","3eADCA","3eORAA","3eADDA","3eCPX", "3sJSR", "3eLDS", "3eSTS",
 
 
