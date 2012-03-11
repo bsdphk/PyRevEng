@@ -78,6 +78,37 @@ for a in range(0x66a, 0x676, 3):
 p.setlabel(0x6e8, "rr0++")
 
 #######################################################################
+p.setlabel(0x6bc, "Count_Down()")
+x = p.t.find(0x6bc, "ins")
+x.blockcmt += """-
+This is the RESET "countdown" routine
+
+Displays:
+  .9.9.9.9 9.9
+  .8.8.8.8 8.8
+  ...
+  .0.0.0.0 0.0
+
+It calls 0x5ca a lot, presumably to let the analog stuff settle ?
+
+"""
+#######################################################################
+p.setlabel(0x7df, "Update_Display()")
+x = p.t.find(0x7df, "ins")
+x.blockcmt += """-
+The display is driven by two chains of 3 three P4003 10-bit shift
+registers, which again drives 7447 7-segment drivers.
+
+On entry r2 contains 0x20 or 0x40, depending on which clock-pulse
+line should be driven.
+
+A total of 30 pulses are sent:
+
+	6 x 1  Decimal points, left to right
+	6 x 4  BCD to 7447, LSD to MSD order.
+
+"""
+#######################################################################
 # Build code graph
 
 if True:
