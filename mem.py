@@ -355,6 +355,24 @@ class byte_mem(base_mem):
 			adr += 1
 		return s
 
+	def fromhexfile(self, fn, offset = 0, step = 1):
+		f = open(fn, "r")
+		na = 0
+		for i in f.readlines():
+			if i[0] == "#":
+				continue
+			j = i.split()
+			a = int(j[0], 16)
+			if a != na:
+				assert "address wrong" == "in hexfile"
+			na = a + 1
+			d = int(j[1], 16)
+			self.setflags(offset, None,
+			    self.can_read|self.can_write,
+			    self.invalid|self.undef)
+			self.wr(offset, d)
+			offset += step
+
 	def fromfile(self, fn, offset = 0, step = 1):
 		f = open(fn, "rb")
 		d = f.read()
