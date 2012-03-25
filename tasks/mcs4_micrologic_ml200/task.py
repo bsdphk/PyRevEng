@@ -120,6 +120,24 @@ if True:
 	p.g.xxx(p)
 
 #######################################################################
+
+import pseudo
+
+regs = dict()
+regs["rc"] = 1
+regs["ra"] = 4
+for i in range(0,16):
+	regs["r%d" %i] = 4
+regs["rsrc"] = 8
+regs["rdcl"] = 11
+
+def fbb(tree, priv, lvl):
+	if tree.tag == "bb":
+		pseudo.pseudo_test(tree, regs)
+
+p.t.recurse(fbb)
+
+#######################################################################
 # Render output
 
 print("Render")

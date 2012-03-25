@@ -283,6 +283,7 @@ class instruction(object):
 		self.status = "new"
 		self.cmt = ""
 		self.diag = None
+		self.pseudo = None
 
 	def __repr__(self):
 		s = "<ins " + self.disass.name + " " + str(self.status)

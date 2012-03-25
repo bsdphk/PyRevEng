@@ -1,3 +1,26 @@
+Sun Mar 25 06:29:34 UTC 2012
+
+	Pseudo-language, inspired by Halvar Flake BH 2004:
+
+		(oper, src, dst)
+			oper:
+				string
+				globale namespace
+				per CPU pfx'ed by "cpu::"
+			src:
+				tuple
+			dst:
+				str -> register
+				None -> no effects
+				True -> side-effects
+
+		A register cannot be a src if it is a dst.
+				
+
+Sun Nov 27 18:08:19 UTC 2011
+	Non-contig functions normal in M$ compiler output
+	bh-asia-02-halvarflake.pdf
+
 Sun Nov 27 18:08:19 UTC 2011
 	XXX: m68000 DBF instruction has no flow ?
 ---------------

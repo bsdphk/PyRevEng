@@ -291,5 +291,5 @@ class instree(object):
 		return l
 
 if __name__ == "__main__":
-	it = instree(16, "cpus/m68000_instructions.txt")
+	it = instree(8, "cpus/mcs48_instructions.txt")
 	it.print()
