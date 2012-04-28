@@ -460,8 +460,8 @@ for adr in range(0x01000420, 0x01000438, 6):
 
 ###############
 
-const.fill(p, lo = 0x7816, hi =0x8000, fmt="0x%02x")
-const.fill(p, lo = 0x6706, hi =0x6800, fmt="0x%02x")
+const.fill(p, lo = 0x7816, hi =0x7fff, fmt="0x%02x")
+const.fill(p, lo = 0x6706, hi =0x67ff, fmt="0x%02x")
 const.fill(p, lo = 0x01000706, fmt="0x%02x")
 
 
