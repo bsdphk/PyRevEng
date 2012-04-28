@@ -170,3 +170,55 @@ class fill(tree.tree):
 		x.render = ".Fill\t" + \
 		    fmt % rd(lo) + "[" + fmt % (hi-lo) + "]"
 		x.fold = True
+
+def seven_seg_lcmt(y, val, map = ( 1, 2, 4, 8, 16, 32, 64, 128, 0)):
+	if val & map[0]:
+		y.lcmt("  --")
+	else:
+		y.lcmt("    ")
+
+	if val & map[5]:
+		s = " |"
+	else:
+		s = "  "
+	if val & map[1]:
+		y.lcmt(s + "  |")
+	else:
+		y.lcmt(s + "   ")
+
+	if val & map[6]:
+		y.lcmt("  --")
+	else:
+		y.lcmt("    ")
+
+	if val & map[4]:
+		s = " |"
+	else:
+		s = "  "
+	if val & map[2]:
+		y.lcmt(s + "  |")
+	else:
+		y.lcmt(s + "   ")
+
+	if val & map[8]:
+		s = "."
+	else:
+		s = " "
+	if val & map[3]:
+		s += " -- "
+	else:
+		s += "    "
+	if val & map[7]:
+		y.lcmt(s + ".")
+	else:
+		y.lcmt(s)
+	y.lcmt(" ")
+
+class seven_segment(tree.tree):
+	def __init__(self, p, adr,
+	    map = ( 1, 2, 4, 8, 16, 32, 64, 128, 0)):
+		tree.tree.__init__(self, adr, adr + 1, "7seg")
+		y = p.t.add(self.start, self.end, self.tag, True, self)
+		val = p.m.rd(adr)
+		y.render = ".BYTE 0x%02x" % val
+		seven_seg_lcmt(y, val, map)
