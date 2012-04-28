@@ -155,7 +155,7 @@ class mc6800(disass.assy):
 			raise disass.DisassError("bug", c)
 
 	def __vector(self, adr, nm):
-		x = const.w16(self.p, adr)
+		x = const.ptr(self.p, adr, 2)
 		x.cmt.append("Vector: " + nm)
 		w = self.p.m.w16(adr)
 		x.a['flow'] = (("cond", "T", w),)
