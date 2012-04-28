@@ -63,7 +63,11 @@ cpu.vectors(0x8000)
 # HP53xx EPROM structure
 hp53xx.eprom(p, cpu.disass, 0x6000, 0x8000, 0x400)
 #----------------------------------------------------------------------
-hp53xx.chargen(p, chars=27)
+
+for a in range(0x7fbf, 0x7fda):
+	const.seven_segment(p, a)
+p.setlabel(0x7fbf, "CHARGEN")
+
 #----------------------------------------------------------------------
 hp53xx.wr_test_val(p)
 #----------------------------------------------------------------------

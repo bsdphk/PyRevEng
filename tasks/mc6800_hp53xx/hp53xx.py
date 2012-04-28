@@ -71,69 +71,6 @@ def eprom(p, disass, start, end, sz):
 	p.setlabel(l[0], "EPROM_TBL")
 
 #----------------------------------------------------------------------
-# Character Generator for 7-segments
-#
-
-def sevenseg(p, y, val):
-	if val & 0x01:
-		y.lcmt("  --")
-	else:
-		y.lcmt("    ")
-
-	if val & 0x20:
-		s = " |"
-	else:
-		s = "  "
-	if val & 0x02:
-		y.lcmt(s + "  |")
-	else:
-		y.lcmt(s + "   ")
-
-	if val & 0x40:
-		y.lcmt("  --")
-	else:
-		y.lcmt("    ")
-
-	if val & 0x10:
-		s = " |"
-	else:
-		s = "  "
-	if val & 0x04:
-		y.lcmt(s + "  |")
-	else:
-		y.lcmt(s + "   ")
-
-	if val & 0x08:
-		s = "  -- "
-	else:
-		s = "     "
-	if val & 0x80:
-		y.lcmt(s + ".")
-	else:
-		y.lcmt(s)
-	y.lcmt(" ")
-
-
-def chargen(p, start = 0x6000, end = 0x8000, chars=16):
-
-	px = (0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07,
-	     0x7f, 0x6f, 0x80, 0xff, 0x40, 0x79, 0x50, 0x00)
-
-	l = p.m.find(start, end, px)
-	assert len(l) == 1
-
-	ax = l[0]
-	x = p.t.add(ax, ax + chars, "tbl")
-	print("CHARGEN", x)
-	x.blockcmt += "\n-\nBCD to 7 segment table\n\n"
-	p.setlabel(ax, "CHARGEN")
-	for i in range(0,chars):
-		y = const.byte(p, x.start + i)
-		w = p.m.rd(x.start + i)
-		sevenseg(p, y, w)
-
-
-#----------------------------------------------------------------------
 # Write test values
 #
 

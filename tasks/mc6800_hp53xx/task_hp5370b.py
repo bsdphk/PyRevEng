@@ -431,7 +431,10 @@ dot_ptr(p, 0x7915)
 
 #######################################################################
 # BCD->7seg table
-hp53xx.chargen(p, 0x6000,0x8000)
+
+for a in range(0x7e30, 0x7e40):
+	const.seven_segment(p, a)
+p.setlabel(0x7e30, "CHARGEN")
 
 #######################################################################
 # List of two-letter HPIB commands
@@ -724,11 +727,9 @@ if True:
 
 #######################################################################
 
-if True:
-	# Does not work right now
-	for ax in (0x7e23, 0x7e27):
-		ins = cpu.ins[ax]
-		hp53xx.sevenseg(p, ins, p.m.rd(ins.lo + 1))
+for ax in (0x7e23, 0x7e27):
+	ins = cpu.ins[ax]
+	const.seven_seg_lcmt(ins, p.m.rd(ins.lo + 1))
 
 #######################################################################
 # Move instructions to tree
