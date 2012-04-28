@@ -59,6 +59,32 @@ class w32(tree.tree):
 			d = ", "
 		return (s,)
 
+class ptr(tree.tree):
+	def __init__(self, p, adr, width = 2, len = 1):
+		tree.tree.__init__(self, adr, adr + len * width, "const")
+		p.t.add(self.start, self.end, self.tag, True, self)
+
+		self.render = self.rfunc
+		self.width = width
+
+	def rfunc(self, p, t):
+		s = ".PTR\t"
+		d = ""
+		for i in range(t.start, t.end, self.width):
+			if self.width == 2:
+				x = p.m.w16(i)
+			elif self.width == 4:
+				x = p.m.w32(i)
+			else:
+				assert self.width == "Wrong width"
+			s += d
+			if x in p.label:
+				s += p.label[x]
+			else:
+				s += p.m.afmt(x)
+			d = ", "
+		return (s,)
+
 class ltxt(tree.tree):
 	def __init__(self, p, adr, align=2):
 		l = p.m.rd(adr)
