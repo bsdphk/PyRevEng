@@ -47,7 +47,7 @@ import hp5370
 
 m = mem.byte_mem(0, 0x10000, 0, True, "big-endian")
 # NB: the address bus is inverted, so we load from top down
-m.fromfile("HP5370B.ROM", 0x7fff, -1)
+m.fromfile("HP5370A.ROM", 0x7fff, -1)
 m.bcols = 3
 
 #----------------------------------------------------------------------
@@ -67,9 +67,8 @@ hp53xx.eprom(p, cpu.disass, 0x6000, 0x8000, 0x400)
 const.fill(p, hi=0x67ff)
 const.fill(p, hi=0x6bff)
 const.fill(p, hi=0x73ff)
-const.fill(p, hi=0x77ff)
 const.fill(p, hi=0x78ff)
-const.fill(p, hi=0x7bff)
+#const.fill(p, hi=0x7bff)
 
 
 #----------------------------------------------------------------------
@@ -85,7 +84,7 @@ const.fill(p, hi=0x7bff)
 #
 
 p.t.blockcmt += """-
-HP5370B ROM disassembly
+HP5370A ROM disassembly
 =======================
 
 """
@@ -202,7 +201,6 @@ p.t.blockcmt += """-
 
 """
 
-
 class dot_24bit(tree.tree):
 	def __init__(self, p, adr, len = 1, fmt = "0x%06x"):
 		tree.tree.__init__(self, adr, adr + len * 3, "dot-24bit")
@@ -219,7 +217,6 @@ class dot_24bit(tree.tree):
 			s += self.fmt % x
 			d += ", "
 		return (s,)
-
 
 #######################################################################
 # 0x6f00...0x7000 = x^2/256 table
@@ -244,11 +241,11 @@ x = hp5370.float(p, 0x69e4)
 x.lcmt("= 2^31 * 5*10^-9 (%.9e)\n" % (math.ldexp(1,31)*5e-9))
 
 #######################################################################
-const.byte(p, 0x7a75, 15)
-const.byte(p, 0x7a84, 8)
-const.byte(p, 0x7a8c, 8)
-const.byte(p, 0x7a95, 7)
-const.byte(p, 0x77f7, 7)
+const.byte(p, 0x7a73, 15)
+const.byte(p, 0x7a82, 8)
+const.byte(p, 0x7a8a, 8)
+const.byte(p, 0x7a93, 7)
+const.byte(p, 0x77f9, 7)
 
 #######################################################################
 x = p.t.add(0x6b09,0x6b23, "tbl")
@@ -278,33 +275,29 @@ dot_24bit(p, 0x6b38, 1, "%d")
 x = p.t.add(0x6f00,0x7000, "tbl")
 x.blockcmt += "Table of I^2>>8\n"
 
-#######################################################################
-
 hp53xx.wr_test_val(p)
 
 #######################################################################
 
-# strings
 const.txtlen(p,0x78f3,4)
 const.txtlen(p,0x78f7,6)
 const.txtlen(p,0x78fd,2)
 
-p.setlabel(0x77d7, "OUT_STRINGS")
-for i in range(0x77d7,0x77f7,4):
+p.setlabel(0x77d9, "OUT_STRINGS")
+for i in range(0x77d9, 0x77f9, 4):
 	const.txtlen(p,i,4)
 
 const.ptr(p, 0x7915, 2)
 
 #######################################################################
-# BCD->7seg table
 
-hp5370.chargen(p, 0x7e30)
-hp5370.hpib_cmd_table(p, 0x7c64)
+hp5370.chargen(p, 0x7e29)
+hp5370.hpib_cmd_table(p, 0x7c5d)
 hp5370.keyboard_dispatch(p, cpu)
-hp5370.hpib_arg_range(p, 0x7d6c)
-hp5370.hpib_tbl_idx(p, 0x7d88)
-hp5370.dispatch_table_arg(p, 0x7d66, cpu)
-hp5370.dispatch_table_noarg(p, 0x7d30, cpu)
+hp5370.hpib_arg_range(p, 0x7d65)
+hp5370.hpib_tbl_idx(p, 0x7d81)
+hp5370.dispatch_table_arg(p, 0x7d5f, cpu)
+hp5370.dispatch_table_noarg(p, 0x7d29, cpu)
 hp5370.dsp_dispatch(p, cpu)
 
 if True:
@@ -313,7 +306,7 @@ if True:
 	y = p.m.b16(0x7909)
 	cpu.disass(y)
 	p.setlabel(y, "HPIB_CMD_PARSE")
-	ins = cpu.disass(0x7c62)
+	ins = cpu.disass(0x7c5b)
 	ins.flow("cond", "XXX", y)
 
 #######################################################################
@@ -323,7 +316,7 @@ while p.run():
 #######################################################################
 # Manual markup
 
-if True:
+if False:
 	x = p.t.add(0x7d96, 0x7da3, "block")
 	x.blockcmt += "RESET entry point\n"
 	x = p.t.add(0x7da3, 0x7db1, "block")
@@ -377,7 +370,9 @@ if True:
 	p.setlabel(0x624d, "ERR2_TI_OVERRANGE")
 	p.setlabel(0x62cf, "LED=LEDBUF()")
 	p.setlabel(0x6344, "X+=A()")
+if False:
 	p.setlabel(0x63df, "ERR3_UNDEF_ROUTINE")
+if True:
 	p.setlabel(0x66ea, "ERR5_UNDEF_KEY")
 	p.setlabel(0x6918, "REF_ADJ()")
 	p.setlabel(0x69f5, "REF_VALUE=AVG()")
@@ -407,28 +402,33 @@ if True:
 	p.setlabel(0x73c3, "SET_OFLOW()")
 	p.setlabel(0x73ca, "LED_ERR(A)")
 	p.setlabel(0x7403, "RESULT_TO_GPIB()")
-	p.setlabel(0x740b, "FLOAT_FMT()")
+	p.setlabel(0x740c, "FLOAT_FMT()")
+if False:
 	p.setlabel(0x76e6, "ERR1_UNDEF_CMDa")
 	p.setlabel(0x7716, "LED_TO_GPIB()")
-	p.setlabel(0x798c, "UPDATE_LAMPS()")
+if True:
+	p.setlabel(0x7903, "UPDATE_LAMPS()")
 	p.setlabel(0x790c, "LAMP_TEST()")
 	p.setlabel(0x790f, "HPIB_RECV(*X,A)")
 	p.setlabel(0x7912, "HPIB_SEND(*X,A)")
+if False:
 	p.setlabel(0x7936, "KEY_PRELL")
 	p.setlabel(0x7987, "GET_FN()")
-	p.setlabel(0x7a69, "*X=NIBBLES(A)")
-	p.setlabel(0x7bc6, "RESET_STACK_MAIN")
-	p.setlabel(0x7cb2, "SP?")
-	p.setlabel(0x7cb8, "COMMA?")
-	p.setlabel(0x7cbc, "CR?")
-	p.setlabel(0x7cc0, "NL?")
-	p.setlabel(0x7ccb, "TOLOWER")
-	p.setlabel(0x7ccd, "BELOW_A?")
-	p.setlabel(0x7cd1, "ABOVE_Z?")
-	p.setlabel(0x7d19, "ERR1_UNDEF_CMDb")
-	p.setlabel(0x7d21, "CMD_FOUND")
-	p.setlabel(0x7d3f, "BELOW_0")
-	p.setlabel(0x7d43, "ABOVE_9")
+if True:
+	p.setlabel(0x7a67, "*X=NIBBLES(A)")
+	p.setlabel(0x7bc5, "RESET_STACK_MAIN")
+	p.setlabel(0x7cab, "SP?")
+	p.setlabel(0x7cb1, "COMMA?")
+	p.setlabel(0x7cb5, "CR?")
+	p.setlabel(0x7cb9, "NL?")
+	p.setlabel(0x7cc4, "TOLOWER")
+	p.setlabel(0x7cc6, "BELOW_A?")
+	p.setlabel(0x7cca, "ABOVE_Z?")
+	p.setlabel(0x7d12, "ERR1_UNDEF_CMDb")
+	p.setlabel(0x7d1a, "CMD_FOUND")
+	p.setlabel(0x7d38, "BELOW_0")
+	p.setlabel(0x7d3c, "ABOVE_9")
+if False:
 	p.setlabel(0x7de8, "ERR6.N")
 	p.setlabel(0x7df8, "ERRN.M")
 	p.setlabel(0x7e40, "ROMTEST")
@@ -439,6 +439,7 @@ if True:
 
 #######################################################################
 
+if True:
 	#######################################################################
 	# NMI/GPIB debugger
 	nmi = p.m.w16(0x7ffc)
@@ -462,7 +463,7 @@ if True:
 
 #######################################################################
 
-for ax in (0x7e23, 0x7e27):
+for ax in (0x7e1c, 0x7e20):
 	ins = cpu.ins[ax]
 	const.seven_seg_lcmt(ins, p.m.rd(ins.lo + 1))
 
@@ -492,4 +493,4 @@ if True:
 
 r = render.render(p)
 r.add_flows()
-r.render("/tmp/_.hp5370b.txt")
+r.render("/tmp/_.hp5370a.txt")

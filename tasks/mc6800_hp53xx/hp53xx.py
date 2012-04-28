@@ -14,9 +14,10 @@ import const
 #
 def one_eprom(p, disass, start, eprom_size):
 
-	x = p.t.add(start, start + eprom_size, "eprom")
-	x.blockcmt += "\n-\nEPROM at 0x%x-0x%x\n\n" % \
-	    (start, start + eprom_size - 1)
+	if False:
+		x = p.t.add(start, start + eprom_size, "eprom")
+		x.blockcmt += "\n-\nEPROM at 0x%x-0x%x\n\n" % \
+		    (start, start + eprom_size - 1)
 
 	# Calculate checksum
 	j = 0^p.m.w16(start)
@@ -34,16 +35,6 @@ def one_eprom(p, disass, start, eprom_size):
 
 	x = const.byte(p, start + 2)
 	x.cmt.append("EPROM identifier")
-
-	# Handle any 0xff fill at the end of this EPROM
-	n = 0
-	for a in range(start + eprom_size - 1, start, -1):
-		if p.m.rd(a) != 0xff:
-			break;
-		n += 1
-	if n > 1:
-		x = p.t.add(start + eprom_size - n, start + eprom_size, "fill")
-		x.render = ".FILL\t%d, 0xff" % n
 
 	# Jump table at front of EPROM
 	for ax in range(start + 3, start + eprom_size, 3):
@@ -65,7 +56,7 @@ def eprom(p, disass, start, end, sz):
 	print("EPROM", l)
 	assert len(l) == 1
 	x = p.t.add(l[0], l[0] + len(lx), "tbl")
-	x.blockcmt += "\n-\nTable of EPROM locations\n\n"
+	x.blockcmt += "-\nTable of EPROM locations"
 	for ax in range(x.start, x.end, 2):
 		const.w16(p, ax)
 	p.setlabel(l[0], "EPROM_TBL")
@@ -81,7 +72,7 @@ def wr_test_val(p, start = 0x6000, end = 0x8000):
 	ax = l[0]
 	x = p.t.add(ax, ax + len(px), "tbl")
 	print("WR_TEST_VAL", x)
-	x.blockcmt += "\n-\nWrite Test Values\n\n"
+	x.blockcmt += "-\nWrite Test Values"
 	p.setlabel(ax, "WR_TEST_VAL")
 	for i in range(x.start, x.end):
 		const.byte(p, i)
