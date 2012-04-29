@@ -84,9 +84,9 @@ def nmi_debugger(p, cpu):
 
 	xnmi = p.t.add(nmi, 0x7ff8, "src")
 	xnmi.blockcmt += """-
-	NMI based GPIB debugger interface.
-	See HPJ 1978-08 p23
-	"""
+NMI based GPIB debugger interface.
+See HPJ 1978-08 p23
+"""
 
 	i = nmi
 	l = list()

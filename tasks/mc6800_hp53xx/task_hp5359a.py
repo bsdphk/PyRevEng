@@ -70,6 +70,17 @@ p.setlabel(0x7fbf, "CHARGEN")
 
 #----------------------------------------------------------------------
 hp53xx.wr_test_val(p)
+
+const.fill(p, hi=0x63ff)
+const.fill(p, hi=0x67ff)
+const.fill(p, hi=0x68ff)
+const.fill(p, hi=0x6bff)
+const.fill(p, hi=0x6fff)
+const.fill(p, hi=0x73ff)
+const.fill(p, hi=0x77ff)
+const.fill(p, hi=0x7bff)
+const.fill(p, hi=0x7eff)
+const.fill(p, hi=0x7ff7)
 #----------------------------------------------------------------------
 
 
@@ -77,6 +88,9 @@ hp53xx.wr_test_val(p)
 cpu.disass(0x6175)
 # See 0x61fa
 cpu.disass(0x616b)
+cpu.disass(0x60a1)
+
+const.w16(p, 0x68b7)
 #----------------------------------------------------------------------
 while p.run():
 	pass
@@ -120,24 +134,9 @@ hp5359_cmds = {
 	"TE":	"Teach",
 	"LN":	"Learn",
 }
-#----------------------------------------------------------------------
-class dot_code(tree.tree):
-	def __init__(self, p, adr):
-		tree.tree.__init__(self, adr, adr + 2, "dot-code")
-		p.t.add(adr, adr + 2, "dot-code", True, self)
-		self.render = self.rfunc
-		t = p.m.b16(adr)
-		cpu.disass(t)
-		self.a['EA'] = (t,)
 
-	def rfunc(self, p, t):
-		y = p.m.b16(t.start)
-		if y in p.label:
-			s = ".CODE\t%s (%04x)" % (p.label[y], y)
-		else:
-			s = ".CODE\t%04x" % y
-		return (s,)
 #----------------------------------------------------------------------
+
 def hp5359_nbr(p, data):
 	assert len(data) == 8
 	m = 0.0
@@ -257,7 +256,7 @@ def jmptbl(p, jmp, low, high, name, flow="call"):
 	print("Call table for", name)
 	ins = cpu.ins[jmp]
 	for i in range(low, high, 2):
-		dot_code(p, i)
+		const.ptr(p, i)
 		y = p.m.b16(i)
 		ins.flow(flow, name, y)
 		cpu.disass(y)
