@@ -266,3 +266,20 @@ def dsp_dispatch(p, cpu, adr = 0x683b):
 		cpu.disass(w)
 		j += 1
 
+###########################################################
+#x = p.t.add(0x6f00,0x7000, "tbl")
+#x.blockcmt += "Table of I^2>>8\n"
+
+def sqare_table_render(p, t):
+	return (
+		"FOR I (0..255):",
+		"    .BYTE ((I * I) >> 8)",
+		""
+	)
+
+def square_table(p, adr = 0x6f00):
+	x = p.t.add(0x6f00,0x7000, "tbl")
+	x.blockcmt += "-\nTable of I^2>>8\n"
+	x.render = sqare_table_render
+	x.fold = True
+	

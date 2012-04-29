@@ -32,6 +32,7 @@ def one_eprom(p, disass, start, eprom_size):
 
 	x = const.w16(p, start)
 	x.cmt.append("EPROM checksum (%s)" % j)
+	x.blockcmt += "-\nEPROM %04x\n" % start
 
 	x = const.byte(p, start + 2)
 	x.cmt.append("EPROM identifier")

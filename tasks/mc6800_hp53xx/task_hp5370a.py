@@ -267,10 +267,6 @@ dot_24bit(p, 0x6b35, 1, "%d")
 dot_24bit(p, 0x6b38, 1, "%d")
 
 #######################################################################
-x = p.t.add(0x6f00,0x7000, "tbl")
-x.blockcmt += "Table of I^2>>8\n"
-
-hp53xx.wr_test_val(p)
 
 #######################################################################
 
@@ -294,6 +290,8 @@ hp5370.hpib_tbl_idx(p, 0x7d81)
 hp5370.dispatch_table_arg(p, 0x7d5f, cpu)
 hp5370.dispatch_table_noarg(p, 0x7d29, cpu)
 hp5370.dsp_dispatch(p, cpu)
+hp5370.square_table(p)
+hp53xx.wr_test_val(p)
 
 if True:
 	###########################################################

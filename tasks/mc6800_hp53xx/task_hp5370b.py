@@ -156,6 +156,8 @@ p.t.blockcmt += """-
 	0x00c0-0x00c6:	REF_VALUE (FLOAT)
 	0x00f2-0x00f3:	Freq/Period
 	0x00f4-0x00f5:	TI
+		0b0....... ........ Ascii Output (TB0)
+		0b1....... ........ Binary Output (TB1)
 	0x00f6-0x00f7:	Triglev/FN5
 		0b........ ....0000 SS1 1 sample
 		0b........ ....0001 SS2 100 sample
@@ -171,18 +173,16 @@ p.t.blockcmt += """-
 		0b........ .011.... ST4 Max
 		0b........ .100.... ST5 Disp Ref
 		0b........ .101.... ST7 Disp Evt
-		0b........ .111.... ST3 Disp All
+		0b........ .111.... ST9 Disp All
 		0b........ 0....... Ref clear
 		0b........ 1....... Ref set
-
-	0x00f4:
-		0bX.......: TB[01]
 
 	0x0116-0x011c:	MAX_VALUE (FLOAT)
 	0x011d-0x0123:	MIN_VALUE (FLOAT)
 	0x0124-0x012a:
 	0x012b-0x0131:
 	0x0132-0x0138:	#Events ? (FLOAT?)
+	0x0139-0x013f:
 
 	0x0140-0x014f:	Led buffer
 		0bX.......: DP
@@ -270,14 +270,6 @@ dot_24bit(p, 0x6b35, 1, "%d")
 dot_24bit(p, 0x6b38, 1, "%d")
 
 #######################################################################
-x = p.t.add(0x6f00,0x7000, "tbl")
-x.blockcmt += "Table of I^2>>8\n"
-
-#######################################################################
-
-hp53xx.wr_test_val(p)
-
-#######################################################################
 
 # strings
 const.txtlen(p,0x78f3,4)
@@ -301,6 +293,8 @@ hp5370.hpib_tbl_idx(p, 0x7d88)
 hp5370.dispatch_table_arg(p, 0x7d66, cpu)
 hp5370.dispatch_table_noarg(p, 0x7d30, cpu)
 hp5370.dsp_dispatch(p, cpu)
+hp5370.square_table(p)
+hp53xx.wr_test_val(p)
 
 if True:
 	###########################################################
@@ -358,6 +352,7 @@ if True:
 	p.setlabel(0x0116, "MAX_VALUE")
 	p.setlabel(0x011d, "MIN_VALUE")
 
+	p.setlabel(0x6015, "HPIB_SEND_TRIG_LVL(X)")
 	p.setlabel(0x6048, "LED=0.00")
 	p.setlabel(0x6054, "CMD(X+A)")
 	p.setlabel(0x6057, "X=PARAM(CUR)")
@@ -380,20 +375,21 @@ if True:
 	p.setlabel(0x6918, "REF_ADJ()")
 	p.setlabel(0x69f5, "REF_VALUE=AVG()")
 	p.setlabel(0x6a0c, "REF_VALUE=0.0()")
+	p.setlabel(0x700c, "DUP()")
+	p.setlabel(0x700f, "DROP()")
+	p.setlabel(0x7015, "ROLL()")
+	p.setlabel(0x7018, "ADD()")
+	p.setlabel(0x701b, "SUB()")
+	p.setlabel(0x701e, "MULTIPLY()")
+	p.setlabel(0x7021, "DIVIDE()")
 	p.setlabel(0x7048, "PUSH(?*X)")
 	p.setlabel(0x705c, "*X=SX")
 	p.setlabel(0x7069, "memcpy(*0xae,*0xac,7)")
 	p.setlabel(0x707d, "Swap(SX,SY)")
-	p.setlabel(0x708c, "DUP()")
-	p.setlabel(0x70ab, "DROP()")
-	p.setlabel(0x70d2, "ADD()")
 	p.setlabel(0x70ef, "SY.m+=SX.m()")
 	p.setlabel(0x7115, "A=OR(SX.m)")
 	p.setlabel(0x7122, "A=OR(SY.m)")
-	p.setlabel(0x712f, "SUB()")
 	p.setlabel(0x714b, "SY.m-=SX.m()")
-	p.setlabel(0x7173, "MULTIPLY()")
-	p.setlabel(0x71fa, "DIVIDE()")
 	p.setlabel(0x7277, "SY==SX?()")
 	p.setlabel(0x72d3, "NEGATE()")
 	p.setlabel(0x72ee, "SX=0.0()")
@@ -412,9 +408,11 @@ if True:
 	p.setlabel(0x790c, "LAMP_TEST()")
 	p.setlabel(0x790f, "HPIB_RECV(*X,A)")
 	p.setlabel(0x7912, "HPIB_SEND(*X,A)")
+	p.setlabel(0x7918, "FAST_BINARY()")
 	p.setlabel(0x7936, "KEY_PRELL")
 	p.setlabel(0x7987, "GET_FN()")
 	p.setlabel(0x7a69, "*X=NIBBLES(A)")
+	p.setlabel(0x7b38, "EXIT_FAST_BINARY")
 	p.setlabel(0x7bc6, "RESET_STACK_MAIN")
 	p.setlabel(0x7cb2, "SP?")
 	p.setlabel(0x7cb8, "COMMA?")
