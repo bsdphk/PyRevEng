@@ -77,6 +77,61 @@ def wr_test_val(p, start = 0x6000, end = 0x8000):
 	for i in range(x.start, x.end):
 		const.byte(p, i)
 
+def nmi_debugger(p, cpu):
+	#######################################################################
+	# NMI/GPIB debugger
+	nmi = p.m.w16(0x7ffc)
+
+	xnmi = p.t.add(nmi, 0x7ff8, "src")
+	xnmi.blockcmt += """-
+	NMI based GPIB debugger interface.
+	See HPJ 1978-08 p23
+	"""
+
+	i = nmi
+	l = list()
+	while True:
+		j = cpu.disass(i)
+		if j.status == "prospective":
+			print("Error: nmi_debugger called too early")
+			return
+		i = j.hi
+		l.append(j)
+		if j.mne == "BRA":
+			break
+
+	ll = None
+	for i in l:
+		if i.mne == "BSR":
+			p.setlabel(i.lo, "NMI_LOOP()")
+			x = i.flow_out[0][2]
+			p.setlabel(x, "NMI_RX_A()")
+		if i.mne == "CMPA":
+			ll = i.oper[0]
+		if i.mne == "BEQ":
+			x = i.flow_out[1][2]
+			if ll == "#0x01":
+				p.setlabel(x, "NMI_CMD_01_WRITE() [X,L,D...]")
+			elif ll == "#0x02":
+				p.setlabel(x, "NMI_CMD_02_READ() [X,L]")
+				kk = cpu.disass(x)
+				p.setlabel(kk.flow_out[0][2],
+				    "NMI_RX_X()")
+			elif ll == "#0x03":
+				p.setlabel(x, "NMI_CMD_03()")
+			elif ll == "#0x04":
+				p.setlabel(x, "NMI_CMD_04_TX_X()")
+				kk = cpu.disass(x)
+				while kk.mne != "BSR":
+					kk = cpu.disass(kk.hi)
+				p.setlabel(kk.flow_out[0][2],
+				    "NMI_TX_A()")
+			else:
+				print(i, ll)
+		if i.mne == "BRA":
+			x = i.flow_out[0][2]
+			p.setlabel(x, "NMI_CMD_05_END()")
+
 #----------------------------------------------------------------------
 #
 

@@ -70,11 +70,6 @@ const.fill(p, hi=0x73ff)
 const.fill(p, hi=0x78ff)
 #const.fill(p, hi=0x7bff)
 
-
-#----------------------------------------------------------------------
-#hp53xx.nmi_debugger(p, p.m.w16(0x7ffc))
-
-
 #######################################################################
 #######################################################################
 #######################################################################
@@ -314,6 +309,8 @@ while p.run():
 	pass
 
 #######################################################################
+hp53xx.nmi_debugger(p, cpu)
+#######################################################################
 # Manual markup
 
 if False:
@@ -436,30 +433,6 @@ if False:
 	p.setlabel(0x7eff, "DISPLAYTEST")
 	p.setlabel(0x7f24, "RD_TEST")
 	p.setlabel(0x7f4a, "TEST_LOOP")
-
-#######################################################################
-
-if True:
-	#######################################################################
-	# NMI/GPIB debugger
-	nmi = p.m.w16(0x7ffc)
-
-	xnmi = p.t.add(nmi, 0x7ff8, "src")
-	xnmi.blockcmt += """-
-	NMI based GPIB debugger interface.
-	See HPJ 1978-08 p23
-	"""
-
-	p.setlabel(nmi + 0x000c, "NMI_LOOP()")
-	p.setlabel(nmi + 0x0022, "NMI_CMD_01_WRITE() [X,L,D...]")
-	p.setlabel(nmi + 0x0031, "NMI_CMD_02_READ() [X,L]")
-	p.setlabel(nmi + 0x0040, "NMI_CMD_03()")
-	p.setlabel(nmi + 0x0046, "NMI_CMD_04_TX_X()")
-	p.setlabel(nmi + 0x0054, "NMI_CMD_05_END()")
-	p.setlabel(nmi + 0x005a, "NMI_RX_X()")
-	p.setlabel(nmi + 0x0067, "NMI_RX_A()")
-	p.setlabel(nmi + 0x0070, "NMI_TX_A()")
-
 
 #######################################################################
 
