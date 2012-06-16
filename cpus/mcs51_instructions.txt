@@ -1,0 +1,154 @@
+# MCS51 Instructions
+
+#			|. . . . . . . .|. . . . . . . .|
+ACALL	addr11		| ahi |1 0 0 0 1| alo		|
+
+ADD	A,Rn		|0 0 1 0 1| rn  |
+ADD	A,adir		|0 0 1 0 0 1 0 1| adir		|
+ADD	A,@Ri		|0 0 1 0 0 1 1|i|
+ADD	A,#data		|0 0 1 0 0 1 0 0| data		|
+
+ADC	A,Rn		|0 0 1 1 1| rn  |
+ADC	A,adir		|0 0 1 1 0 1 0 1| adir		|
+ADC	A,@Ri		|0 0 1 1 0 1 1|i|
+ADC	A,imm		|0 0 1 1 0 1 0 0| imm		|
+
+AJMP	addr11		| ahi |0 0 0 0 1| alo		|
+
+ANL	A,Rn		|0 1 0 1 1| rn  |
+ANL	A,adir		|0 1 0 1 0 1 0 1| adir		|
+ANL	A,@Ri		|0 1 0 1 0 1 1|i|
+ANL	A,#data		|0 1 0 1 0 1 0 0| data		|
+
+ANL	adir,A		|0 1 0 1 0 0 1 0| adir		|
+ANL	adir,#data	|0 1 0 1 0 0 1 1| adir		| data		|
+ANL	C,bit		|1 0 0 0 0 0 1 0| abit		|
+ANL	C,/bit		|1 0 1 1 0 0 0 0| abit		|
+
+CJNE	A,adir,arel	|1 0 1 1 0 1 0 1| adir		| arel		|
+CJNE	A,#data,arel	|1 0 1 1 0 1 0 0| data		| arel		|
+CJNE	Rn,#data,arel	|1 0 1 1 1| rn	| data		| arel		|
+CJNE	@Ri,#data,arel	|1 0 1 1 0 1 1|i| data		| arel		|
+
+CLR	A		|1 1 1 0 0 1 0 0|
+CLR	C		|1 1 0 0 0 0 1 1|
+CLR	bit		|1 1 0 0 0 0 1 0| abit		|
+
+CPL	A		|1 1 1 1 0 1 0 0|
+CPL	C		|1 0 1 1 0 0 1 1|
+CPL	bit		|1 0 1 1 0 0 1 0| abit		|
+
+DA	A		|1 1 0 1 0 1 0 0|
+
+DEC	A		|0 0 0 1 0 1 0 0|
+DEC	Rn		|0 0 0 1 1| rn  |
+DEC	adir		|0 0 0 1 0 1 0 1| adir		|
+DEC	@Ri		|0 0 0 1 0 1 1|i|
+
+DIV	AB		|1 0 0 0 0 1 0 0|
+
+DJNZ	Rn,arel		|1 1 0 1 1| rn	| arel		|
+DJNZ	adir,arel	|1 1 0 1 0 1 0 1| adir		| arel		|
+
+INC	A		|0 0 0 0 0 1 0 0|
+INC	Rn		|0 0 0 0 1| rn	|
+INC	adir		|0 0 0 0 0 1 0 1| adir		|
+INC	@Ri		|0 0 0 0 0 1 1|i|
+INC	DPTR		|1 0 1 0 0 0 1 1|
+
+JB	abit,arel	|0 0 1 0 0 0 0 0| abit		| arel		|
+JBC	abit,arel	|0 0 0 1 0 0 0 0| abit		| arel		|
+
+JC	arel		|0 1 0 0 0 0 0 0| arel		|
+
+JMP	@A+DPTR		|0 1 1 1 0 0 1 1|
+
+JNB	abit,arel	|0 0 1 1 0 0 0 0| abit		| arel		|
+
+JNC	arel		|0 1 0 1 0 0 0 0| arel		|
+
+JNZ	arel		|0 1 1 1 0 0 0 0| arel		|
+
+JZ	arel		|0 1 1 0 0 0 0 0| arel		|
+
+LCALL	a16		|0 0 0 1 0 0 1 0| ahi		| alo		|
+
+LJMP	a16		|0 0 0 0 0 0 1 0| ahi		| alo		|
+
+MOV	A,Rn		|1 1 1 0 1| rn	|
+MOV	A,adir		|1 1 1 0 0 1 0 1| adir		|
+MOV	A,@Ri		|1 1 1 0 0 1 1|i|
+MOV	A,#data		|0 1 1 1 0 1 0 0| data		|
+MOV	Rn,A		|1 1 1 1 1| rn	|
+MOV	Rn,adir		|1 0 1 0 1| rn	| adir		|
+MOV	Rn,#data	|0 1 1 1 1| rn	| data		|
+MOV	adir,A		|1 1 1 1 0 1 0 1| adir		|
+MOV	adir,Rn		|1 0 0 0 1| rn	| adir		|
+MOV	adir,adir2	|1 0 0 0 0 1 0 	| adir		| adir2		|
+MOV	adir,@Ri	|1 0 0 0 0 1 1|i| adir		|
+MOV	adir,#data	|0 1 1 1 0 1 0 1| adir		| data		|
+MOV	@Ri,A		|1 1 1 1 0 1 1|i|
+MOV	@Ri,adir	|1 0 1 0 0 1 1|i| adir		|
+MOV	@Ri,#data	|0 1 1 1 0 1 1|i| data		|
+
+MOV	C,bit		|1 0 1 0 0 0 1 0| bit		|
+MOV	bit,C		|1 0 0 1 0 0 1 0| bit		|
+
+MOV	DPTR,#data16	|1 0 0 1 0 0 0 0| dhi		| dlo		|
+
+MOVC	A,@A+DPTR	|1 0 0 1 0 0 1 1|
+MOVC	A,@A+PC		|1 0 0 0 0 0 1 1|
+
+MOVX	A,@Ri		|1 1 1 0 0 0 1|i|
+MOVX	A,@DPTR		|1 1 1 0 0 0 0 0|
+MOVX	@Ri,A		|1 1 1 1 0 0 1|i|
+MOVX	@DPTR,A		|1 1 1 1 0 0 0 0|
+
+MUL	AB		|1 0 1 0 0 1 0 0|
+
+NOP	-		|0 0 0 0 0 0 0 0|
+
+ORL	A,Rn		|0 1 0 0 1| rn	|
+ORL	A,adir		|0 1 0 0 0 1 0 1| adir		|
+ORL	A,@Ri		|0 1 0 0 0 1 1|i|
+ORL	A,#data		|0 1 0 0 0 1 0 0| data		|
+ORL	adir,A		|0 1 0 0 0 0 1 0| adir		|
+ORL	adir,#data	|0 1 0 0 0 0 1 1| adir		| data		|
+ORL	C,bit		|0 1 1 1 0 0 1 0| bit		|
+ORL	C,/bit		|1 0 1 0 0 0 0 0| bit		|
+
+POP	adir		|1 1 0 1 0 0 0 0| adir		|
+PUSH	adir		|1 1 0 0 0 0 0 0| adir		|
+
+RET	-		|0 0 1 0 0 0 1 0|
+
+RETI	-		|0 0 1 1 0 0 1 0|
+
+RL	A		|0 0 1 0 0 0 1 1|
+RLC	A		|0 0 1 1 0 0 1 1|
+RR	A		|0 0 0 0 0 0 1 1|
+RRC	A		|0 0 0 1 0 0 1 1|
+
+SETB	C		|1 1 0 1 0 0 1 1|
+SETB	bit		|1 1 0 1 0 0 1 0| abit		|
+
+SJMP	arel		|1 0 0 0 0 0 0 0| arel		|
+
+SUBB	A,Rn		|1 0 0 1 1| rn  |
+SUBB	A,adir		|1 0 0 1 0 1 0 1| adir		|
+SUBB	A,@Ri		|1 0 0 1 0 1 1|i|
+SUBB	A,#data		|1 0 0 1 0 1 0 0| data		|
+
+SWAP	A		|1 1 0 0 0 1 0 0|
+XCH	A,Rn		|1 1 0 0 1| rn  |
+XCH	A,adir		|1 1 0 0 0 1 0 1| adir		|
+XCH	A,@Ri		|1 1 0 0 0 1 1|i|
+XCHD	A,@Ri		|1 1 0 1 0 1 1|i|
+
+XRL	A,Rn		|0 1 1 0 1| rn	|
+XRL	A,adir		|0 1 1 0 0 1 0 1| adir		|
+XRL	A,@Ri		|0 1 1 0 0 1 1|i|
+XRL	A,#data		|0 1 1 0 0 1 0 0| data		|
+XRL	adir,A		|0 1 1 0 0 0 1 0| adir		|
+XRL 	adir,#data	|0 1 1 0 0 0 1 1| adir		| data		|
+
