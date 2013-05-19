@@ -57,7 +57,7 @@ class flow(object):
 			if self.fm.trampoline:
 				fmn = "BB%x" % self.fm.lo
 			else:
-				fmn = "BB%x:out" % self.fm.lo
+				fmn = "BB%x:s" % self.fm.lo
 		else:
 			fmn = "FLF%x" % id(self)
 			if self.fm != None:
@@ -67,7 +67,7 @@ class flow(object):
 			if self.to.trampoline:
 				ton = "BB%x" % self.to.lo
 			else:
-				ton = "BB%x:in" % self.to.lo
+				ton = "BB%x:n" % self.to.lo
 		else:
 			if self.to != None:
 				ton = "FLT%x" % self.to.lo
@@ -145,11 +145,11 @@ class bb(object):
 			dot = 'shape=record, fontname="Courier", label="{'
 			if self.label != None:
 				dot += self.label + "|"
-			dot += '<in>%04x-%04x|' % (self.lo, self.hi)
+			dot += '%04x-%04x|' % (self.lo, self.hi)
 			for i in self.ins:
 				for j in i.render(p, i):
 					dot += j.expandtabs() + '\\l'
-			dot += '|<out>}"'
+			dot += '}"'
 		fo.write(nmx + ' [' + dot + ']\n')
 
 class segment(object):
