@@ -184,15 +184,14 @@ class fill(tree.tree):
 				return
 			x = rd(hi)
 			try:
-				while x == rd(hi):
+				while x == rd(hi + 1):
 					hi += 1
-				hi -= 1
 			except:
 				pass
+			hi += 1
 		if lo == None or hi == None:
 			print("BOGUS fill(", lo, ",", mid, ",", hi, ")")
 			return
-		hi += 1
 		tree.tree.__init__(self, lo, hi, "fill")
 		x = p.t.add(self.start, self.end, self.tag, True, self)
 		x.render = ".Fill\t" + \
