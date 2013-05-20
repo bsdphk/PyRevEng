@@ -25,7 +25,7 @@ ADDQ.L		#const,ea	037f	|0 1 0 1|const|0|1 0| eam | ear |
 # 117/4-13
 # Collision with ADDA.L
 aDDX.B		Dy,Dx		0000	|1 1 0 1| Dx  |1|0 0|0 0|0| Dy  |
-aDDX.W		Dy,Dx		0000	|1 1 0 1| Dx  |1|0 1|0 0|0| Dy  |
+ADDX.W		Dy,Dx		0000	|1 1 0 1| Dx  |1|0 1|0 0|0| Dy  |
 ADDX.L		Dy,Dx		0000	|1 1 0 1| Dx  |1|1 0|0 0|0| Dy  |
 aDDX.B		-(Ay),-(Ax)	0000	|1 1 0 1| Ax  |1|0 0|0 0|1| Ay  |
 aDDX.W		-(Ay),-(Ax)	0000	|1 1 0 1| Ax  |1|0 1|0 0|1| Ay  |
@@ -39,7 +39,7 @@ ANDI.Z		#data,ea	037d	|0 0 0 0 0 0 1 0| sz| eam | ear |
 # 124/4-20
 aNDI.B		#const,CCR	0000	|0 0 0 0|0 0 1 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
 # 125/4-21
-aSL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 0| Dy  |
+ASL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 0| Dy  |
 ASR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 0| Dy  |
 ASL.Z		#rot,Dn		0000	|1 1 1 0| #rot|1| sz|0|0 0| Dn  |
 ASR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|0 0| Dn  |
@@ -73,6 +73,7 @@ BTST.B		#bn,ea		037c	|0 0 0 0|1 0 0|0 0 0| eam | ear |0 0 0 0|0 0 0 0| #bn		|
 BTST.L		#bn,Dn		0000	|0 0 0 0|1 0 0|0 0 0|0 0 0| Dn  |0 0 0 0|0 0 0 0| #bn		|
 # 173/4-69
 cHK.W		ea,Dn		1f7d	|0 1 0 0| Dn  |1 1|0| eam | ear |
+CHK.L		ea,Dn		1f7d	|0 1 0 0| Dn  |1 0|0| eam | ear |
 # 177/4-73
 CLR.Z		ea		037d	|0 1 0 0|0 0 1 0| sz| eam | ear |
 # 179/4-75
@@ -146,10 +147,10 @@ MOVEM.L		rrlist,ea	0374	|0 1 0 0|1 0 0|0 1 1| eam | ear | rrlist			|
 MOVEM.W		ea,rlist	0f6c	|0 1 0 0|1 1 0|0 1 0| eam | ear | rlist				|
 MOVEM.L		ea,rlist	0f6c	|0 1 0 0|1 1 0|0 1 1| eam | ear | rlist				|
 # 235/4-131
-mOVEP.W		Dn,An+#disp16	0000	|0 0 0 0| Dn  |1|1 0|0 0 1| An  | disp16			|
+MOVEP.W		Dn,An+#disp16	0000	|0 0 0 0| Dn  |1|1 0|0 0 1| An  | disp16			|
 MOVEP.L		Dn,An+#disp16	0000	|0 0 0 0| Dn  |1|1 1|0 0 1| An  | disp16			|
-mOVEP.W		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 0|0 0 1| An  | disp16			|
-mOVEP.L		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 1|0 0 1| An  | disp16			|
+MOVEP.W		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 0|0 0 1| An  | disp16			|
+MOVEP.L		An+#disp16,Dn	0000	|0 0 0 0| Dn  |1|0 1|0 0 1| An  | disp16			|
 # 238/4-134
 MOVEQ.L		#data8,Dn	0000	|0 1 1 1| Dn  |0| #data8	|
 # 239/4-135
@@ -213,7 +214,7 @@ SUBQ.L		#const,ea	037f	|0 1 0 1|const|1|1 0| eam | ear |
 # 287/4-183
 # Collision with SUBA.L
 sUBX.B		Dx,Dy		0000	|1 0 0 1| Dy  |1|0 0|0 0|0| Dx  |
-sUBX.W		Dx,Dy		0000	|1 0 0 1| Dy  |1|0 1|0 0|0| Dx  |
+SUBX.W		Dx,Dy		0000	|1 0 0 1| Dy  |1|0 1|0 0|0| Dx  |
 SUBX.L		Dx,Dy		0000	|1 0 0 1| Dy  |1|1 0|0 0|0| Dx  |
 sUBX.B		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1|0 0|0 0|1| Ax  |
 sUBX.W		-(Ax),-(Ay)	0000	|1 0 0 1| Ay  |1|0 1|0 0|1| Ax  |
