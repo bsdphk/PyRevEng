@@ -31,7 +31,36 @@ def reglist_word(w, p, l):
 def reglist(w):
 	r = reglist_word(w, "D", "01234567") + \
 	    reglist_word(w >> 8, "A", "01234567")
-	return "{" + r[1:] + "}"
+	return "[" + r[1:] + "]"
+
+def regrlist(w):
+	r = reglist_word(w >> 8, "D", "76543210") + \
+	    reglist_word(w, "A", "76543210")
+	return "[" + r[1:] + "]"
+
+#######################################################################
+
+def ask_gdb(m, a):
+	import subprocess
+
+	fo = open("/tmp/_.bin", "wb")
+	b = bytearray()
+	for i in range(16):
+		b.append(m.rd(a + i))
+	fo.write(b)
+	fo.close()
+
+	b = subprocess.check_output([
+		"m68k-rtems-objdump",
+		"-bbinary",
+		"-D",
+		"--adjust-vma=0x%x" % a,
+		"-mm68k:68030",
+		"/tmp/_.bin"
+	])
+	b=b.decode("ascii").split("\n")
+	return b[7]
+
 
 #######################################################################
 
@@ -85,23 +114,25 @@ m68kvecs[56] = "MMU Conf"
 m68kvecs[57] = "MMU Illegal Op"
 m68kvecs[58] = "MMU Access Violation"
 
-class m68000(disass.assy):
+class m68k(disass.assy):
 
-	def __init__(self, p, name = "m68000"):
+	def __init__(self, p, name = None):
 		disass.assy.__init__(self, p, name)
 		self.root = instree.instree(
-		    width = 16,
-		    filename = __file__[:-3] + "_instructions.txt"
+		   width = 16,
+		   filename = __file__[:-3] + "_instructions.txt"
 		)
-		#self.root.print()
 
-	def vectors(self, hi):
+	def load_ins(self, fn):
+		self.root.load(filename = __file__[:-9] + fn)
+
+	def vectors(self, hi, base=0x0):
 		for a in range(0, hi):
-			x = const.w32(self.p, a * 4)
+			x = const.w32(self.p, base + a * 4)
 			if a in m68kvecs:
 				x.lcmt(m68kvecs[a])
 			if a > 0:
-				self.disass(self.p.m.w32(a * 4))
+				self.disass(self.p.m.w32(base + a * 4))
 
 	def rdarg(self, adr, c, arg, fail_ok = False):
 		x = c.get_field(self.p, adr, self.p.m.b16, 2, arg)
@@ -109,62 +140,102 @@ class m68000(disass.assy):
 			print("NB: ", arg, "not found in", c)
 		return x
 
-	def extword(self, ins, idx, ver = True):
-		adr = ins.lo
+	def extword(self, ins, breg, ver = True):
+		adr = ins.hi
 		p = self.p
 		ev = p.m.b16(ins.hi)
 		ins.hi += 2
-		if ev & 256:
-			if ver:
-				print(("Error @%04x: %04x %04x " +
-				    "Long extension word in EA.6 %04x") %
-				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
-				    ev))
-				print("\t", self.last_c)
+		if not self.lew and (ev & 0x0700):
 			return None
-		#print("EA6: Ev: %04x" % ev)
+		ea = ""
 		da = ev >> 15
 		reg = (ev >> 12) & 7
-		wl = (ev >> 11) & 1
-		scale = (ev >> 9) & 3
-		displ = ev & 0xff
-		if displ & 0x80:
-			displ -= 256
 		if da == 0:
-			rg = "D%d" % reg
+			irg = "D%d" % reg
 		else:
-			rg = "A%d" % reg
+			irg = "A%d" % reg
+		wl = (ev >> 11) & 1
 		if wl:
-			rg += ".L"
+			irg += ".L"
 		else:
-			rg += ".W"
-		#print("rg", rg, "wl", wl, "scale", scale, "displ", displ)
-		ea = "(" + idx
+			irg += ".W"
+		scale = (ev >> 9) & 3
 		if scale != 0:
-			ea +=  "*%d" % (1 << scale)
-		ea += "+" + rg
-		if displ < 0:
-			ea +=  "-0x%x" % -displ
-		elif displ > 0:
-			ea +=  "+0x%x" % displ
-		ea += ")"
-		return ea
+			irg +=  "*%d" % (1 << scale)
+		if ev & 0x0100:
+			bs = (ev >> 7) & 1
+			Is = (ev >> 6) & 1
+			bds = (ev >> 4) & 3
+			iis = (ev >> 0) & 7
+			if bds == 0:
+				return None
+			elif bds == 1:
+				displ = 0
+			elif bds == 2:
+				displ = p.m.s16(ins.hi)
+				ins.hi += 2
+			else:
+				displ = p.m.s32(ins.hi)
+				ins.hi += 4
+			if bs == 0:
+				if breg != "PC":
+					ea += "+" + breg
+					if displ < 0:
+						ea += "-0x%x" % -displ
+					elif displ > 0:
+						ea += "+0x%x" % displ
+				else:
+					ea += "+0x%x" % (adr + displ)
+			else:
+				ea += "+0x%x" % displ
+			if Is == 0:
+				ea += "+" + irg
+			if iis == 0:
+				pass
+			elif iis == 1:
+				ea = "+(" + ea[1:] + ")"
+				ins.gbd = True
+			else:
+				ins.gbd = True
+				ea += "  LEW[iis %d]" % (iis)
+				ins.flow("missing_LEW", "T", None)
+		else:
+			displ = ev & 0xff
+			if displ & 0x80:
+				displ -= 256
+			if breg == "PC":
+				ea += "+0x%x" % (adr + displ)
+				ea += "+" + irg
+			else:
+				ea += "+" + breg
+				ea += "+" + irg
+				if displ < 0:
+					ea +=  "-0x%x" % -displ
+				elif displ > 0:
+					ea +=  "+0x%x" % displ
+		return "(" + ea[1:] + ")"
 
 	def ea(self, ins, eam, ear, wid):
 
 		adr = ins.lo
 		v = None
 		if eam == 0:
+			# Data Register Direct
 			ea = "D%d" % ear
 		elif eam == 1:
+			# Address Register Direct
 			ea = "A%d" % ear
 		elif eam == 2:
+			# Address Register Indirect
 			ea = "(A%d)" % ear
 		elif eam == 3:
+			# Address Register Indirect with Postincrement
 			ea = "(A%d)+" % ear
 		elif eam == 4:
+			# Adress Register Indirect with Predecrement
 			ea = "-(A%d)" % ear
 		elif eam == 5:
+			# Adress Register Indirect with Displacement
 			v = self.p.m.sb16(ins.hi)
 			ins.hi += 2
 			if v < 0:
@@ -172,40 +243,48 @@ class m68000(disass.assy):
 			else:
 				ea = "(A%d+#0x%04x)" % (ear, v)
 		elif eam == 6:
+			# Adress Register Indirect with Index
 			ea = self.extword(ins, "A%d" % ear)
 			if ea == None:
 				return (None, None)
 		elif eam == 7 and ear == 0:
+			# Absolute Short Addressing
 			v = self.p.m.b16(ins.hi)
 			if v & 0x8000:
 				v |= 0xffff0000
 			ea=(v, "%s")
 			ins.hi += 2
 		elif eam == 7 and ear == 1:
+			# Absolute Long Adressing
 			v =self.p.m.b32(ins.hi)
 			ea=(v, "%s")
 			ins.hi += 4
 		elif eam == 7 and ear == 2:
+			# Program Counter Indirect with Displacement
 			v = ins.hi + self.p.m.sb16(ins.hi)
 			ea=(v, "%s")
 			ins.hi += 2
 		elif eam == 7 and ear == 3:
+			# Program Counter Indirect with Index
 			ea = self.extword(ins, "PC")
 			if ea == None:
 				return (None, None)
 		elif eam == 7 and ear == 4 and wid == 8:
+			# Immediate Data (8 bit)
 			ea="#0x%02x" % (self.p.m.b16(ins.hi) & 0xff)
 			ins.hi += 2
 		elif eam == 7 and ear == 4 and wid == 16:
+			# Immediate Data (16 bit)
 			v = self.p.m.b16(ins.hi)
 			ea="#0x%04x" % v
 			ins.hi += 2
 		elif eam == 7 and ear == 4 and wid == 32:
+			# Immediate Data (32 bit)
 			v = self.p.m.b32(ins.hi)
 			ea="#0x%08x" % v
 			ins.hi += 4
 		else:
-			if False:
+			if True:
 				print(("Error @%04x: %04x %04x " +
 				    "EA.%d.%d w%d missing") %
 				    (adr, self.p.m.b16(adr), self.p.m.b16(adr + 2),
@@ -295,9 +374,14 @@ class m68000(disass.assy):
 	def do_disass(self, adr, ins):
 		assert ins.lo == adr
 		assert ins.status == "prospective"
+		ins.gbd = False
 
 		p = self.p
-		c = self.root.find(p, adr, p.m.b16)
+		try:
+			c = self.root.find(p, adr, p.m.b16)
+		except:
+			ins.fail("no match", ask_gdb(p.m, adr) )
+			return None
 
 		# We have a specification in 'c'
 		self.last_c = c
@@ -329,7 +413,9 @@ class m68000(disass.assy):
 				#    y)
 				#print("\t", c)
 				#print(self.root.allfind(p, adr, p.m.b16))
-				ins.fail("wrong sz field", c)
+				ins.fail("wrong sz field", 
+					ask_gdb(p.m, adr)
+				)
 				return 
 		
 		else:
@@ -363,7 +449,9 @@ class m68000(disass.assy):
 		if junk == True:
 			ea,dstadr = self.ea(ins, eam, ear, wid)
 			if ea == None:
-				ins.fail("wrong ea")
+				ins.fail("wrong ea m<%x> r<%x>" % (eam, ear) +
+					"\n\t" + ask_gdb(p.m, adr)
+				)
 				return
 		else:
 			ea = None
@@ -375,11 +463,12 @@ class m68000(disass.assy):
 				y = None
 			elif i == "ea":
 				if ea == None:
-					ins.fail("wrong ea",
+					ins.fail("No ea",
 					    "@" + p.m.afmt(adr) +
 					    ": " + p.m.dfmt(p.m.b16(adr)) + 
 					    " " + p.m.dfmt(p.m.b16(adr + 2)) +
-					    " " + str(c)
+					    " " + str(c) + "\n" +
+					    "\t" + ask_gdb(p.m, adr)
 					)
 					return
 				y = ea
@@ -418,6 +507,8 @@ class m68000(disass.assy):
 				dstadr = adr + 2 + j
 				#print("%04x: na=%04x j=%d" % (adr, ins.hi, j))
 				y = "0x%04x" % dstadr
+			elif i == "rrlist":
+				y = regrlist(self.rdarg(adr, c, i))
 			elif i == "rlist":
 				y = reglist(self.rdarg(adr, c, i))
 			elif i == "#bn":
@@ -449,6 +540,8 @@ class m68000(disass.assy):
 					mne = "DB" + cc
 				else:
 					y = cc
+			elif i == "Rc":
+				y = "RC%03x" % self.rdarg(adr, c, i)
 			elif i in special_registers:
 				y = i
 			else:
@@ -457,7 +550,7 @@ class m68000(disass.assy):
 				    (adr, p.m.b16(adr), p.m.b16(adr + 2),
 				    i))
 				print("\t", c)
-				ins.fail("unhandled arg")
+				ins.fail("unhandled arg" + ask_gdb(p.m,adr))
 				return
 			if y != None:
 				ol.append(y)
@@ -487,4 +580,41 @@ class m68000(disass.assy):
 			ins.flow("cond", cc, ins.hi)
 			
 		ins.mne = mne
+		if mne[0].islower() or ins.gbd:
+			ins.lcmt(ask_gdb(p.m, adr) + "\tGDB\t" + str(self.last_c))
 		ins.oper = ol
+
+class m68000(m68k):
+	def __init__(self, p, name = "m68000"):
+		m68k.__init__(self, p, name)
+		self.lew = False
+
+class m68010(m68k):
+	def __init__(self, p, name = "m68010"):
+		m68k.__init__(self, p, name)
+		self.load_ins("m68010_instructions.txt")
+		self.lew = False
+
+class m68020(m68k):
+	def __init__(self, p, name = "m68020"):
+		m68k.__init__(self, p, name)
+		self.load_ins("m68010_instructions.txt")
+		self.load_ins("m68020_instructions.txt")
+		self.lew = True
+
+class m68030(m68k):
+	def __init__(self, p, name = "m68030"):
+		m68k.__init__(self, p, name)
+		self.load_ins("m68010_instructions.txt")
+		self.load_ins("m68020_instructions.txt")
+		self.load_ins("m68030_instructions.txt")
+		self.lew = True
+
+class m68040(m68k):
+	def __init__(self, p, name = "m68040"):
+		m68k.__init__(self, p, name)
+		self.load_ins("m68010_instructions.txt")
+		self.load_ins("m68020_instructions.txt")
+		self.load_ins("m68030_instructions.txt")
+		self.load_ins("m68040_instructions.txt")
+		self.lew = True

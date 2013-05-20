@@ -1,0 +1,12 @@
+# 68010 instruction list
+#
+# From:
+#	M68000 Family Programmer's Reference Manual
+#
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+# 476/6-22
+mOVEC		Rc,Dn		0000	|0 1 0 0|1 1 1 0|0 1 1 1|1 0 1|0|0| Dn  | Rc                    |
+mOVEC		Rc,An		0000	|0 1 0 0|1 1 1 0|0 1 1 1|1 0 1|0|1| An  | Rc                    |
+mOVEC		Dn,Rc		0000	|0 1 0 0|1 1 1 0|0 1 1 1|1 0 1|1|0| Dn  | Rc                    |
+MOVEC		An,Rc		0000	|0 1 0 0|1 1 1 0|0 1 1 1|1 0 1|1|1| An  | Rc                    |
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|

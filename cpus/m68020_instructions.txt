@@ -1,0 +1,21 @@
+# 68020 instruction list
+#
+# From:
+#	M68000 Family Programmer's Reference Manual
+#
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+# 196/4.92
+DIVS.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 1| eam | ear |0| Dy  |1|0|0 0 0 0 0 0 0| Dx  |
+DIVSL.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 1| eam | ear |0| Dy  |1|1|0 0 0 0 0 0 0| Dx  |
+# 200/4.96
+DIVU.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 1| eam | ear |0| Dy  |0|0|0 0 0 0 0 0 0| Dx  |
+DIVUL.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 1| eam | ear |0| Dy  |0|1|0 0 0 0 0 0 0| Dx  |
+# 210/4.106
+EXTB.L		Dn		0	|0 1 0 0 1 0 0 1 1 1 0 0 0| Dn  |
+# 239/4.135
+MULS.L		ea,Dy		1f7d	|0 1 0 0 1 1 0 0 0 0| eam | ear |0| Dy  |1|0|0 0 0 0 0 0 0| Dx  |
+mULS.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 0| eam | ear |0| Dy  |1|1|0 0 0 0 0 0 0| Dx  |
+# 242/4.138
+mULU.L		ea,Dy		1f7d	|0 1 0 0 1 1 0 0 0 0| eam | ear |0| Dy  |0|0|0 0 0 0 0 0 0| Dx  |
+mULU.L		ea,Dx,Dy	1f7d	|0 1 0 0 1 1 0 0 0 0| eam | ear |0| Dy  |0|1|0 0 0 0 0 0 0| Dx  |
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
