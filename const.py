@@ -3,7 +3,10 @@
 
 from __future__ import print_function
 
+from struct import unpack, pack
+
 import tree
+
 
 class byte(tree.tree):
 	def __init__(self, p, adr, len = 1, fmt="0x%02x"):
@@ -84,6 +87,20 @@ class ptr(tree.tree):
 				s += p.m.afmt(x)
 			d = ", "
 		return (s,)
+
+class ieee_fp64(tree.tree):
+	def __init__(self, p, adr, endian=">"):
+		tree.tree.__init__(self, adr, adr + 8, "ieee_fp64")
+		p.t.add(self.start, self.end, self.tag, True, self)
+
+		self.render = self.rfunc
+		b = bytearray()
+		for i in range(8):
+			b.append(p.m.rd(adr + i))
+		self.fp = unpack(endian + "d", b)
+
+	def rfunc(self, p, t):
+		return (".FP64\t%.15g" % self.fp,)
 
 class ltxt(tree.tree):
 	def __init__(self, p, adr, align=2):
