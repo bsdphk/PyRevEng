@@ -37,7 +37,7 @@ AND.Z		Dn,ea		037c	|1 1 0 0| Dn  |1| sz| eam | ear |
 # 122/4-18
 ANDI.Z		#data,ea	037d	|0 0 0 0 0 0 1 0| sz| eam | ear |
 # 124/4-20
-aNDI.B		#const,CCR	0000	|0 0 0 0|0 0 1 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
+ANDI.B		#const,CCR	0000	|0 0 0 0|0 0 1 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
 # 125/4-21
 ASL.Z		Dx,Dy		0000	|1 1 1 0| Dx  |1| sz|1|0 0| Dy  |
 ASR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 0| Dy  |
@@ -49,7 +49,7 @@ aSR.W		ea		037c	|1 1 1 0|0 0 0|0|1 1| eam | ear |
 Bcc		cc,#dst		0000	|0 1 1 0| cc    | disp8		|
 # 131/4-27
 bCHG.B		Dn,ea		037c	|0 0 0 0| Dn  |1 0 1| eam | ear |
-bCHG.L		Dx,Dy		0000	|0 0 0 0| Dx  |1 0 1|0 0 0| Dy  |
+BCHG.L		Dx,Dy		0000	|0 0 0 0| Dx  |1 0 1|0 0 0| Dy  |
 BCHG.B		#bn,ea		037c	|0 0 0 0|1 0 0|0 0 1| eam | ear |0 0 0 0|0 0 0 0| #bn		|
 BCHG.L		#bn,Dn		0000	|0 0 0 0|1 0 0|0 0 1|0 0 0| Dn  |0 0 0 0|0 0 0 0| #bn		|
 # 134/4-30
@@ -126,7 +126,7 @@ LSR.Z		Dx,Dy		0000	|1 1 1 0| Dx  |0| sz|1|0 1| Dy  |
 LSL.Z		#rot,Dn		0000	|1 1 1 0| #rot|1| sz|0|0 1| Dn  |
 LSR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|0 1| Dn  |
 lSL.W		ea		037c	|1 1 1 0|0 0 1|1|1 1| eam | ear |
-lSR.W		ea		037c	|1 1 1 0|0 0 1|0|1 1| eam | ear |
+LSR.W		ea		037c	|1 1 1 0|0 0 1|0|1 1| eam | ear |
 # 220/4-116
 MOVE.B		ea,ead		1f7f	|0 0|0 1|earx |eamx | eam | ear |
 MOVE.W		ea,ead		1f7f	|0 0|1 1|earx |eamx | eam | ear |
@@ -173,7 +173,7 @@ OR.Z		Dn,ea		037c	|1 0 0 0| Dn  |1| sz| eam | ear |
 # 257/4-153
 ORI.Z		#data,ea	037d	|0 0 0 0|0 0 0 0| sz| eam | ear |
 # 259/4-155
-oRI		#const,CCR	0000	|0 0 0 0|0 0 0 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
+ORI		#const,CCR	0000	|0 0 0 0|0 0 0 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
 # 263/4-159
 PEA.L		ea		0f64	|0 1 0 0|1 0 0|0 0 1| eam | ear |
 # 264/4-160
@@ -191,7 +191,7 @@ ROXR.Z		#rot,Dn		0000	|1 1 1 0| #rot|0| sz|0|1 0| Dn  |
 rOXL.W		ea		037c	|1 1 1 0|0 1 0|1|1 1| eam | ear |
 rOXR.W		ea		037c	|1 1 1 0|0 1 0|0|1 1| eam | ear |
 # 272/4-168
-rTR		""		0000	|0 1 0 0|1 1 1 0|0 1 1 1|0 1 1 1|
+RTR		""		0000	|0 1 0 0|1 1 1 0|0 1 1 1|0 1 1 1|
 # 273/4-169
 RTS		""		0000	|0 1 0 0|1 1 1 0|0 1 1 1|0 1 0 1|
 # 274/4-170

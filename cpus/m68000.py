@@ -43,6 +43,9 @@ def regrlist(w):
 def ask_gdb(m, a):
 	import subprocess
 
+	if a >= 0x80000:
+		return "---"
+	print("0x%x {" % a)
 	fo = open("/tmp/_.bin", "wb")
 	b = bytearray()
 	for i in range(16):
@@ -55,10 +58,11 @@ def ask_gdb(m, a):
 		"-bbinary",
 		"-D",
 		"--adjust-vma=0x%x" % a,
-		"-mm68k:68030",
+		"-mm68k:68000",
 		"/tmp/_.bin"
 	])
 	b=b.decode("ascii").split("\n")
+	print("}}", b[7])
 	return b[7]
 
 
@@ -122,9 +126,13 @@ class m68k(disass.assy):
 		   width = 16,
 		   filename = __file__[:-3] + "_instructions.txt"
 		)
+		self.trap_returns = dict()
 
 	def load_ins(self, fn):
 		self.root.load(filename = __file__[:-9] + fn)
+
+	def m68881(self):
+		self.root.load(filename = __file__[:-9] + "m68881_instructions.txt")
 
 	def vectors(self, hi, base=0x0):
 		for a in range(0, hi):
@@ -236,12 +244,12 @@ class m68k(disass.assy):
 			ea = "-(A%d)" % ear
 		elif eam == 5:
 			# Adress Register Indirect with Displacement
-			v = self.p.m.sb16(ins.hi)
+			vv = self.p.m.sb16(ins.hi)
 			ins.hi += 2
-			if v < 0:
-				ea = "(A%d-#0x%04x)" % (ear, -v)
+			if vv < 0:
+				ea = "(A%d-#0x%04x)" % (ear, -vv)
 			else:
-				ea = "(A%d+#0x%04x)" % (ear, v)
+				ea = "(A%d+#0x%04x)" % (ear, vv)
 		elif eam == 6:
 			# Adress Register Indirect with Index
 			ea = self.extword(ins, "A%d" % ear)
@@ -556,7 +564,10 @@ class m68k(disass.assy):
 				ol.append(y)
 
 		if mne == "TRAP":
-			ins.flow("call.TRAP", "T", None)
+			if int(ol[0]) in self.trap_returns:
+				ins.flow("call", "T", None)
+			else:
+				ins.flow("call.TRAP", "T", None)
 		elif mne[:2] == "DB":
 			ins.flow("cond", "NZ", dstadr)
 			ins.flow("cond", "Z", ins.hi)

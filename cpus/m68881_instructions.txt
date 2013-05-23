@@ -1,0 +1,9 @@
+# 68020 instruction list
+#
+# From:
+#	M68000 Family Programmer's Reference Manual
+#
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
+# 468/6.14
+FSAVE		ea		372	|1 1 1 1|0 0 1|1 0 0| eam | ear |
+#		src,dst		ea	|_ _ _ _|_ _ _v_|_ _v_ _|_v_ _ _|_ _ _ _|_ _ _ _|_ _ _ _|_ _ _ _|
