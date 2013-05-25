@@ -385,6 +385,13 @@ class m68k(disass.assy):
 		ins.gbd = False
 
 		p = self.p
+
+		try:
+			p.m.rd(adr)
+		except:
+			ins.fail("no mem")
+			return None
+
 		try:
 			c = self.root.find(p, adr, p.m.b16)
 		except:

@@ -134,7 +134,7 @@ class txtlen(tree.tree):
 		return (s,)
 
 class txt(tree.tree):
-	def __init__(self, p, adr, len = None, descend=True):
+	def __init__(self, p, adr, len = None, align=1):
 		elen = 0
 		self.term=""
 		if len == None:
@@ -155,14 +155,15 @@ class txt(tree.tree):
 				c2 = p.m.rd(adr + len)
 				if c2 == 0x0a or c2 == 0x00:
 					continue
-				txt(p, adr + len, descend=descend)
+				txt(p, adr + len)
 				break;
 		if len <= 0:
 			print("BOGUS const.txt @%x" % adr)
 			return
+		if align == 2 and (adr+len+elen) & 1:
+			elen += 1
 		tree.tree.__init__(self, adr, adr + len + elen, "const")
 		x = p.t.add(self.start, self.end, self.tag, True, self)
-		x.descend = descend
 
 		self.render = self.rfunc
 		if len > 0:
