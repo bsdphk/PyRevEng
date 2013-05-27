@@ -173,7 +173,7 @@ OR.Z		Dn,ea		037c	|1 0 0 0| Dn  |1| sz| eam | ear |
 # 257/4-153
 ORI.Z		#data,ea	037d	|0 0 0 0|0 0 0 0| sz| eam | ear |
 # 259/4-155
-ORI		#const,CCR	0000	|0 0 0 0|0 0 0 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| const		|
+ORI		#word,CCR	0000	|0 0 0 0|0 0 0 0|0 0 1 1|1 1 0 0|0 0 0 0|0 0 0 0| #word		|
 # 263/4-159
 PEA.L		ea		0f64	|0 1 0 0|1 0 0|0 0 1| eam | ear |
 # 264/4-160
@@ -207,7 +207,7 @@ SUBA.W		ea,An		1f7f	|1 0 0 1| An  |0 1 1| eam | ear |
 SUBA.L		ea,An		1f7f	|1 0 0 1| An  |1 1 1| eam | ear |
 # 283/4-179
 SUBI.Z		#data,ea	037d	|0 0 0 0|0 1 0 0| sz| eam | ear |
-# 295/4-181
+# 285/4-181
 SUBQ.B		#const,ea	037d	|0 1 0 1|const|1|0 0| eam | ear |
 SUBQ.W		#const,ea	037f	|0 1 0 1|const|1|0 1| eam | ear |
 SUBQ.L		#const,ea	037f	|0 1 0 1|const|1|1 0| eam | ear |
