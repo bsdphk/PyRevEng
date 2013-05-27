@@ -505,7 +505,10 @@ class m68k(disass.assy):
 			elif i == "#vect":
 				y = "%d" % self.rdarg(adr, c, i) 
 			elif i == "#const":
-				y = "#0x%01x" % self.rdarg(adr, c, "const")
+				j = self.rdarg(adr, c, "const")
+				if j == 0:
+					j = 8
+				y = "#0x%01x" % j
 			elif i == "#word":
 				y = "#0x%04x" % self.rdarg(adr, c, i)
 			elif i == "An+#disp16":
