@@ -264,6 +264,14 @@ class instree(object):
 			self.root.insert(x)
 		fi.close()
 
+	def load_string(self, s):
+		for i in s.split("\n"):
+			i = i.strip()
+			if i == "" or i[0] == "#":
+				continue
+			x = insline(i, self.width)
+			self.root.insert(x)
+
 	def print(self):
 		self.root.print()
 
@@ -291,5 +299,5 @@ class instree(object):
 		return l
 
 if __name__ == "__main__":
-	it = instree(8, "cpus/mcs48_instructions.txt")
+	it = instree(8, "cpus/mcs51_instructions.txt")
 	it.print()
