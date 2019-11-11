@@ -1,3 +1,16 @@
+
+NOTICE (2019-11-11)
+===================
+
+This project is retired, please see the successor project:
+
+	https://github.com/bsdphk/PyReveng3
+
+Poul-Henning
+
+Original README content
+-----------------------
+
 This is the latest instantiation of a long series of programable
 reverse engineering/disassembly tools I have written.  Python seems
 to work so well for this kind of work that I am trying to write a
